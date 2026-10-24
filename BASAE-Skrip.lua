@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.0"
+local testver = "Test v1.1"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
