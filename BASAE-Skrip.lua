@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.84"
+local testver = "Test v1.85"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1305,40 +1305,42 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not pickup or not pickup:IsA("Model") then
                 return -1, "CPS unavailable: animal model missing"
             end
-            local overheadAttachment
+
+            local attachmentsFound = 0
+            local labelsFound = 0
+            local rawText
             for _, descendant in ipairs(pickup:GetDescendants()) do
                 if descendant.Name == "AnimalOverheadAttachment" then
-                    overheadAttachment = descendant
-                    break
+                    attachmentsFound += 1
+                    local overhead = descendant:FindFirstChild("AnimalOverhead", true)
+                    local searchRoot = overhead or descendant
+                    for _, item in ipairs(searchRoot:GetDescendants()) do
+                        if item.Name == "CashPerSecond" and item:IsA("TextLabel") then
+                            labelsFound += 1
+                            local display = item.Text
+                            local cleaned = display:gsub(",", ""):gsub("%s+", ""):gsub("%$", "")
+                            cleaned = cleaned:gsub("/[sS]$", "")
+                            local numberText, suffix = cleaned:match("^([%d%.]+)([%a]*)$")
+                            local number = tonumber(numberText)
+                            local scales = {k=1e3, m=1e6, b=1e9, t=1e12, qa=1e15, q=1e15, qi=1e18}
+                            local scale = scales[(suffix or ""):lower()]
+                            if number and number >= 0 and (not suffix or suffix == "" or scale) then
+                                return number * (scale or 1), display
+                            end
+                            rawText = display .. (suffix and suffix ~= "" and not scale and " (unknown CPS suffix)" or " (invalid CPS text)")
+                        end
+                    end
                 end
             end
-            if not overheadAttachment then
+
+            if attachmentsFound == 0 then
                 return -1, "CPS unavailable: AnimalOverheadAttachment not found inside " .. pickup.Name
             end
-            local overhead = overheadAttachment:FindFirstChild("AnimalOverhead", true)
-            if not overhead then
-                return -1, "CPS unavailable: AnimalOverhead missing below AnimalOverheadAttachment"
+            if labelsFound == 0 then
+                return -1, "CPS unavailable: no CashPerSecond TextLabel under AnimalOverheadAttachment"
             end
-            local cpsContainer = overhead:FindFirstChild("CashPerSecond", true)
-            local cpsLabel = cpsContainer and cpsContainer:FindFirstChild("CashPerSecond", true)
-            if not cpsLabel or not cpsLabel:IsA("TextLabel") then
-                return -1, "CPS unavailable: CashPerSecond TextLabel missing below AnimalOverhead"
-            end
-            local raw = cpsLabel.Text
-            local cleaned = raw:gsub(",", ""):gsub("%s+", ""):gsub("%$", ""):gsub("/[sS]$", "")
-            local numberText, suffix = cleaned:match("^([%d%.]+)([%a]*)$")
-            local number = tonumber(numberText)
-            local scales = {k=1e3, m=1e6, b=1e9, t=1e12, qa=1e15, q=1e15, qi=1e18}
-            local scale = scales[(suffix or ""):lower()]
-            if not number or number < 0 then
-                return -1, raw .. " (invalid CPS text)"
-            end
-            if suffix and suffix ~= "" and not scale then
-                return -1, raw .. " (unknown CPS suffix)"
-            end
-            return number * (scale or 1), raw
+            return -1, "CPS unavailable: " .. tostring(rawText or "CashPerSecond text could not be parsed")
         end
-
         local function IsRarityAllowed(pickup)
             local selectedCount = 0
             for _, selected in pairs(SelectedRarities) do
