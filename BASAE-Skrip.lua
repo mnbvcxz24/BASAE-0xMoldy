@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.49"
+local testver = "Test v1.50"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1384,7 +1384,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             task.spawn(function()
                 local ok, err = pcall(function()
                     prompt:InputHoldBegin()
-                    task.wait(math.max(0.1, prompt.HoldDuration) + 0.1)
+                    task.wait(prompt.HoldDuration + 0.1)
                     prompt:InputHoldEnd()
                 end)
                 if not ok then
