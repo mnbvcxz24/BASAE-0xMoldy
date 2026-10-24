@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.103"
+local testver = "Test v1.104"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1472,6 +1472,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             local cps, cpsText = GetPetCPS(pickup)
+            if cps < 0 then
+                for attempt = 1, 8 do
+                    if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then break end
+                    SetPickupTracking(pickup, string.format("Waiting for CPS data (%d/8)", attempt), cpsText)
+                    task.wait(0.25)
+                    cps, cpsText = GetPetCPS(pickup)
+                    if cps >= 0 then break end
+                end
+            end
             SetPickupTracking(pickup, cps >= 0 and "CPS checked" or "CPS read failed", cpsText)
             if HighestCashEnabled and cps < 0 then
                 SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
@@ -1943,8 +1952,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
         CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
             if tostring(action):lower() ~= "fling" or typeof(flingPosition) ~= "Vector3" then return end
-            if not AutoPickupEnabled or ReturningAfterPickup then
-                SetTrackerStatus("Fling recovery ignored: Auto Pickup is off or return-to-base is active.")
+            if not AutoPickupEnabled then
+                SetTrackerStatus("Fling recovery ignored: Auto Pickup is off.")
                 return
             end
             if PickupRequested then
