@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.35"
+local testver = "Test v1.36"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -708,6 +708,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Card1.Size = UDim2.new(1, 0, 0, 114)
         local StartAutoBreak
         local StopAutoBreak
+        local CompletedEggs = {}
         local AutoBreakToggleInitialized = false
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
             if not AutoBreakToggleInitialized then
@@ -1153,8 +1154,52 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local WaitingForPickup = false
         local MovementConnection
         local BaselinePickups = {}
+        local PickupRequested = false
+        local ReturningAfterPickup = false
         local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
         local AnimalPickups = workspace:WaitForChild("AnimalPickups")
+        local AnimalBankedRemote = game:GetService("ReplicatedStorage"):WaitForChild("AnimalBankedRemote")
+        local ReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
+        AnimalBankedRemote.OnClientEvent:Connect(function()
+            if not PickupRequested or ReturningAfterPickup then
+                return
+            end
+            PickupRequested = false
+            ReturningAfterPickup = true
+            SetTrackerStatus("AnimalBankedRemote confirmed the pet reached the base. Returning to the pickup point.")
+            task.spawn(function()
+                local character = LocalPlayer.Character
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                if not humanoid or not root then
+                    ReturningAfterPickup = false
+                    SetTrackerStatus("Return failed: character or HumanoidRootPart unavailable.")
+                    return
+                end
+                local started = os.clock()
+                while character.Parent and humanoid.Health > 0 and (root.Position - ReturnPosition).Magnitude > 4 do
+                    if os.clock() - started > 25 then
+                        humanoid:Move(Vector3.zero, false)
+                        ReturningAfterPickup = false
+                        SetTrackerStatus("Return timed out before reaching the pickup point.")
+                        return
+                    end
+                    local offset = Vector3.new(ReturnPosition.X - root.Position.X, 0, ReturnPosition.Z - root.Position.Z)
+                    if offset.Magnitude > 0 then
+                        local direction = root.CFrame:VectorToObjectSpace(offset.Unit)
+                        humanoid:Move(Vector3.new(direction.X, 0, direction.Z), true)
+                    end
+                    game:GetService("RunService").Heartbeat:Wait()
+                end
+                humanoid:Move(Vector3.zero, false)
+                ReturningAfterPickup = false
+                SetTrackerStatus("Returned to pickup point.")
+                if AutoBreakToggleInitialized and StartAutoBreak then
+                    task.wait(0.2)
+                    StartAutoBreak()
+                end
+            end)
+        end)
         local function IsTargetReference(reference, target)
             if reference == target then
                 return true
@@ -1185,6 +1230,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 .. " | counter=" .. tostring(hitCounter)
                 .. " | health=" .. tostring(health))
             if tonumber(health) and tonumber(health) <= 0 then
+                CompletedEggs[target] = true
                 WaitingForPickup = true
                 SetTrackerStatus("Target health reached 0; watching AnimalPickups for a new pet.")
             end
@@ -1283,9 +1329,37 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
             end
+            local promptAnchor = workspace:FindFirstChild("PromptAnchor")
+            local prompt = promptAnchor and promptAnchor:FindFirstChild("StealPrompt")
+            if not prompt or not prompt:IsA("ProximityPrompt") or not prompt.Enabled then
+                SetTrackerStatus("Eligible pet " .. pickup.Name .. " but StealPrompt is missing or disabled.")
+                return
+            end
+            if PickupRequested or ReturningAfterPickup then
+                SetTrackerStatus("Eligible pet " .. pickup.Name .. " but a pickup/return is already in progress.")
+                return
+            end
+            PickupRequested = true
             SetTrackerStatus("ELIGIBLE PET: " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown")
-                .. " | zone=" .. tostring(petZone or "unknown") .. " | CPS=" .. cpsText
-                .. " | pickup action still needs the game's confirmed pickup handler.")
+                .. " | zone=" .. tostring(petZone or "unknown") .. " | CPS=" .. cpsText .. " | holding StealPrompt.")
+            task.spawn(function()
+                local ok, err = pcall(function()
+                    prompt:InputHoldBegin()
+                    task.wait(math.max(0.1, prompt.HoldDuration) + 0.1)
+                    prompt:InputHoldEnd()
+                end)
+                if not ok then
+                    PickupRequested = false
+                    SetTrackerStatus("StealPrompt hold failed: " .. tostring(err))
+                    return
+                end
+                SetTrackerStatus("StealPrompt hold sent; waiting for AnimalBankedRemote confirmation.")
+                task.wait(8)
+                if PickupRequested then
+                    PickupRequested = false
+                    SetTrackerStatus("No AnimalBankedRemote confirmation within 8 seconds; stopping this pickup attempt.")
+                end
+            end)
         end
         AnimalPickups.ChildAdded:Connect(function(pickup)
             if not WaitingForPickup or BaselinePickups[pickup] then
@@ -1341,7 +1415,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         if (egg:IsA("Model") or egg:IsA("BasePart"))
                         and egg.Name:lower():find("egg", 1, true) then
                             local eggName = GetEggTypeName(egg.Name)
-                            if SelectedEggs[eggName] ~= false then
+                            if SelectedEggs[eggName] ~= false and not CompletedEggs[egg] then
                                 target = egg
                                 break
                             end
