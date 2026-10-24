@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.101"
+local testver = "Test v1.102"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1547,7 +1547,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 PickupMovementConnection:Disconnect()
                 PickupMovementConnection = nil
             end
-            local animalMoveConnection = RunService.Heartbeat:Connect(function()
+            local animalMoveConnection = RunService.RenderStepped:Connect(function()
                 if not PickupRequested or PickupGeneration ~= pickupToken or not pickup.Parent
                     or LocalPlayer.Character ~= moveCharacter or not moveRoot.Parent
                     or moveHumanoid.Health <= 0 then
