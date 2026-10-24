@@ -1,4 +1,4 @@
--- REUSABLE UI TEMPLATE                  --
+-- REUSABLE UI TEMPLATE
 -- SERVICES
 
 local Players = game:GetService("Players")
@@ -1165,7 +1165,6 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 -- SEARCH
---
 -- UI-only search; connect it to page controls when needed.
 SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 
@@ -1180,27 +1179,4 @@ end)
 
 -- BACKEND PLACEHOLDER
 
---[[
-    DO NOT put game functionality above this section.
-
-    Your future script backend can go here.
-
-    Example:
-
-        local function AutoFarm()
-            ...
-        end
-
-        local function ESP()
-            ...
-        end
-
-        local function Teleport()
-            ...
-        end
-
-    Then connect those functions to the UI callbacks
-    above.
-
-    This keeps the UI reusable between different scripts.
-]]
+-- Add script-specific functions here and connect them to the UI callbacks above.
