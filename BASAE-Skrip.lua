@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.70"
+local testver = "Test v1.71"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1237,19 +1237,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end)
         end
         local function IsTargetReference(reference, target)
-            if reference == target then
-                return true
+            if typeof(reference) ~= "Instance" or typeof(target) ~= "Instance" then
+                return false
             end
-            if typeof(reference) == "Instance" and typeof(target) == "Instance" then
-                if reference:IsDescendantOf(target) then
-                    return true
-                end
-                local nestedEgg = target:FindFirstChild("Egg", true)
-                if nestedEgg and reference == nestedEgg then
-                    return true
-                end
-            end
-            return false
+            return reference == target or reference:IsDescendantOf(target)
         end
         SetTrackerStatus = function(message)
             AddDebugLog("[Egg Tracker] " .. tostring(message))
@@ -1607,6 +1598,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         StartAutoBreak = function()
             if PickupRequested or ReturningAfterPickup then
                 SetTrackerStatus("Auto Break start ignored: pickup/return is in progress.")
+                return
+            end
+            if WaitingForPickup then
+                SetTrackerStatus("Auto Break start ignored: broken target is waiting for its AnimalPickups entry.")
                 return
             end
             StopAutoBreak()
