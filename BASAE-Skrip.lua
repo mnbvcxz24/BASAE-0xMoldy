@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.2"
+local testver = "Test v1.3"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -100,7 +100,7 @@ local Main = Create("Frame", {
     BorderSizePixel = 0,
     ClipsDescendants = true
 })
-AddCorner(Main, 12)
+local MainCorner = AddCorner(Main, 12)
 AddStroke(Main, Theme.Border, 1)
 -- TOP BAR
 local TopBar = Create("Frame", {
@@ -195,6 +195,22 @@ local CloseButton = Create("TextButton", {
 })
 AddCorner(CloseButton, 8)
 AddStroke(CloseButton, Theme.Border, 1)
+local RestoreButton = Create("TextButton", {
+    Name = "Restore",
+    Parent = Main,
+    Position = UDim2.fromOffset(0, 0),
+    Size = UDim2.fromOffset(44, 44),
+    BackgroundColor3 = Theme.Sidebar,
+    Text = "B",
+    TextColor3 = Theme.Text,
+    Font = Enum.Font.GothamBold,
+    TextSize = 16,
+    BorderSizePixel = 0,
+    Visible = false,
+    ZIndex = 5
+})
+AddCorner(RestoreButton, 22)
+AddStroke(RestoreButton, Theme.Border, 1)
 -- SIDEBAR
 local Sidebar = Create("Frame", {
     Name = "Sidebar",
@@ -708,27 +724,29 @@ SidebarButtons[1].BackgroundColor3 = Theme.Selected
 SidebarButtons[1].TextColor3 = Theme.SelectedText
 -- MINIMIZE
 local Minimized = false
-MinimizeButton.MouseButton1Click:Connect(function()
-    Minimized = not Minimized
+local function SetMinimized(state)
+    Minimized = state
     if Minimized then
         Content.Visible = false
         Sidebar.Visible = false
-        Tween(Main, {
-            Size = UDim2.fromOffset(
-                UIConfig.Width,
-                58
-            )
-        })
+        TopBar.Visible = false
+        RestoreButton.Visible = true
+        MainCorner.CornerRadius = UDim.new(0, 22)
+        Tween(Main, {Size = UDim2.fromOffset(44, 44)})
     else
+        RestoreButton.Visible = false
+        MainCorner.CornerRadius = UDim.new(0, 12)
+        Tween(Main, {Size = UDim2.fromOffset(UIConfig.Width, UIConfig.Height)})
+        TopBar.Visible = true
         Content.Visible = true
         Sidebar.Visible = true
-        Tween(Main, {
-            Size = UDim2.fromOffset(
-                UIConfig.Width,
-                UIConfig.Height
-            )
-        })
     end
+end
+MinimizeButton.MouseButton1Click:Connect(function()
+    SetMinimized(true)
+end)
+RestoreButton.MouseButton1Click:Connect(function()
+    SetMinimized(false)
 end)
 -- CLOSE
 CloseButton.MouseButton1Click:Connect(function()
