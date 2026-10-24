@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.83"
+local testver = "Test v1.84"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1305,22 +1305,24 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not pickup or not pickup:IsA("Model") then
                 return -1, "CPS unavailable: animal model missing"
             end
-            local dataFolder = pickup:FindFirstChild(pickup.Name)
-            if not dataFolder then
-                return -1, "CPS unavailable: " .. pickup.Name .. " animal-name path missing"
+            local overheadAttachment
+            for _, descendant in ipairs(pickup:GetDescendants()) do
+                if descendant.Name == "AnimalOverheadAttachment" then
+                    overheadAttachment = descendant
+                    break
+                end
             end
-            local overheadAttachment = dataFolder:FindFirstChild("AnimalOverheadAttachment", true)
             if not overheadAttachment then
-                return -1, "CPS unavailable: AnimalOverheadAttachment missing under " .. pickup.Name
+                return -1, "CPS unavailable: AnimalOverheadAttachment not found inside " .. pickup.Name
             end
             local overhead = overheadAttachment:FindFirstChild("AnimalOverhead", true)
             if not overhead then
-                return -1, "CPS unavailable: AnimalOverhead missing"
+                return -1, "CPS unavailable: AnimalOverhead missing below AnimalOverheadAttachment"
             end
             local cpsContainer = overhead:FindFirstChild("CashPerSecond", true)
             local cpsLabel = cpsContainer and cpsContainer:FindFirstChild("CashPerSecond", true)
             if not cpsLabel or not cpsLabel:IsA("TextLabel") then
-                return -1, "CPS unavailable: CashPerSecond TextLabel missing"
+                return -1, "CPS unavailable: CashPerSecond TextLabel missing below AnimalOverhead"
             end
             local raw = cpsLabel.Text
             local cleaned = raw:gsub(",", ""):gsub("%s+", ""):gsub("%$", ""):gsub("/[sS]$", "")
