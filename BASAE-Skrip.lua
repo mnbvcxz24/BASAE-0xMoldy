@@ -10,7 +10,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
-
+local testver = Test v1.0
 --========================================================--
 -- UI CONFIGURATION
 -- Change these values when creating another script.
@@ -18,7 +18,7 @@ local LocalPlayer = Players.LocalPlayer
 
 local UIConfig = {
     Title = "BASAE-Skrip",
-    Subtitle = "BASAE-Skrip UI Template",
+    Subtitle = testver,
 
     Width = 200,
     Height = 350,
