@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.78"
+local testver = "Test v1.79"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1305,8 +1305,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not pickup or not pickup:IsA("Model") then
                 return -1, "CPS unavailable: animal model missing"
             end
-            local animalPart = pickup:FindFirstChild(pickup.Name)
-            local overheadAttachment = animalPart and animalPart:FindFirstChild("AnimalOverheadAttachment", true)
+            local pivot = pickup:FindFirstChild("Pivot")
+            local primary = pivot and (pivot:FindFirstChild("PrimaryPart") or pivot:FindFirstChild("Primary Pivot"))
+            if not primary then
+                primary = pickup.PrimaryPart
+            end
+            if not primary or not primary:IsA("BasePart") then
+                return -1, "CPS unavailable: Pivot primary part missing"
+            end
+            local dataFolder = pickup:FindFirstChild(primary.Name) or (pivot and pivot:FindFirstChild(primary.Name))
+            if not dataFolder then
+                return -1, "CPS unavailable: " .. primary.Name .. " data missing"
+            end
+            local overheadAttachment = dataFolder:FindFirstChild("AnimalOverheadAttachment", true)
             local overhead = overheadAttachment and overheadAttachment:FindFirstChild("AnimalOverhead")
             local cpsContainer = overhead and overhead:FindFirstChild("CashPerSecond")
             local cpsLabel = cpsContainer and cpsContainer:FindFirstChild("CashPerSecond")
