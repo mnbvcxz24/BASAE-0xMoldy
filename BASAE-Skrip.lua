@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.14"
+local testver = "Test v1.15"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -755,13 +755,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Name = "EggSortOptions",
             Parent = Card1,
             Position = UDim2.fromOffset(15, 78),
-            Size = UDim2.new(1, -30, 0, 32),
-            BackgroundTransparency = 1,
+            Size = UDim2.new(1, -30, 0, 30),
+            BackgroundColor3 = Theme.SurfaceInput,
+            BorderSizePixel = 0,
             Visible = true
         })
+        AddCorner(SortFrame, 6)
+        AddStroke(SortFrame, Theme.Border, 1)
         Create("TextLabel", {
             Parent = SortFrame,
-            Size = UDim2.fromOffset(38, 30),
+            Size = UDim2.fromOffset(42, 28),
             BackgroundTransparency = 1,
             Text = "Sort",
             TextColor3 = Theme.Gray,
@@ -784,8 +787,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         SortLargestButton = Create("TextButton", {
             Name = "SortLargest",
             Parent = SortFrame,
-            Position = UDim2.fromOffset(40, 2),
-            Size = UDim2.new(0.5, -44, 0, 28),
+            Position = UDim2.fromOffset(46, 2),
+            Size = UDim2.new(0.5, -48, 0, 26),
             BackgroundColor3 = Theme.Selected,
             Text = "● Largest",
             TextColor3 = Theme.SelectedText,
@@ -799,7 +802,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Name = "SortSmallest",
             Parent = SortFrame,
             Position = UDim2.new(0.5, 0, 0, 2),
-            Size = UDim2.new(0.5, -2, 0, 28),
+            Size = UDim2.new(0.5, -2, 0, 26),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "○ Smallest",
             TextColor3 = Theme.Gray,
