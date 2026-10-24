@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.6"
+local testver = "Test v1.7"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -685,14 +685,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local SelectedEggs = {}
         local FilterOpen = false
-        local FilterButton = CreateButton(Card1, "Filter list                         ▼", function()
+        local EggList
+        local FilterButton
+        FilterButton = CreateButton(Card1, "Filter list                         ▼", function(){
             FilterOpen = not FilterOpen
             EggList.Visible = FilterOpen
             Card1.Size = UDim2.new(1, 0, 0, FilterOpen and 226 or 122)
             FilterButton.Text = FilterOpen and "Filter list                         ▲" or "Filter list                         ▼"
         end)
         FilterButton.Position = UDim2.fromOffset(15, 76)
-        local EggList = Create("ScrollingFrame", {
+        EggList = Create("ScrollingFrame", {
             Name = "EggFilterList",
             Parent = Card1,
             Position = UDim2.fromOffset(15, 114),
