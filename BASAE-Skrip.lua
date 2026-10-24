@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.115"
+local testver = "Test v1.116"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -511,7 +511,7 @@ local function CreateToggle(parent, text, default, callback)
     })
     AddCorner(Circle, 20)
     local Enabled = default == true
-    local function Update()
+    local function Update(runCallback)
         if Enabled then
             Tween(Switch, {
                 BackgroundColor3 = Theme.Selected
@@ -527,15 +527,22 @@ local function CreateToggle(parent, text, default, callback)
                 Position = UDim2.fromOffset(2, 2)
             })
         end
-        if callback then
+        if runCallback ~= false and callback then
             callback(Enabled)
         end
     end
+    Toggle.SetEnabled = function(value, runCallback)
+        Enabled = value == true
+        Update(runCallback)
+    end
+    Toggle.GetEnabled = function()
+        return Enabled
+    end
     Toggle.MouseButton1Click:Connect(function()
         Enabled = not Enabled
-        Update()
+        Update(true)
     end)
-    Update()
+    Update(true)
     return Toggle
 end
 -- DROPDOWN
@@ -752,6 +759,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local StartAutoBreak
         local StopAutoBreak
         local StopPickupAutomation
+        local DisableAutoBreakOptions
         local CompletedEggs = {}
         local AutoBreakToggleInitialized = false
         local AutoBreakEnabled = false
@@ -764,8 +772,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AddDebugLog("[Auto Break] Toggle " .. (enabled and "ON" or "OFF"))
             if enabled then
                 if StartAutoBreak then StartAutoBreak() end
-            elseif StopAutoBreak then
-                StopAutoBreak("Toggle disabled")
+            else
+                if DisableAutoBreakOptions then DisableAutoBreakOptions() end
+                if StopAutoBreak then StopAutoBreak("Toggle disabled") end
                 if StopPickupAutomation then StopPickupAutomation("Auto Break disabled") end
             end
         end)
@@ -893,9 +902,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
             SortFrame.Visible = true
-            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 224 or 114)
+            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 270 or 158)
             SortFrame.Position = UDim2.fromOffset(15, 78)
-            SortFrame.Size = UDim2.new(1, -30, 0, 30)
+            SortFrame.Size = UDim2.new(1, -30, 0, 28)
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
         end
@@ -969,50 +978,23 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Name = "EggSortOptions",
             Parent = Card1,
             Position = UDim2.fromOffset(15, 78),
-            Size = UDim2.new(1, -30, 0, 30),
+            Size = UDim2.new(1, -30, 0, 28),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             Visible = true
         })
-        Create("TextLabel", {
-            Parent = SortFrame,
-            Size = UDim2.fromOffset(42, 28),
-            BackgroundTransparency = 1,
-            Text = "Sort",
-            TextColor3 = Theme.Gray,
-            Font = Enum.Font.Gotham,
-            TextSize = 9,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
         local function UpdateSortButtons()
-            local selected = SortOrder == "Highest Luck"
-            SortLargestButton.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
-            SortLargestButton.TextColor3 = selected and Theme.SelectedText or Theme.Gray
-            SortLargestButton.Text = (selected and "● " or "○ ") .. "Highest Luck"
+            SortOrder = HighestLuckToggle and HighestLuckToggle.GetEnabled() and "Highest Luck" or "Default"
         end
-        SortLargestButton = Create("TextButton", {
-            Name = "SortHighestLuck",
-            Parent = SortFrame,
-            Position = UDim2.fromOffset(46, 2),
-            Size = UDim2.new(1, -52, 0, 26),
-            BackgroundColor3 = Theme.Selected,
-            Text = "● Highest Luck",
-            TextColor3 = Theme.SelectedText,
-            Font = Enum.Font.Gotham,
-            TextSize = 9,
-            BorderSizePixel = 0,
-            AutoButtonColor = false
-        })
-        AddCorner(SortLargestButton, 5)
-        SortSmallestButton = Create("TextButton", {
-            Name = "SortSmallest",
-            Parent = SortFrame,
-            Visible = false,
-            Size = UDim2.fromOffset(0, 0),
-            BackgroundTransparency = 1,
-            Text = "",
-            BorderSizePixel = 0
-        })
+        local HighestLuckToggle = CreateToggle(SortFrame, "Highest Luck first", false, function(enabled)
+            SortOrder = enabled and "Highest Luck" or "Default"
+            if RefreshEggList then RefreshEggList() end
+            AddDebugLog("[Auto Break] Highest Luck first " .. (enabled and "ON" or "OFF"))
+        end)
+        HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
+        HighestLuckToggle.Size = UDim2.new(1, 0, 0, 28)
+        SortLargestButton = HighestLuckToggle
+        SortSmallestButton = nil
         local function GetEggTypeName(name)
             return (name:gsub("^%d+:%s*", ""))
         end
@@ -1200,33 +1182,37 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end)
             end
         end
-        SortLargestButton.MouseButton1Click:Connect(function()
-            SortOrder = SortOrder == "Highest Luck" and "Default" or "Highest Luck"
-            UpdateSortButtons()
-            RefreshEggList()
-        end)
         UpdateSortButtons()
         local TitanicPriorityEnabled = false
         local TitanicPriorityToggle = CreateToggle(Card1, "TITANIC priority", false, function(enabled)
             TitanicPriorityEnabled = enabled
-            AddDebugLog("[Auto Break] Titanic priority " .. (enabled and "ON" or "OFF"))
+            AddDebugLog("[Auto Break] TITANIC priority " .. (enabled and "ON" or "OFF"))
         end)
         TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
-        TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 26)
-        Card1.Size = UDim2.new(1, 0, 0, 150)
+        TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
+        Card1.Size = UDim2.new(1, 0, 0, 158)
         local function UpdateFilterPanelWithTitanic()
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
             SortFrame.Visible = true
-            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 260 or 150)
+            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 270 or 158)
             SortFrame.Position = UDim2.fromOffset(15, 78)
-            SortFrame.Size = UDim2.new(1, -30, 0, 30)
+            SortFrame.Size = UDim2.new(1, -30, 0, 28)
+            HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
+            HighestLuckToggle.Size = UDim2.new(1, 0, 0, 28)
             TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
-            TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 26)
-            ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
-            EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
-            ZoneList.Position = UDim2.fromOffset(15, 142)
-            EggFilterList.Position = UDim2.fromOffset(15, 142)
+            TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
+            ZoneFilterButton.Text = ZoneFilterOpen and "Filter zone ▲" or "Filter zone"
+            EggFilterButton.Text = EggFilterOpen and "Filter egg ▲" or "Filter egg"
+            ZoneList.Position = UDim2.fromOffset(15, 150)
+            EggFilterList.Position = UDim2.fromOffset(15, 150)
+        end
+        DisableAutoBreakOptions = function()
+            SortOrder = "Default"
+            TitanicPriorityEnabled = false
+            if HighestLuckToggle then HighestLuckToggle.SetEnabled(false, false) end
+            if TitanicPriorityToggle then TitanicPriorityToggle.SetEnabled(false, false) end
+            if RefreshEggList then RefreshEggList() end
         end
         ZoneFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
         EggFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
