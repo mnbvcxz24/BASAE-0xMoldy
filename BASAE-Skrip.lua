@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.76"
+local testver = "Test v1.77"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1918,8 +1918,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                 break
                             end
                         end
+                        if not foundNearby then confirmed = true; break end
                     end
-                    if not foundNearby then confirmed = true; break end
                     task.wait(0.1)
                 end
                 if PickupGeneration ~= flingToken then return end
