@@ -5,7 +5,25 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.114"
+local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
+local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
+if type(PreviousRuntimeCleanup) == "function" then
+    pcall(PreviousRuntimeCleanup)
+end
+local Runtime = {Stopped = false}
+RuntimeEnv.__BASAESkripCleanup = function()
+    Runtime.Stopped = true
+    pcall(function()
+        local oldUI = game.CoreGui:FindFirstChild("BASAESkripUI")
+        if oldUI then oldUI:Destroy() end
+    end)
+    pcall(function()
+        local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+        local oldESP = playerGui and playerGui:FindFirstChild("BASE_Skrip_EggESP")
+        if oldESP then oldESP:Destroy() end
+    end)
+end
+local testver = "Test v1.115"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -68,12 +86,15 @@ local function Tween(object, properties, duration)
         properties
     ):Play()
 end
--- REMOVE OLD UI
+-- REMOVE ANY LEFTOVER UI FROM A PREVIOUS RUN
 pcall(function()
     local oldUI = game.CoreGui:FindFirstChild("BASAESkripUI")
-    if oldUI then
-        oldUI:Destroy()
-    end
+    if oldUI then oldUI:Destroy() end
+end)
+pcall(function()
+    local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+    local oldESP = playerGui and playerGui:FindFirstChild("BASE_Skrip_EggESP")
+    if oldESP then oldESP:Destroy() end
 end)
 -- SCREEN GUI
 local ScreenGui = Create("ScreenGui", {
@@ -1768,7 +1789,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end)
             PickupMovementConnection = animalMoveConnection
-            while PickupRequested and PickupGeneration == pickupToken and pickup.Parent and moveHumanoid.Health > 0 do
+            while not Runtime.Stopped and PickupRequested and PickupGeneration == pickupToken and pickup.Parent and moveHumanoid.Health > 0 do
                 if LocalPlayer.Character ~= moveCharacter or not moveCharacter.Parent or not moveRoot.Parent then
                     if PickupGeneration ~= pickupToken then return end
                     PickupRequested = false
@@ -1935,7 +1956,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end)
                 PickupMovementConnection = promptMoveConnection
-                while PickupRequested and PickupGeneration == pickupToken and pickup.Parent and prompt.Parent and humanoid.Health > 0 do
+                while not Runtime.Stopped and PickupRequested and PickupGeneration == pickupToken and pickup.Parent and prompt.Parent and humanoid.Health > 0 do
                     if LocalPlayer.Character ~= character or not character.Parent or not root.Parent then
                         if PickupGeneration ~= pickupToken then return end
                         PickupRequested = false
@@ -2057,7 +2078,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         pcall(function() prompt:InputHoldEnd() end)
                     end
                     local pickupDeadline = os.clock() + 1.25
-                    while os.clock() < pickupDeadline and PickupGeneration == pickupToken do
+                    while not Runtime.Stopped and os.clock() < pickupDeadline and PickupGeneration == pickupToken do
                         if not pickup.Parent then
                             pickupConfirmed = true
                             break
@@ -2171,7 +2192,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local lastMoveTo = 0
                 local lastProgressAt = os.clock()
                 local bestDistance = math.huge
-                while PickupRequested and PickupGeneration == flingToken and humanoid.Health > 0 do
+                while not Runtime.Stopped and PickupRequested and PickupGeneration == flingToken and humanoid.Health > 0 do
                     if LocalPlayer.Character ~= character or not character.Parent or not root.Parent then
                         PickupRequested = false
                         SetTrackerStatus("FLING RECOVERY cancelled: character changed or root became unavailable.")
@@ -2268,7 +2289,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - flingPosition).Magnitude))
                 local moveStarted = os.clock()
-                while PickupRequested and PickupGeneration == flingToken and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
+                while not Runtime.Stopped and PickupRequested and PickupGeneration == flingToken and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
                     promptPosition = positionOf(prompt) or promptPosition
                     local locationError = (promptPosition - flingPosition).Magnitude
                     if locationError > 14 then
@@ -2340,7 +2361,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus("FLING RECOVERY prompt activated; confirming animal collection.")
                 local confirmed = false
                 local confirmDeadline = os.clock() + 4
-                while os.clock() < confirmDeadline and PickupGeneration == flingToken and PickupRequested do
+                while not Runtime.Stopped and os.clock() < confirmDeadline and PickupGeneration == flingToken and PickupRequested do
                     local foundNearby = false
                     local folder = workspace:FindFirstChild("AnimalPickups")
                     if folder then
@@ -2710,7 +2731,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if enabled then
                 ESPStatus.Text = "Scanning eggs..."
                 task.spawn(function()
-                    while ESPEnabled and not ScriptShuttingDown do
+                    while not Runtime.Stopped and ESPEnabled and not ScriptShuttingDown do
                         UpdateEggESP()
                         task.wait(0.75)
                     end
@@ -2853,7 +2874,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AnimalsList.CanvasSize = UDim2.new(0, 0, 0, AnimalsLayout.AbsoluteContentSize.Y + 10)
         end)
         task.spawn(function()
-            while ScreenGui.Parent and Page.Parent do
+            while not Runtime.Stopped and ScreenGui.Parent and Page.Parent do
                 RefreshPlacedAnimals()
                 RefreshAnimalPickups()
                 task.wait(2)
