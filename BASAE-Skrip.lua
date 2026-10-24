@@ -475,6 +475,7 @@ local function CreateButton(parent, text, callback)
     return Button
 end
 -- TOGGLE
+local ToggleControllers = setmetatable({}, {__mode = "k"})
 local function CreateToggle(parent, text, default, callback)
     local Toggle = Create("TextButton", {
         Parent = parent,
@@ -531,13 +532,15 @@ local function CreateToggle(parent, text, default, callback)
             callback(Enabled)
         end
     end
-    Toggle.SetEnabled = function(value, runCallback)
-        Enabled = value == true
-        Update(runCallback)
-    end
-    Toggle.GetEnabled = function()
-        return Enabled
-    end
+    ToggleControllers[Toggle] = {
+        SetEnabled = function(value, runCallback)
+            Enabled = value == true
+            Update(runCallback)
+        end,
+        GetEnabled = function()
+            return Enabled
+        end
+    }
     Toggle.MouseButton1Click:Connect(function()
         Enabled = not Enabled
         Update(true)
@@ -983,10 +986,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BorderSizePixel = 0,
             Visible = true
         })
+        local HighestLuckToggle
         local function UpdateSortButtons()
-            SortOrder = HighestLuckToggle and HighestLuckToggle.GetEnabled() and "Highest Luck" or "Default"
+            SortOrder = HighestLuckToggle and ToggleControllers[HighestLuckToggle].GetEnabled() and "Highest Luck" or "Default"
         end
-        local HighestLuckToggle = CreateToggle(SortFrame, "Highest Luck first", false, function(enabled)
+        HighestLuckToggle = CreateToggle(SortFrame, "Highest Luck first", false, function(enabled)
             SortOrder = enabled and "Highest Luck" or "Default"
             if RefreshEggList then RefreshEggList() end
             AddDebugLog("[Auto Break] Highest Luck first " .. (enabled and "ON" or "OFF"))
@@ -1210,8 +1214,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         DisableAutoBreakOptions = function()
             SortOrder = "Default"
             TitanicPriorityEnabled = false
-            if HighestLuckToggle then HighestLuckToggle.SetEnabled(false, false) end
-            if TitanicPriorityToggle then TitanicPriorityToggle.SetEnabled(false, false) end
+            if HighestLuckToggle then ToggleControllers[HighestLuckToggle].SetEnabled(false, false) end
+            if TitanicPriorityToggle then ToggleControllers[TitanicPriorityToggle].SetEnabled(false, false) end
             if RefreshEggList then RefreshEggList() end
         end
         ZoneFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
