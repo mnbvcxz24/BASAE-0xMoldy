@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.31"
+local testver = "Test v1.32"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -723,9 +723,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
-        local AutoPickupCard = CreateCard(Page, "Auto pickup", "UI preview only. Pickup behavior is not connected.")
+        local AutoPickupCard = CreateCard(Page, "Auto pickup", "Filters new pets after an egg breaks; pickup action is not connected yet.")
         AutoPickupCard.Size = UDim2.new(1, 0, 0, 128)
-        local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, nil)
+        local AutoPickupEnabled = false
+        local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
+            AutoPickupEnabled = enabled
+            AddDebugLog("[Auto Pickup] " .. (enabled and "Monitoring ON." or "Monitoring OFF."))
+        end)
         AutoPickupToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoPickupToggle.Size = UDim2.fromOffset(58, 26)
         local RarityFilterOpen = false
@@ -741,7 +745,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         RarityFilterButton.Position = UDim2.fromOffset(15, 43)
         RarityFilterButton.Size = UDim2.new(1, -30, 0, 28)
-        local HighestCashToggle = CreateToggle(AutoPickupCard, "Pick up highest Cash Per Second", false, nil)
+        local HighestCashEnabled = false
+        local HighestCashToggle = CreateToggle(AutoPickupCard, "Pick up highest Cash Per Second", false, function(enabled)
+            HighestCashEnabled = enabled
+            AddDebugLog("[Auto Pickup] " .. (enabled and "Highest CPS filter ON." or "Highest CPS filter OFF."))
+        end)
         HighestCashToggle.Position = UDim2.fromOffset(15, 76)
         HighestCashToggle.Size = UDim2.new(1, -30, 0, 30)
         RarityList = Create("ScrollingFrame", {
@@ -1181,13 +1189,118 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus("Target health reached 0; watching AnimalPickups for a new pet.")
             end
         end)
+        local function GetPetRarity(pickup)
+            local rarity = pickup:FindFirstChild("Rarity", true)
+            if rarity and rarity:IsA("StringValue") then
+                return rarity.Value
+            end
+            if rarity and rarity:IsA("TextLabel") then
+                return rarity.Text
+            end
+            if rarity and rarity:IsA("Attribute") then
+                return tostring(rarity.Value)
+            end
+            local attribute = pickup:GetAttribute("Rarity")
+            return attribute and tostring(attribute) or nil
+        end
+        local function GetPickupZone(pickup)
+            local zone = pickup:FindFirstChild("ZoneId", true)
+            if zone and zone:IsA("ValueBase") then
+                return tostring(zone.Value)
+            end
+            local attribute = pickup:GetAttribute("ZoneId")
+            return attribute and tostring(attribute) or nil
+        end
+        local function GetPetCPS(pickup)
+            for _, item in ipairs(pickup:GetDescendants()) do
+                if item.Name == "CashPerSecond" and item:IsA("TextLabel") then
+                    local raw = item.Text:gsub(",", ""):gsub("%s+", "")
+                    local number = tonumber(raw:match("[%d%.]+"))
+                    local suffix = raw:match("[KkMmBbTt]$")
+                    local scale = ({k=1e3,m=1e6,b=1e9,t=1e12})[suffix and suffix:lower() or ""]
+                    return number and number * (scale or 1) or -1, item.Text
+                end
+            end
+            return -1, "CPS unavailable"
+        end
+        local function IsRarityAllowed(pickup)
+            local selectedCount = 0
+            for _, selected in pairs(SelectedRarities) do
+                if selected then selectedCount += 1 end
+            end
+            if selectedCount == 0 then return true end
+            local rarity = GetPetRarity(pickup)
+            if not rarity then
+                SetTrackerStatus("Cannot filter " .. pickup.Name .. ": Rarity value not found.")
+                return false
+            end
+            for selectedRarity, selected in pairs(SelectedRarities) do
+                if selected and selectedRarity:lower() == rarity:lower() then
+                    return true
+                end
+            end
+            return false
+        end
+        local function GetHighestPlacedCPS()
+            local plots = workspace:FindFirstChild("Plots")
+            if not plots then return -1 end
+            for _, base in ipairs(plots:GetChildren()) do
+                local hitbox = base:FindFirstChild("Hitbox")
+                local info = hitbox and hitbox:FindFirstChild("PlayerInfoUi")
+                local nameLabel = info and info:FindFirstChild("Name")
+                if nameLabel and nameLabel:IsA("TextLabel") and nameLabel.Text == "Your Base" then
+                    local placed = base:FindFirstChild("PlacedAnimals")
+                    local highest = -1
+                    if placed then
+                        for _, animal in ipairs(placed:GetChildren()) do
+                            local value = GetPetCPS(animal)
+                            if value > highest then highest = value end
+                        end
+                    end
+                    return highest
+                end
+            end
+            return -1
+        end
+        local function EvaluatePickup(pickup)
+            if not AutoPickupEnabled then
+                SetTrackerStatus("New pet detected (Auto Pickup OFF): " .. pickup.Name)
+                return
+            end
+            if not IsRarityAllowed(pickup) then
+                SetTrackerStatus("Filtered out " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown"))
+                return
+            end
+            local petZone = GetPickupZone(pickup)
+            local targetZone = CurrentTarget and CurrentTarget.Parent and CurrentTarget.Parent.Parent
+            local targetZoneName = targetZone and targetZone.Name
+            if petZone and targetZoneName and petZone:lower() ~= targetZoneName:lower() then
+                SetTrackerStatus("Filtered out " .. pickup.Name .. " | zone=" .. petZone .. " (target zone " .. targetZoneName .. ")")
+                return
+            end
+            local cps, cpsText = GetPetCPS(pickup)
+            if HighestCashEnabled then
+                local highestPlaced = GetHighestPlacedCPS()
+                if highestPlaced >= 0 and cps <= highestPlaced then
+                    SetTrackerStatus("Filtered out " .. pickup.Name .. " | CPS " .. cpsText .. " is not above your highest placed CPS.")
+                    return
+                end
+            end
+            SetTrackerStatus("ELIGIBLE PET: " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown")
+                .. " | zone=" .. tostring(petZone or "unknown") .. " | CPS=" .. cpsText
+                .. " | pickup action still needs the game's confirmed pickup handler.")
+        end
         AnimalPickups.ChildAdded:Connect(function(pickup)
             if not WaitingForPickup or BaselinePickups[pickup] then
                 return
             end
             WaitingForPickup = false
-            SetTrackerStatus("NEW PICKUP after target egg break: " .. pickup.Name
-                .. " | class=" .. pickup.ClassName)
+            SetTrackerStatus("NEW PET after target egg break: " .. pickup.Name .. " | class=" .. pickup.ClassName)
+            task.defer(function()
+                if pickup.Parent then
+                    EvaluatePickup(pickup)
+                end
+            end)
         end)
         StopAutoBreak = function(reason)
             if MovementConnection then
