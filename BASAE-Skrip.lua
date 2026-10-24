@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.66"
+local testver = "Test v1.67"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1419,47 +1419,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if not prompt then
                     local anchor = workspace:FindFirstChild("PromptAnchor")
                     if anchor then
-                        local targetPosition
-                        if eggRoot and eggRoot.Parent == workspace then
-                            targetPosition = eggRoot:GetPivot().Position
-                        elseif CurrentTarget and CurrentTarget.Parent then
-                            targetPosition = CurrentTarget:GetPivot().Position
-                        end
-                        local anchorPosition
-                        if anchor:IsA("BasePart") then
-                            anchorPosition = anchor.Position
-                        elseif anchor:IsA("Model") then
-                            anchorPosition = anchor:GetPivot().Position
-                        else
-                            local anchorCFrame = anchor:GetAttribute("CFrame")
-                            local anchorLocation = anchor:GetAttribute("Location")
-                            if typeof(anchorCFrame) == "CFrame" then
-                                anchorPosition = anchorCFrame.Position
-                            elseif typeof(anchorLocation) == "Vector3" then
-                                anchorPosition = anchorLocation
-                            end
-                            if not anchorPosition then
-                                local positionValue = anchor:FindFirstChild("Location", true)
-                                if positionValue and positionValue:IsA("Vector3Value") then
-                                    anchorPosition = positionValue.Value
-                                elseif positionValue and positionValue:IsA("CFrameValue") then
-                                    anchorPosition = positionValue.Value.Position
-                                end
-                            end
-                        end
                         local anchorPrompt = anchor:FindFirstChild("StealPrompt", true)
-                        if anchorPrompt and targetPosition and anchorPosition then
-                            local distance = (targetPosition - anchorPosition).Magnitude
-                            if distance <= 12 then
-                                prompt = anchorPrompt
-                                promptState = "ready at " .. prompt:GetFullName()
-                                    .. " | anchor distance=" .. math.floor(distance)
-                            else
-                                promptState = "PromptAnchor is " .. math.floor(distance)
-                                    .. " studs from target egg"
-                            end
-                        elseif anchorPrompt then
-                            promptState = "PromptAnchor found, but its position could not be resolved"
+                        if anchorPrompt then
+                            prompt = anchorPrompt
+                            promptState = "matched PromptAnchor path: " .. prompt:GetFullName()
+                        else
+                            promptState = "PromptAnchor found, but StealPrompt is missing beneath it"
                         end
                     end
                 end
