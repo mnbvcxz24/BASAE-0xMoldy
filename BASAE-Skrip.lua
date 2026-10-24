@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.111"
+local testver = "Test v1.112"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -995,6 +995,31 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function GetEggTypeName(name)
             return (name:gsub("^%d+:%s*", ""))
         end
+        local function GetEggDataValue(egg, variableName)
+            local eggModel = egg and (egg:FindFirstChild("Egg") or egg)
+            if not eggModel then return nil end
+            local function readFrom(object)
+                local attribute = object:GetAttribute(variableName)
+                if attribute ~= nil then return tostring(attribute) end
+                if object.Name == variableName then
+                    if object:IsA("ValueBase") then return tostring(object.Value) end
+                    if object:IsA("TextLabel") or object:IsA("TextButton") or object:IsA("TextBox") then
+                        if object.Text ~= "" then return object.Text end
+                    end
+                end
+                return nil
+            end
+            local value = readFrom(eggModel)
+            if value ~= nil then return value end
+            for _, node in ipairs(eggModel:GetDescendants()) do
+                value = readFrom(node)
+                if value ~= nil then return value end
+            end
+            return nil
+        end
+        local function GetEggWeightBracket(egg)
+            return GetEggDataValue(egg, "WeightBracket")
+        end
         local function GetEggLuck(egg)
             local eggModel = egg:FindFirstChild("Egg") or egg
             local info = eggModel:FindFirstChild("EggInfoUi", true)
@@ -1160,6 +1185,30 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             RefreshEggList()
         end)
         UpdateSortButtons()
+        local TitanicPriorityEnabled = false
+        local TitanicPriorityToggle = CreateToggle(Card1, "Titanic priority", false, function(enabled)
+            TitanicPriorityEnabled = enabled
+            AddDebugLog("[Auto Break] Titanic priority " .. (enabled and "ON" or "OFF"))
+        end)
+        TitanicPriorityToggle.Position = UDim2.fromOffset(15, 108)
+        TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 24)
+        Card1.Size = UDim2.new(1, 0, 0, 144)
+        local function UpdateFilterPanelWithTitanic()
+            ZoneList.Visible = ZoneFilterOpen
+            EggFilterList.Visible = EggFilterOpen
+            SortFrame.Visible = true
+            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 254 or 144)
+            SortFrame.Position = UDim2.fromOffset(15, 78)
+            SortFrame.Size = UDim2.new(1, -30, 0, 30)
+            TitanicPriorityToggle.Position = UDim2.fromOffset(15, 108)
+            TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 24)
+            ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
+            EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
+            ZoneList.Position = UDim2.fromOffset(15, 138)
+            EggFilterList.Position = UDim2.fromOffset(15, 138)
+        end
+        ZoneFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
+        EggFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
         RefreshZoneList()
         RefreshEggList()
         ZoneBuilds.ChildAdded:Connect(function()
@@ -2373,7 +2422,28 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             table.sort(selectedZoneNames)
             local target
+            if TitanicPriorityEnabled then
+                for _, zone in ipairs(ZoneBuilds:GetChildren()) do
+                    local eggsFolder = zone:FindFirstChild("Eggs")
+                    if eggsFolder then
+                        for _, egg in ipairs(eggsFolder:GetChildren()) do
+                            if (egg:IsA("Model") or egg:IsA("BasePart"))
+                                and egg.Name:lower():find("egg", 1, true)
+                                and not CompletedEggs[egg] then
+                                local bracket = GetEggWeightBracket(egg)
+                                if bracket and bracket:match("^%s*(.-)%s*$"):lower() == "titanic" then
+                                    target = egg
+                                    SetTrackerStatus("TITANIC PRIORITY: selected " .. egg.Name .. " | WeightBracket=" .. bracket .. " before the normal egg route.")
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    if target then break end
+                end
+            end
             for _, zoneName in ipairs(selectedZoneNames) do
+                if target then break end
                 local zone = ZoneBuilds:FindFirstChild(zoneName)
                 local eggsFolder = zone and zone:FindFirstChild("Eggs")
                 if eggsFolder then
@@ -2544,14 +2614,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         local function GetESPValue(object, names)
+            if not object then return nil end
             for _, name in ipairs(names) do
                 local value = object:GetAttribute(name)
                 if value ~= nil then return tostring(value) end
                 local child = object:FindFirstChild(name, true)
-                if child and (child:IsA("StringValue") or child:IsA("NumberValue") or child:IsA("IntValue")) then
-                    return tostring(child.Value)
-                end
-                if child and (child:IsA("TextLabel") or child:IsA("TextButton")) and child.Text ~= "" then
+                if child and child:IsA("ValueBase") then return tostring(child.Value) end
+                if child and (child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox")) and child.Text ~= "" then
                     return child.Text
                 end
             end
@@ -2560,7 +2629,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function GetEggESPInfo(egg)
             local eggModel = egg:FindFirstChild("Egg") or egg
             local info = eggModel:FindFirstChild("EggInfoUi", true)
-            local luck = GetESPValue(info or eggModel, {"LuckMulti", "Luck", "LuckMultiplier"})
+            local luck = GetESPValue(eggModel, {"LuckMulti", "Luck", "LuckMultiplier"})
+                or GetESPValue(info, {"LuckMulti", "Luck", "LuckMultiplier"})
             if not luck and info then
                 local luckList = info:FindFirstChild("LuckMultiList", true)
                 local luckLabel = luckList and luckList:FindFirstChild("LuckMulti", true)
@@ -2568,16 +2638,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     luck = luckLabel.Text
                 end
             end
-            local size = GetESPValue(eggModel, {"Size", "EggSize", "SizeMultiplier"})
-            if not size then
-                local ok, extents = pcall(function()
-                    return eggModel:IsA("Model") and eggModel:GetExtentsSize() or eggModel.Size
-                end)
-                if ok and extents then
-                    size = string.format("%.1f x %.1f x %.1f", extents.X, extents.Y, extents.Z)
-                end
-            end
-            return luck or "?", size or "?"
+            local weightKG = GetESPValue(eggModel, {"WeightKG"})
+                or GetESPValue(info, {"WeightKG"})
+            local category = GetESPValue(eggModel, {"WeightBracket"})
+                or GetESPValue(info, {"WeightBracket"})
+            return luck or "?", weightKG or "?", category or "?"
         end
         local function UpdateEggESP()
             local build = workspace:FindFirstChild("Build")
@@ -2622,8 +2687,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                     ESPObjects[egg] = gui
                                 end
                                 gui.Adornee = adornee
-                                local luck, size = GetEggESPInfo(egg)
-                                gui.Info.Text = egg.Name .. "\nLuck: " .. luck .. " | Size: " .. size
+                                local luck, weightKG, category = GetEggESPInfo(egg)
+                                gui.Size = UDim2.fromOffset(205, 58)
+                                gui.Info.Text = egg.Name .. "\nLuck: " .. luck .. " | KG: " .. weightKG .. "\nCategory: " .. category
                             end
                         end
                     end
