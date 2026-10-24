@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.38"
+local testver = "Test v1.39"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -724,7 +724,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
-        local AutoPickupCard = CreateCard(Page, "Auto pickup", "Filters new pets after an egg breaks; pickup action is not connected yet.")
+        local AutoPickupCard = CreateCard(Page, "Auto pickup", "")
         AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 320 or 160)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
@@ -937,24 +937,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             TextXAlignment = Enum.TextXAlignment.Left
         })
         local function UpdateSortButtons()
-            for _, pair in ipairs({
-                {SortLargestButton, "Largest"},
-                {SortSmallestButton, "Smallest"}
-            }) do
-                local button, order = pair[1], pair[2]
-                local selected = SortOrder == order
-                button.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
-                button.TextColor3 = selected and Theme.SelectedText or Theme.Gray
-                button.Text = (selected and "● " or "○ ") .. order
-            end
+            local selected = SortOrder == "Highest Luck"
+            SortLargestButton.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
+            SortLargestButton.TextColor3 = selected and Theme.SelectedText or Theme.Gray
+            SortLargestButton.Text = (selected and "● " or "○ ") .. "Highest Luck"
         end
         SortLargestButton = Create("TextButton", {
-            Name = "SortLargest",
+            Name = "SortHighestLuck",
             Parent = SortFrame,
             Position = UDim2.fromOffset(46, 2),
-            Size = UDim2.new(0.5, -26, 0, 26),
+            Size = UDim2.new(1, -52, 0, 26),
             BackgroundColor3 = Theme.Selected,
-            Text = "● Largest",
+            Text = "● Highest Luck",
             TextColor3 = Theme.SelectedText,
             Font = Enum.Font.Gotham,
             TextSize = 9,
@@ -965,19 +959,27 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         SortSmallestButton = Create("TextButton", {
             Name = "SortSmallest",
             Parent = SortFrame,
-            Position = UDim2.new(0.5, 26, 0, 2),
-            Size = UDim2.new(0.5, -26, 0, 26),
-            BackgroundColor3 = Theme.SurfaceInput,
-            Text = "○ Smallest",
-            TextColor3 = Theme.Gray,
-            Font = Enum.Font.Gotham,
-            TextSize = 9,
-            BorderSizePixel = 0,
-            AutoButtonColor = false
+            Visible = false,
+            Size = UDim2.fromOffset(0, 0),
+            BackgroundTransparency = 1,
+            Text = "",
+            BorderSizePixel = 0
         })
-        AddCorner(SortSmallestButton, 5)
         local function GetEggTypeName(name)
             return (name:gsub("^%d+:%s*", ""))
+        end
+        local function GetEggLuck(egg)
+            local eggModel = egg:FindFirstChild("Egg") or egg
+            local info = eggModel:FindFirstChild("EggInfoUi", true)
+            local luckLabel = info and info:FindFirstChild("LuckMultiList", true)
+            luckLabel = luckLabel and luckLabel:FindFirstChild("LuckMulti", true)
+            if not luckLabel then return 0 end
+            local rawLuck = luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton") and luckLabel.Text or luckLabel:GetAttribute("LuckMulti")
+            if type(rawLuck) ~= "string" and type(rawLuck) ~= "number" then
+                rawLuck = luckLabel:GetAttribute("LuckMulti")
+            end
+            local luck = tonumber(tostring(rawLuck or ""):match("[%d%.]+"))
+            return luck or 0
         end
         local function GetEggRecords()
             local records = {}
@@ -991,12 +993,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             if (egg:IsA("Model") or egg:IsA("BasePart"))
                             and egg.Name:lower():find("egg", 1, true) then
                                 local eggName = GetEggTypeName(egg.Name)
-                                local size = egg:IsA("Model") and egg:GetExtentsSize().Magnitude or egg.Size.Magnitude
+                                local luck = GetEggLuck(egg)
                                 if not byName[eggName] then
-                                    byName[eggName] = {name = eggName, size = size}
+                                    byName[eggName] = {name = eggName, luck = luck}
                                     table.insert(records, byName[eggName])
-                                elseif size > byName[eggName].size then
-                                    byName[eggName].size = size
+                                elseif luck > byName[eggName].luck then
+                                    byName[eggName].luck = luck
                                 end
                             end
                         end
@@ -1004,13 +1006,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end
             table.sort(records, function(a, b)
-                if a.size == b.size then
+                if a.luck == b.luck then
                     return a.name < b.name
                 end
-                if SortOrder == "Largest" then
-                    return a.size > b.size
-                end
-                return a.size < b.size
+                return a.luck > b.luck
             end)
             return records
         end
@@ -1129,12 +1128,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         SortLargestButton.MouseButton1Click:Connect(function()
-            SortOrder = "Largest"
-            UpdateSortButtons()
-            RefreshEggList()
-        end)
-        SortSmallestButton.MouseButton1Click:Connect(function()
-            SortOrder = "Smallest"
+            SortOrder = "Highest Luck"
             UpdateSortButtons()
             RefreshEggList()
         end)
