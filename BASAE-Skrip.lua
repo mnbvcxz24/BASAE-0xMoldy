@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.106"
+local testver = "Test v1.107"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -745,6 +745,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if StartAutoBreak then StartAutoBreak() end
             elseif StopAutoBreak then
                 StopAutoBreak("Toggle disabled")
+                PickupGeneration += 1
+                PickupRequested = false
+                ReturningAfterPickup = false
+                ActivePickup = nil
+                ActivePickupCPS = -1
+                if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+                if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+                local character = LocalPlayer.Character
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                if humanoid then humanoid:Move(Vector3.zero, false) end
+                SetTrackerStatus("Auto Break disabled; all automation movement stopped.")
             end
         end)
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
@@ -755,6 +766,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Monitoring ON." or "Monitoring OFF."))
+            if not enabled then
+                PickupGeneration += 1
+                PickupRequested = false
+                ReturningAfterPickup = false
+                ActivePickup = nil
+                ActivePickupCPS = -1
+                if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+                if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+                local character = LocalPlayer.Character
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                if humanoid then humanoid:Move(Vector3.zero, false) end
+                SetTrackerStatus("Auto Pickup disabled; pickup, fling recovery, and return movement cancelled.")
+                if AutoBreakEnabled and StartAutoBreak then task.defer(StartAutoBreak) end
+            end
         end)
         AutoPickupToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoPickupToggle.Size = UDim2.fromOffset(58, 26)
@@ -1253,6 +1278,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         humanoid:Move(Vector3.zero, false)
                         connection:Disconnect()
                         connection = nil
+                        ReturnMovementConnection = nil
                         ReturningAfterPickup = false
                         SetTrackerStatus("Return movement stopped: character unavailable.")
                         if AutoBreakEnabled and StartAutoBreak then
@@ -1278,7 +1304,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                 EquipHotbarOne()
                             end
                         end)
-                        SetTrackerStatus("Returned to pickup point.")
+                        SetTrackerStatus("Reached base; waiting 2 seconds before equipping hotbar 1.")
+                        task.delay(2, function()
+                            if not ScriptShuttingDown and AutoPickupEnabled and AutoBreakEnabled and LocalPlayer.Character == character then
+                                EquipHotbarOne()
+                                SetTrackerStatus("Returned to base; hotbar 1 equip attempted.")
+                            end
+                        end)
                         if AutoBreakEnabled and StartAutoBreak then
                             task.delay(0.2, function()
                                 if AutoBreakEnabled then StartAutoBreak() end
@@ -1302,6 +1334,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     humanoid:Move(offset.Unit, false)
                 end)
+                ReturnMovementConnection = connection
             end)
         end
         local function IsTargetReference(reference, target)
