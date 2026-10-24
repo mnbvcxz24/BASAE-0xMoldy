@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.43"
+local testver = "Test v1.44"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -330,7 +330,8 @@ local function CreatePage(pageNumber, pageName)
         Name = "Page_" .. pageNumber,
         Parent = Content,
         Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1,
+        BackgroundColor3 = Theme.Background,
+        BackgroundTransparency = 0,
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
         ScrollBarImageColor3 = Theme.Gray,
