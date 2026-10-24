@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.93"
+local testver = "Test v1.94"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1607,7 +1607,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local prompt
             local promptState = "StealPrompt not found"
             local promptDeadline = os.clock() + 5
-            local promptMatchRadius = 12
+            local promptMatchRadius = 18
             local function getPromptPosition(candidate)
                 local parent = candidate and candidate.Parent
                 while parent and parent ~= workspace do
@@ -1616,7 +1616,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     elseif parent:IsA("BasePart") then
                         return parent.Position
                     elseif parent:IsA("Model") then
-                        return parent:GetPivot().Position
+                        local ok, pivot = pcall(function() return parent:GetPivot() end)
+                        if ok and pivot then return pivot.Position end
                     end
                     parent = parent.Parent
                 end
@@ -1625,11 +1626,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             repeat
                 if PickupGeneration ~= pickupToken then return end
                 prompt = nil
-                local anchor = workspace:FindFirstChild("PromptAnchor")
                 local nearestDistance = math.huge
-                if anchor and pickupPosition then
-                    for _, candidate in ipairs(anchor:GetDescendants()) do
-                        if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
+                local totalStealPrompts = 0
+                local enabledStealPrompts = 0
+                for _, candidate in ipairs(workspace:GetDescendants()) do
+                    if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" then
+                        totalStealPrompts += 1
+                        if candidate.Enabled then
+                            enabledStealPrompts += 1
                             local candidatePosition = getPromptPosition(candidate)
                             if candidatePosition then
                                 local distance = (candidatePosition - pickupPosition).Magnitude
@@ -1640,15 +1644,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             end
                         end
                     end
-                    if prompt then
-                        promptState = string.format("nearest PromptAnchor StealPrompt: %s (%.2f studs from animal)", prompt:GetFullName(), nearestDistance)
-                    else
-                        promptState = "No enabled PromptAnchor StealPrompt within " .. promptMatchRadius .. " studs of animal"
-                    end
-                elseif not anchor then
-                    promptState = "PromptAnchor not found"
+                end
+                if prompt then
+                    promptState = string.format("nearest enabled StealPrompt: %s (%.2f studs from animal; found %d total/%d enabled)", prompt:GetFullName(), nearestDistance, totalStealPrompts, enabledStealPrompts)
                 else
-                    promptState = "Could not read animal position for PromptAnchor matching"
+                    promptState = string.format("No enabled StealPrompt within %.0f studs of animal (found %d total/%d enabled)", promptMatchRadius, totalStealPrompts, enabledStealPrompts)
                 end
                 if prompt and prompt:IsA("ProximityPrompt") and prompt.Enabled then
                     break
