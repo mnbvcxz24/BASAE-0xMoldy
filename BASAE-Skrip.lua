@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.1"
+local testver = "Test v1.2"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -106,7 +106,7 @@ AddStroke(Main, Theme.Border, 1)
 local TopBar = Create("Frame", {
     Name = "TopBar",
     Parent = Main,
-    Size = UDim2.new(1, 0, 0, 58),
+    Size = UDim2.new(1, 0, 0, 48),
     BackgroundColor3 = Theme.Background,
     BorderSizePixel = 0
 })
@@ -199,21 +199,22 @@ AddStroke(CloseButton, Theme.Border, 1)
 local Sidebar = Create("Frame", {
     Name = "Sidebar",
     Parent = Main,
-    Position = UDim2.fromOffset(0, 58),
+    Position = UDim2.fromOffset(0, 48),
     Size = UDim2.new(
         0,
         UIConfig.SidebarWidth,
         1,
-        -58
+        -48
     ),
     BackgroundColor3 = Theme.Sidebar,
     BorderSizePixel = 0
 })
+AddCorner(Sidebar, 12)
 -- Sidebar title
 local NavigationTitle = Create("TextLabel", {
     Name = "NavigationTitle",
     Parent = Sidebar,
-    Position = UDim2.fromOffset(8, 20),
+    Position = UDim2.fromOffset(8, 12),
     Size = UDim2.new(1, -16, 0, 20),
     BackgroundTransparency = 1,
     Text = "NAVIGATION",
@@ -226,7 +227,7 @@ local NavigationTitle = Create("TextLabel", {
 local SidebarContainer = Create("ScrollingFrame", {
     Name = "Buttons",
     Parent = Sidebar,
-    Position = UDim2.fromOffset(5, 52),
+    Position = UDim2.fromOffset(5, 40),
     Size = UDim2.new(1, -10, 1, -60),
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
@@ -248,13 +249,13 @@ local Content = Create("Frame", {
     Parent = Main,
     Position = UDim2.fromOffset(
         UIConfig.SidebarWidth,
-        58
+        48
     ),
     Size = UDim2.new(
         1,
         -UIConfig.SidebarWidth,
         1,
-        -58
+        -48
     ),
     BackgroundColor3 = Theme.Background,
     BorderSizePixel = 0
@@ -274,18 +275,20 @@ local function CreatePage(pageNumber, pageName)
         ScrollBarThickness = 3,
         ScrollBarImageColor3 = Theme.Gray,
         CanvasSize = UDim2.new(0, 0, 0, 0),
-        Visible = false
+        Visible = false,
+        ClipsDescendants = true
     })
+    AddCorner(Page, 10)
     local Padding = Create("UIPadding", {
         Parent = Page,
-        PaddingTop = UDim.new(0, 20),
-        PaddingBottom = UDim.new(0, 20),
-        PaddingLeft = UDim.new(0, 20),
-        PaddingRight = UDim.new(0, 20)
+        PaddingTop = UDim.new(0, 12),
+        PaddingBottom = UDim.new(0, 12),
+        PaddingLeft = UDim.new(0, 12),
+        PaddingRight = UDim.new(0, 12)
     })
     local Layout = Create("UIListLayout", {
         Parent = Page,
-        Padding = UDim.new(0, 12),
+        Padding = UDim.new(0, 8),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -293,7 +296,7 @@ local function CreatePage(pageNumber, pageName)
             0,
             0,
             0,
-            Layout.AbsoluteContentSize.Y + 40
+            Layout.AbsoluteContentSize.Y + 24
         )
     end)
     Pages[pageNumber] = Page
