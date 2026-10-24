@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.42"
+local testver = "Test v1.43"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -404,7 +404,7 @@ end
 local function CreateButton(parent, text, callback)
     local Button = Create("TextButton", {
         Parent = parent,
-        Size = UDim2.new(1, -30, 0, 34),
+        Size = UDim2.new(1, -30, 0, 28),
         Position = UDim2.fromOffset(15, 68),
         BackgroundColor3 = Theme.Selected,
         Text = text,
@@ -436,7 +436,7 @@ end
 local function CreateToggle(parent, text, default, callback)
     local Toggle = Create("TextButton", {
         Parent = parent,
-        Size = UDim2.new(1, -30, 0, 34),
+        Size = UDim2.new(1, -30, 0, 28),
         Position = UDim2.fromOffset(15, 68),
         BackgroundTransparency = 1,
         Text = "",
@@ -500,7 +500,7 @@ end
 local function CreateDropdown(parent, text, options, callback)
     local Dropdown = Create("TextButton", {
         Parent = parent,
-        Size = UDim2.new(1, -30, 0, 34),
+        Size = UDim2.new(1, -30, 0, 28),
         Position = UDim2.fromOffset(15, 68),
         BackgroundColor3 = Theme.SurfaceInput,
         Text = "",
@@ -523,7 +523,7 @@ local function CreateDropdown(parent, text, options, callback)
     local Arrow = Create("TextLabel", {
         Parent = Dropdown,
         Position = UDim2.new(1, -25, 0, 0),
-        Size = UDim2.fromOffset(20, 34),
+        Size = UDim2.fromOffset(20, 28),
         BackgroundTransparency = 1,
         Text = "v",
         TextColor3 = Theme.Gray,
@@ -534,7 +534,7 @@ local function CreateDropdown(parent, text, options, callback)
     local List = Create("Frame", {
         Parent = Dropdown,
         Position = UDim2.new(0, 0, 1, 5),
-        Size = UDim2.new(1, 0, 0, #options * 30),
+        Size = UDim2.new(1, 0, 0, #options * 26),
         BackgroundColor3 = Theme.SurfaceInput,
         BorderSizePixel = 0,
         Visible = false,
@@ -549,7 +549,7 @@ local function CreateDropdown(parent, text, options, callback)
     for _, option in ipairs(options) do
         local Option = Create("TextButton", {
             Parent = List,
-            Size = UDim2.new(1, 0, 0, 30),
+            Size = UDim2.new(1, 0, 0, 26),
             BackgroundTransparency = 1,
             Text = tostring(option),
             TextColor3 = Theme.Text,
@@ -748,14 +748,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             RarityList.Visible = RarityFilterOpen
         end)
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
-        RarityFilterButton.Size = UDim2.new(1, -22, 0, 25)
+        RarityFilterButton.Size = UDim2.new(1, -22, 0, 26)
         local HighestCashEnabled = false
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Highest CPS", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Highest CPS filter ON." or "Highest CPS filter OFF."))
         end)
         HighestCashToggle.Position = UDim2.fromOffset(11, 73)
-        HighestCashToggle.Size = UDim2.new(1, -22, 0, 27)
+        HighestCashToggle.Size = UDim2.new(1, -22, 0, 26)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
             Parent = AutoPickupCard,
@@ -857,14 +857,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             UpdateFilterPanel()
         end)
         ZoneFilterButton.Position = UDim2.fromOffset(15, 44)
-        ZoneFilterButton.Size = UDim2.new(0.5, -20, 0, 30)
+        ZoneFilterButton.Size = UDim2.new(0.5, -20, 0, 26)
         EggFilterButton = CreateButton(Card1, "Eggs ▼", function()
             EggFilterOpen = not EggFilterOpen
             ZoneFilterOpen = false
             UpdateFilterPanel()
         end)
         EggFilterButton.Position = UDim2.new(0.5, 5, 0, 44)
-        EggFilterButton.Size = UDim2.new(0.5, -20, 0, 30)
+        EggFilterButton.Size = UDim2.new(0.5, -20, 0, 26)
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
             Parent = Card1,
@@ -1490,7 +1490,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Name = "ClearLogs",
             Parent = ConsoleCard,
             Position = UDim2.new(1, -75, 0, 10),
-            Size = UDim2.fromOffset(60, 22),
+            Size = UDim2.fromOffset(56, 20),
             BackgroundColor3 = Theme.Selected,
             Text = "CLEAR",
             TextColor3 = Theme.SelectedText,
