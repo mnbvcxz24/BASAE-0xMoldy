@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.72"
+local testver = "Test v1.73"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1603,6 +1603,130 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if AnimalPickups then
             BindAnimalPickups(AnimalPickups)
         end
+        local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
+        CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
+            if tostring(action):lower() ~= "fling" or typeof(flingPosition) ~= "Vector3" then return end
+            if not AutoPickupEnabled or PickupRequested or ReturningAfterPickup then
+                SetTrackerStatus("Fling recovery ignored: Auto Pickup is off or another pickup/return is active.")
+                return
+            end
+            PickupRequested = true
+            if CurrentTarget then CompletedEggs[CurrentTarget] = true end
+            if StopAutoBreak then StopAutoBreak() end
+            if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+            SetTrackerStatus(string.format("FLING RECOVERY: received location (%.1f, %.1f, %.1f); searching for matching StealPrompt.", flingPosition.X, flingPosition.Y, flingPosition.Z))
+            task.spawn(function()
+                local anchor = workspace:FindFirstChild("PromptAnchor")
+                local prompt, promptPosition
+                local searchDeadline = os.clock() + 8
+                local function positionOf(candidate)
+                    local parent = candidate and candidate.Parent
+                    while parent and parent ~= workspace do
+                        if parent:IsA("Attachment") then return parent.WorldPosition end
+                        if parent:IsA("BasePart") then return parent.Position end
+                        if parent:IsA("Model") then return parent:GetPivot().Position end
+                        parent = parent.Parent
+                    end
+                    return nil
+                end
+                repeat
+                    anchor = workspace:FindFirstChild("PromptAnchor")
+                    local nearest = math.huge
+                    prompt, promptPosition = nil, nil
+                    if anchor then
+                        for _, candidate in ipairs(anchor:GetDescendants()) do
+                            if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
+                                local pos = positionOf(candidate)
+                                if pos then
+                                    local distance = (pos - flingPosition).Magnitude
+                                    if distance < nearest and distance <= 12 then
+                                        nearest, prompt, promptPosition = distance, candidate, pos
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    if prompt then break end
+                    task.wait(0.2)
+                until os.clock() >= searchDeadline
+                if not prompt or not prompt.Parent or not prompt.Enabled or not promptPosition then
+                    PickupRequested = false
+                    SetTrackerStatus("FLING RECOVERY failed: no enabled StealPrompt within 12 studs of reported fling location.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
+                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                SetTrackerStatus(string.format("FLING RECOVERY locked prompt %.1f studs from fling location; moving to verify position.", (promptPosition - flingPosition).Magnitude))
+                local moveStarted = os.clock()
+                while PickupRequested and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
+                    promptPosition = positionOf(prompt) or promptPosition
+                    local locationError = (promptPosition - flingPosition).Magnitude
+                    if locationError > 14 then
+                        humanoid:Move(Vector3.zero, false)
+                        PickupRequested = false
+                        SetTrackerStatus(string.format("FLING RECOVERY cancelled: prompt moved %.1f studs from reported location.", locationError))
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        return
+                    end
+                    local offset = Vector3.new(promptPosition.X - root.Position.X, 0, promptPosition.Z - root.Position.Z)
+                    local distanceToPrompt = (promptPosition - root.Position).Magnitude
+                    if distanceToPrompt <= math.min(prompt.MaxActivationDistance, 5) then break end
+                    if os.clock() - moveStarted >= 25 then
+                        humanoid:Move(Vector3.zero, false)
+                        PickupRequested = false
+                        SetTrackerStatus("FLING RECOVERY cancelled: timed out reaching the verified prompt.")
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        return
+                    end
+                    humanoid:Move(offset.Magnitude > 0 and offset.Unit or Vector3.zero, false)
+                    task.wait(0.05)
+                end
+                humanoid:Move(Vector3.zero, false)
+                if not PickupRequested or not prompt.Parent or not prompt.Enabled or humanoid.Health <= 0 then
+                    PickupRequested = false
+                    SetTrackerStatus("FLING RECOVERY cancelled: prompt or character became unavailable.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                promptPosition = positionOf(prompt) or promptPosition
+                local finalPlayerDistance = (promptPosition - root.Position).Magnitude
+                local finalLocationError = (promptPosition - flingPosition).Magnitude
+                if finalPlayerDistance > math.min(prompt.MaxActivationDistance, 5) or finalLocationError > 14 then
+                    PickupRequested = false
+                    SetTrackerStatus(string.format("FLING RECOVERY blocked by location verification: player=%.1f studs, fling mismatch=%.1f studs.", finalPlayerDistance, finalLocationError))
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                task.wait(0.15)
+                promptPosition = positionOf(prompt) or promptPosition
+                if not prompt.Parent or not prompt.Enabled or (promptPosition - root.Position).Magnitude > math.min(prompt.MaxActivationDistance, 5) or (promptPosition - flingPosition).Magnitude > 14 then
+                    PickupRequested = false
+                    SetTrackerStatus("FLING RECOVERY blocked: prompt moved outside the verified pickup range.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                local ok, err = pcall(function()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(prompt)
+                    else
+                        prompt:InputHoldBegin()
+                        task.wait(prompt.HoldDuration + 0.1)
+                        prompt:InputHoldEnd()
+                    end
+                end)
+                if not ok then
+                    pcall(function() prompt:InputHoldEnd() end)
+                    PickupRequested = false
+                    SetTrackerStatus("FLING RECOVERY pickup failed: " .. tostring(err))
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                SetTrackerStatus("FLING RECOVERY prompt activated at verified location; returning to base.")
+                ReturnToPickup("Fling recovery pickup attempted. Returning to base.")
+            end)
+        end)
         workspace.ChildAdded:Connect(function(child)
             if child.Name == "AnimalPickups" and not AnimalPickups then
                 BindAnimalPickups(child)
