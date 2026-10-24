@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.57"
+local testver = "Test v1.58"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1183,7 +1183,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
         local AnimalPickups = workspace:FindFirstChild("AnimalPickups")
         local SetTrackerStatus
-        local AnimalBankedRemote = game:GetService("ReplicatedStorage"):WaitForChild("AnimalBankedRemote")
         local ReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
         local function ReturnToPickup(reason)
             if ReturningAfterPickup then return end
@@ -1231,17 +1230,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end)
         end
-        AnimalBankedRemote.OnClientEvent:Connect(function()
-            if not PickupRequested or ReturningAfterPickup then return end
-            ReturnToPickup("AnimalBankedRemote confirmed the pet reached the base. Returning to the pickup point.")
-            task.delay(20, function()
-                if PickupRequested and not ReturningAfterPickup then
-                    PickupRequested = false
-                    SetTrackerStatus("Pickup confirmation timeout: AnimalBankedRemote was not received. Auto Break can continue.")
-                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
-                end
-            end)
-        end)
         local function IsTargetReference(reference, target)
             if reference == target then
                 return true
@@ -1463,7 +1451,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
-                SetTrackerStatus("StealPrompt hold completed; waiting for AnimalBankedRemote confirmation before returning.")
+                SetTrackerStatus("StealPrompt hold completed. Returning straight to base now.")
+                ReturnToPickup("StealPrompt hold completed. Returning straight to base.")
             end)
         end
         local function BindAnimalPickups(folder)
