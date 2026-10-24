@@ -784,7 +784,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
         local AutoPickupCard = CreateCard(Page, "Auto pickup", "")
-        AutoPickupCard.Size = UDim2.new(1, 0, 0, 142)
+        AutoPickupCard.Size = UDim2.new(1, 0, 0, 170)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
@@ -803,7 +803,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local RarityFilterButton
         RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
-            AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 270 or 142)
+            AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 300 or 170)
             RarityFilterButton.Text = RarityFilterOpen and "Filter for Rarity  ▲" or "Filter for Rarity  ▼"
             RarityList.Visible = RarityFilterOpen
         end)
@@ -816,10 +816,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         HighestCashToggle.Position = UDim2.fromOffset(11, 73)
         HighestCashToggle.Size = UDim2.new(1, -22, 0, 26)
+        local UnindexedOnlyEnabled = false
+        local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed animals (???)", false, function(enabled)
+            UnindexedOnlyEnabled = enabled
+            AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
+        end)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 101)
+        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 26)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 104),
+            Position = UDim2.fromOffset(11, 132),
             Size = UDim2.new(1, -22, 0, 155),
             CanvasSize = UDim2.new(0, 0, 0, 0),
             ScrollBarThickness = 3,
@@ -1649,6 +1656,55 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             pickup:SetAttribute("BASAE_CPSCheckedAt", os.time())
         end
+        local function GetIndexNameLabel(animalName)
+            local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+            local mainGui = playerGui and playerGui:FindFirstChild("MainGUI")
+            local frames = mainGui and mainGui:FindFirstChild("Frames")
+            local index = frames and frames:FindFirstChild("Index")
+            local indexList = index and index:FindFirstChild("IndexList")
+            local scrollingFrame = indexList and indexList:FindFirstChild("ScrollingFrame")
+            if not scrollingFrame then return nil end
+            local wanted = tostring(animalName):lower():gsub("[%s_%-]", "")
+            for _, zone in ipairs(scrollingFrame:GetChildren()) do
+                local animalList = zone:FindFirstChild("AnimalList")
+                if animalList then
+                    for _, animalEntry in ipairs(animalList:GetChildren()) do
+                        local entryName = animalEntry.Name:lower():gsub("[%s_%-]", "")
+                        if entryName == wanted then
+                            local inner = animalEntry:FindFirstChild("Inner")
+                            local nameLabel = inner and inner:FindFirstChild("Name")
+                            if nameLabel and (nameLabel:IsA("TextLabel") or nameLabel:IsA("TextButton")) then
+                                return nameLabel
+                            end
+                        end
+                    end
+                end
+            end
+            return nil
+        end
+        local function EvaluateUnindexedStatus(pickup)
+            local label = GetIndexNameLabel(pickup.Name)
+            for attempt = 1, 8 do
+                if label and label.Parent then break end
+                if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                    return nil, "verification cancelled"
+                end
+                SetPickupTracking(pickup, string.format("Waiting for Index entry (%d/8)", attempt))
+                task.wait(0.25)
+                label = GetIndexNameLabel(pickup.Name)
+            end
+            if not label or not label.Parent then
+                return nil, "Index entry unavailable"
+            end
+            local displayName = tostring(label.Text or ""):match("^%s*(.-)%s*$")
+            if displayName == "???" then
+                return true, displayName
+            end
+            if displayName == "" then
+                return nil, "Index name is empty"
+            end
+            return false, displayName
+        end
         local function EvaluatePickup(pickup)
             SetPickupTracking(pickup, "Checking")
             if ReturningAfterPickup then
@@ -1667,6 +1723,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                 end)
                 return
+            end
+            if UnindexedOnlyEnabled then
+                local isUnindexed, indexDisplay = EvaluateUnindexedStatus(pickup)
+                if isUnindexed == nil then
+                    SetPickupTracking(pickup, "Rejected: Index verification unavailable", tostring(indexDisplay))
+                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | Index verification failed: " .. tostring(indexDisplay))
+                    return
+                elseif not isUnindexed then
+                    SetPickupTracking(pickup, "Skipped: already indexed", tostring(indexDisplay))
+                    RejectPickupAndRestart("Skipped " .. pickup.Name .. " | already indexed as " .. tostring(indexDisplay))
+                    return
+                end
+                SetPickupTracking(pickup, "Unindexed (???); continuing verification", "???")
             end
             if not IsRarityAllowed(pickup) then
                 SetPickupTracking(pickup, "Rejected: rarity filter")
@@ -2171,23 +2240,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             FlingRecoveryActive = true
-            local trackedFlingAnimal
-            if AnimalPickups then
-                local nearestAnimalDistance = 12
-                for _, animal in ipairs(AnimalPickups:GetChildren()) do
-                    local okPosition, animalPosition = pcall(function()
-                        if animal:IsA("Model") then return animal:GetPivot().Position end
-                        if animal:IsA("BasePart") then return animal.Position end
-                    end)
-                    if okPosition and animalPosition then
-                        local distance = (animalPosition - flingPosition).Magnitude
-                        if distance <= nearestAnimalDistance then
-                            nearestAnimalDistance = distance
-                            trackedFlingAnimal = animal
-                        end
-                    end
-                end
-            end
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
@@ -2405,25 +2457,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local confirmed = false
                 local confirmDeadline = os.clock() + 4
                 while not Runtime.Stopped and os.clock() < confirmDeadline and PickupGeneration == flingToken and PickupRequested do
-                    local foundNearby = false
+                    local foundAtEventLocation = false
                     local folder = workspace:FindFirstChild("AnimalPickups")
-                    if trackedFlingAnimal then
-                        if not trackedFlingAnimal.Parent or not folder or not trackedFlingAnimal:IsDescendantOf(folder) then
-                            confirmed = true
-                            break
-                        end
-                    elseif folder then
+                    if folder then
                         for _, animal in ipairs(folder:GetChildren()) do
                             local okPosition, animalPosition = pcall(function()
                                 if animal:IsA("Model") then return animal:GetPivot().Position end
                                 if animal:IsA("BasePart") then return animal.Position end
                             end)
                             if okPosition and animalPosition and (animalPosition - flingPosition).Magnitude <= 12 then
-                                foundNearby = true
+                                foundAtEventLocation = true
                                 break
                             end
                         end
-                        if not foundNearby then confirmed = true; break end
+                        if not foundAtEventLocation then confirmed = true; break end
                     end
                     task.wait(0.1)
                 end
