@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.55"
+local testver = "Test v1.56"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1197,25 +1197,30 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetTrackerStatus("Return failed: character or HumanoidRootPart unavailable.")
                     return
                 end
-                local reached = false
-                local moveConnection = humanoid.MoveToFinished:Connect(function(success)
-                    reached = success
-                end)
-                SetTrackerStatus("Moving to return position with Humanoid:MoveTo.")
-                humanoid:MoveTo(ReturnPosition)
+                SetTrackerStatus("Moving straight to return position.")
                 local moveStarted = os.clock()
                 while character.Parent and humanoid.Health > 0
                     and (root.Position - ReturnPosition).Magnitude > 4
-                    and not reached and os.clock() - moveStarted < 25 do
+                    and os.clock() - moveStarted < 25 do
+                    local offset = Vector3.new(
+                        ReturnPosition.X - root.Position.X,
+                        0,
+                        ReturnPosition.Z - root.Position.Z
+                    )
+                    if offset.Magnitude > 0.1 then
+                        humanoid:Move(offset.Unit, false)
+                    else
+                        humanoid:Move(Vector3.zero, false)
+                    end
                     game:GetService("RunService").Heartbeat:Wait()
                 end
-                if moveConnection then moveConnection:Disconnect() end
+                humanoid:Move(Vector3.zero, false)
                 if (root.Position - ReturnPosition).Magnitude <= 4 then
                     ReturningAfterPickup = false
                     SetTrackerStatus("Returned to pickup point.")
                 else
                     ReturningAfterPickup = false
-                    SetTrackerStatus("MoveTo did not reach pickup point; distance=" .. math.floor((root.Position - ReturnPosition).Magnitude) .. ".")
+                    SetTrackerStatus("Straight movement did not reach pickup point; distance=" .. math.floor((root.Position - ReturnPosition).Magnitude) .. ".")
                     return
                 end
                 if AutoBreakToggleInitialized and StartAutoBreak then
@@ -1423,6 +1428,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SetTrackerStatus("ELIGIBLE PET: " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown")
                 .. " | zone=" .. tostring(petZone or "unknown") .. " | CPS=" .. cpsText .. " | holding StealPrompt.")
             task.spawn(function()
+                SetTrackerStatus("Pet data displayed in AnimalPickups. Waiting 3 seconds before pickup.")
+                task.wait(3)
+                if not PickupRequested or not pickup.Parent then
+                    PickupRequested = false
+                    SetTrackerStatus("Pickup cancelled: pet disappeared during the 3-second wait.")
+                    return
+                end
+                if not prompt.Parent or not prompt.Enabled then
+                    PickupRequested = false
+                    SetTrackerStatus("Pickup cancelled: StealPrompt became unavailable after the 3-second wait.")
+                    return
+                end
                 local ok, err = pcall(function()
                     prompt:InputHoldBegin()
                     task.wait(prompt.HoldDuration + 0.1)
@@ -1433,8 +1450,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetTrackerStatus("StealPrompt hold failed: " .. tostring(err))
                     return
                 end
-                SetTrackerStatus("StealPrompt hold completed; starting return movement without waiting for AnimalBankedRemote.")
-                ReturnToPickup("StealPrompt hold completed. Returning to the pickup point.")
+                SetTrackerStatus("StealPrompt hold completed; waiting for AnimalBankedRemote confirmation before returning.")
             end)
         end
         local function BindAnimalPickups(folder)
