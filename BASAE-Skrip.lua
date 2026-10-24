@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.67"
+local testver = "Test v1.68"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1256,10 +1256,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         HitEvent.OnClientEvent:Connect(function(eggReference, hitCounter, health)
             local target = CurrentTarget
-            if not target or not ArrivedAtTarget then
-                return
-            end
-            if not IsTargetReference(eggReference, target) then
+            if not target or not IsTargetReference(eggReference, target) then
                 return
             end
             SetTrackerStatus("MATCH | target=" .. target:GetFullName()
@@ -1268,7 +1265,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if tonumber(health) and tonumber(health) <= 0 then
                 CompletedEggs[target] = true
                 WaitingForPickup = true
-                SetTrackerStatus("Target health reached 0; watching AnimalPickups for a new pet.")
+                ArrivedAtTarget = false
+                if MovementConnection then
+                    MovementConnection:Disconnect()
+                    MovementConnection = nil
+                end
+                local character = LocalPlayer.Character
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid:Move(Vector3.zero, false)
+                end
+                SetTrackerStatus("Target egg reached 0 HP (including while travelling); movement stopped and watching AnimalPickups.")
             end
         end)
         local function GetPetRarity(pickup)
@@ -1359,7 +1366,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local function EvaluatePickup(pickup)
             if not AutoPickupEnabled then
-                SetTrackerStatus("New pet detected (Auto Pickup OFF): " .. pickup.Name)
+                if CurrentTarget then CompletedEggs[CurrentTarget] = true end
+                WaitingForPickup = false
+                SetTrackerStatus("New pet detected (Auto Pickup OFF): " .. pickup.Name .. " | continuing to next egg.")
+                task.defer(function()
+                    if StopAutoBreak then StopAutoBreak() end
+                    task.wait(0.2)
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                end)
                 return
             end
             if not IsRarityAllowed(pickup) then
@@ -1605,7 +1619,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             MovementConnection = game:GetService("RunService").RenderStepped:Connect(function()
                 if CurrentTarget ~= target or not target.Parent or not character.Parent
                 or humanoid.Health <= 0 then
-                    StopAutoBreak("Movement stopped: target/character unavailable.")
+                    if CurrentTarget == target and (not target.Parent or humanoid.Health <= 0) then
+                        CompletedEggs[target] = true
+                        SetTrackerStatus("Target egg became invalid while travelling; rescanning eggs.")
+                        StopAutoBreak()
+                        task.defer(function()
+                            task.wait(0.2)
+                            if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
+                                StartAutoBreak()
+                            end
+                        end)
+                    else
+                        StopAutoBreak("Movement stopped: target/character unavailable.")
+                    end
                     return
                 end
                 local targetPosition = target:GetPivot().Position
