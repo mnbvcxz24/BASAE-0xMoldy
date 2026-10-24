@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.44"
+local testver = "Test v1.45"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -326,20 +326,28 @@ local function AddDebugLog(message)
 end
 -- CREATE PAGE
 local function CreatePage(pageNumber, pageName)
-    local Page = Create("ScrollingFrame", {
-        Name = "Page_" .. pageNumber,
+    local PageClip = Create("Frame", {
+        Name = "PageClip_" .. pageNumber,
         Parent = Content,
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundColor3 = Theme.Background,
-        BackgroundTransparency = 0,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        Visible = false
+    })
+    AddCorner(PageClip, 10)
+    local Page = Create("ScrollingFrame", {
+        Name = "Page_" .. pageNumber,
+        Parent = PageClip,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         ScrollBarThickness = 3,
         ScrollBarImageColor3 = Theme.Gray,
         CanvasSize = UDim2.new(0, 0, 0, 0),
-        Visible = false,
+        Visible = true,
         ClipsDescendants = true
     })
-    AddCorner(Page, 10)
     local Padding = Create("UIPadding", {
         Parent = Page,
         PaddingTop = UDim.new(0, 12),
@@ -353,14 +361,9 @@ local function CreatePage(pageNumber, pageName)
         SortOrder = Enum.SortOrder.LayoutOrder
     })
     Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Page.CanvasSize = UDim2.new(
-            0,
-            0,
-            0,
-            Layout.AbsoluteContentSize.Y + 24
-        )
+        Page.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 24)
     end)
-    Pages[pageNumber] = Page
+    Pages[pageNumber] = PageClip
     return Page
 end
 -- CARD
