@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.15"
+local testver = "Test v1.16"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -756,12 +756,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Parent = Card1,
             Position = UDim2.fromOffset(15, 78),
             Size = UDim2.new(1, -30, 0, 30),
-            BackgroundColor3 = Theme.SurfaceInput,
+            BackgroundTransparency = 1,
             BorderSizePixel = 0,
             Visible = true
         })
-        AddCorner(SortFrame, 6)
-        AddStroke(SortFrame, Theme.Border, 1)
         Create("TextLabel", {
             Parent = SortFrame,
             Size = UDim2.fromOffset(42, 28),
