@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.60"
+local testver = "Test v1.61"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1446,20 +1446,35 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
-                local ok, err = pcall(function()
+                local holdOk, holdErr = pcall(function()
                     prompt:InputHoldBegin()
                     task.wait(prompt.HoldDuration + 0.1)
                     prompt:InputHoldEnd()
                 end)
-                if not ok then
+                if not holdOk then
                     pcall(function() prompt:InputHoldEnd() end)
                     PickupRequested = false
-                    SetTrackerStatus("StealPrompt hold failed: " .. tostring(err))
+                    SetTrackerStatus("StealPrompt hold failed: " .. tostring(holdErr))
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
-                SetTrackerStatus("StealPrompt hold completed. Returning straight to base now.")
-                ReturnToPickup("StealPrompt hold completed. Returning straight to base.")
+                local pickupDeadline = os.clock() + 4
+                local pickupConfirmed = false
+                while os.clock() < pickupDeadline do
+                    if not pickup.Parent then
+                        pickupConfirmed = true
+                        break
+                    end
+                    task.wait(0.1)
+                end
+                if not pickupConfirmed then
+                    PickupRequested = false
+                    SetTrackerStatus("StealPrompt hold finished, but the animal is still in AnimalPickups; not returning to base.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                SetTrackerStatus("Pickup confirmed: animal disappeared from AnimalPickups. Returning to base.")
+                ReturnToPickup("Pickup confirmed. Returning straight to base.")
             end)
         end
         local function BindAnimalPickups(folder)
