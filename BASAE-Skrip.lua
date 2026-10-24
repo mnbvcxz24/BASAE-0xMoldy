@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.29"
+local testver = "Test v1.30"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -723,6 +723,88 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
+        local AutoPickupCard = CreateCard(Page, "Auto pickup", "UI preview only. Pickup behavior is not connected.")
+        AutoPickupCard.Size = UDim2.new(1, 0, 0, 128)
+        local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, nil)
+        AutoPickupToggle.Position = UDim2.new(1, -68, 0, 10)
+        AutoPickupToggle.Size = UDim2.fromOffset(58, 26)
+        local RarityFilterOpen = false
+        local SelectedRarities = {}
+        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"}
+        local RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
+            RarityFilterOpen = not RarityFilterOpen
+            AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 282 or 128)
+            RarityFilterButton.Text = RarityFilterOpen and "Filter for Rarity  ▲" or "Filter for Rarity  ▼"
+            RarityList.Visible = RarityFilterOpen
+        end)
+        RarityFilterButton.Position = UDim2.fromOffset(15, 43)
+        RarityFilterButton.Size = UDim2.new(1, -30, 0, 28)
+        local HighestCashToggle = CreateToggle(AutoPickupCard, "Pick up highest Cash Per Second", false, nil)
+        HighestCashToggle.Position = UDim2.fromOffset(15, 76)
+        HighestCashToggle.Size = UDim2.new(1, -30, 0, 30)
+        local RarityList = Create("Frame", {
+            Name = "RarityFilterContainer",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(15, 112),
+            Size = UDim2.new(1, -30, 0, 160),
+            BackgroundColor3 = Theme.SurfaceInput,
+            BorderSizePixel = 0,
+            Visible = false
+        })
+        AddCorner(RarityList, 6)
+        local RarityLayout = Create("UIListLayout", {
+            Parent = RarityList,
+            Padding = UDim.new(0, 3),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        Create("UIPadding", {
+            Parent = RarityList,
+            PaddingTop = UDim.new(0, 5),
+            PaddingBottom = UDim.new(0, 5),
+            PaddingLeft = UDim.new(0, 5),
+            PaddingRight = UDim.new(0, 5)
+        })
+        for rarityIndex, rarityName in ipairs(RarityOptions) do
+            local RarityButton = Create("TextButton", {
+                Name = "Rarity_" .. rarityName,
+                Parent = RarityList,
+                Size = UDim2.new(1, -4, 0, 19),
+                BackgroundColor3 = Theme.Card,
+                Text = "",
+                BorderSizePixel = 0,
+                LayoutOrder = rarityIndex,
+                AutoButtonColor = false
+            })
+            AddCorner(RarityButton, 4)
+            local RarityLabel = Create("TextLabel", {
+                Parent = RarityButton,
+                Position = UDim2.fromOffset(7, 0),
+                Size = UDim2.new(1, -28, 1, 0),
+                BackgroundTransparency = 1,
+                Text = rarityName,
+                TextColor3 = Theme.Text,
+                Font = Enum.Font.Gotham,
+                TextSize = 10,
+                TextXAlignment = Enum.TextXAlignment.Left
+            })
+            local RarityCheck = Create("TextLabel", {
+                Parent = RarityButton,
+                Position = UDim2.new(1, -23, 0, 0),
+                Size = UDim2.fromOffset(20, 19),
+                BackgroundTransparency = 1,
+                Text = "○",
+                TextColor3 = Theme.Gray,
+                Font = Enum.Font.GothamBold,
+                TextSize = 12
+            })
+            RarityButton.MouseButton1Click:Connect(function()
+                SelectedRarities[rarityName] = not SelectedRarities[rarityName] or nil
+                local selected = SelectedRarities[rarityName] == true
+                RarityCheck.Text = selected and "✓" or "○"
+                RarityCheck.TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray
+                RarityButton.BackgroundColor3 = selected and Theme.Selected or Theme.Card
+            end)
+        end
         local SelectedZones = {}
         local SelectedEggs = {}
         local ZoneFilterOpen = false
