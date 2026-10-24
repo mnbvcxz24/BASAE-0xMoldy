@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.41"
+local testver = "Test v1.42"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -130,7 +130,7 @@ local Title = Create("TextLabel", {
     Text = UIConfig.Title,
     TextColor3 = Theme.Text,
     Font = Enum.Font.GothamBold,
-    TextSize = 13,
+    TextSize = 12,
     TextXAlignment = Enum.TextXAlignment.Left
 })
 -- Subtitle
@@ -159,7 +159,7 @@ local SearchBox = Create("TextBox", {
     Text = "",
     TextColor3 = Theme.Text,
     Font = Enum.Font.Gotham,
-    TextSize = 11,
+    TextSize = 10,
     ClearTextOnFocus = false,
     BorderSizePixel = 0
 })
@@ -175,7 +175,7 @@ local MinimizeButton = Create("TextButton", {
     Text = "-",
     TextColor3 = Theme.Text,
     Font = Enum.Font.GothamBold,
-    TextSize = 15,
+    TextSize = 13,
     BorderSizePixel = 0
 })
 AddCorner(MinimizeButton, 8)
@@ -190,7 +190,7 @@ local CloseButton = Create("TextButton", {
     Text = "×",
     TextColor3 = Theme.Text,
     Font = Enum.Font.GothamBold,
-    TextSize = 17,
+    TextSize = 15,
     BorderSizePixel = 0
 })
 AddCorner(CloseButton, 8)
@@ -204,7 +204,7 @@ local RestoreButton = Create("TextButton", {
     Text = "B",
     TextColor3 = Theme.Text,
     Font = Enum.Font.GothamBold,
-    TextSize = 16,
+    TextSize = 14,
     BorderSizePixel = 0,
     Visible = false,
     ZIndex = 5
@@ -301,7 +301,7 @@ local function AddDebugLog(message)
         Text = lineText,
         TextColor3 = Theme.Text,
         Font = Enum.Font.Code,
-        TextSize = 10,
+        TextSize = 9,
         TextWrapped = true,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Top,
@@ -381,7 +381,7 @@ local function CreateCard(parent, title, description)
         Text = title,
         TextColor3 = Theme.Text,
         Font = Enum.Font.GothamBold,
-        TextSize = 11,
+        TextSize = 10,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     local CardDescription = Create("TextLabel", {
@@ -393,7 +393,7 @@ local function CreateCard(parent, title, description)
         Visible = description ~= nil and description ~= "",
         TextColor3 = Theme.Gray,
         Font = Enum.Font.Gotham,
-        TextSize = 10,
+        TextSize = 9,
         TextWrapped = true,
         TextXAlignment = Enum.TextXAlignment.Left,
         TextYAlignment = Enum.TextYAlignment.Top
@@ -410,7 +410,7 @@ local function CreateButton(parent, text, callback)
         Text = text,
         TextColor3 = Theme.SelectedText,
         Font = Enum.Font.GothamMedium,
-        TextSize = 10,
+        TextSize = 9,
         BorderSizePixel = 0,
         AutoButtonColor = false
     })
@@ -449,7 +449,7 @@ local function CreateToggle(parent, text, default, callback)
         Text = text,
         TextColor3 = Theme.Text,
         Font = Enum.Font.Gotham,
-        TextSize = 10,
+        TextSize = 9,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     local Switch = Create("Frame", {
@@ -517,7 +517,7 @@ local function CreateDropdown(parent, text, options, callback)
         Text = text .. ": " .. tostring(options[1]),
         TextColor3 = Theme.Text,
         Font = Enum.Font.Gotham,
-        TextSize = 10,
+        TextSize = 9,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     local Arrow = Create("TextLabel", {
@@ -528,7 +528,7 @@ local function CreateDropdown(parent, text, options, callback)
         Text = "v",
         TextColor3 = Theme.Gray,
         Font = Enum.Font.GothamBold,
-        TextSize = 10
+        TextSize = 9
     })
     local Open = false
     local List = Create("Frame", {
@@ -554,7 +554,7 @@ local function CreateDropdown(parent, text, options, callback)
             Text = tostring(option),
             TextColor3 = Theme.Text,
             Font = Enum.Font.Gotham,
-            TextSize = 10,
+            TextSize = 9,
             BorderSizePixel = 0,
             ZIndex = 21
         })
@@ -588,7 +588,7 @@ local function CreateSlider(parent, text, minimum, maximum, default, callback)
         Text = text,
         TextColor3 = Theme.Text,
         Font = Enum.Font.Gotham,
-        TextSize = 10,
+        TextSize = 9,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     local Value = Create("TextLabel", {
@@ -599,7 +599,7 @@ local function CreateSlider(parent, text, minimum, maximum, default, callback)
         Text = tostring(default),
         TextColor3 = Theme.Gray,
         Font = Enum.Font.Gotham,
-        TextSize = 10,
+        TextSize = 9,
         TextXAlignment = Enum.TextXAlignment.Right
     })
     local Bar = Create("Frame", {
@@ -804,7 +804,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 Text = rarityName,
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.Gotham,
-                TextSize = 10,
+                TextSize = 9,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
             local RarityCheck = Create("TextLabel", {
@@ -815,7 +815,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 Text = SelectedRarities[rarityName] and "✓" or "○",
                 TextColor3 = SelectedRarities[rarityName] and Color3.fromRGB(110, 205, 145) or Theme.Gray,
                 Font = Enum.Font.GothamBold,
-                TextSize = 12
+                TextSize = 11
             })
             if SelectedRarities[rarityName] then
                 RarityButton.BackgroundColor3 = Theme.Selected
@@ -933,7 +933,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Text = "Sort",
             TextColor3 = Theme.Gray,
             Font = Enum.Font.Gotham,
-            TextSize = 10,
+            TextSize = 9,
             TextXAlignment = Enum.TextXAlignment.Left
         })
         local function UpdateSortButtons()
@@ -1045,7 +1045,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = zoneName,
                     TextColor3 = Theme.Text,
                     Font = Enum.Font.Gotham,
-                    TextSize = 10,
+                    TextSize = 9,
                     TextXAlignment = Enum.TextXAlignment.Left
                 })
                 local Checkmark = Create("TextLabel", {
@@ -1056,7 +1056,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = selected and "✓" or "○",
                     TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
                     Font = Enum.Font.GothamBold,
-                    TextSize = 14
+                    TextSize = 12
                 })
                 ZoneButton.MouseButton1Click:Connect(function()
                     SelectedZones[zoneName] = not SelectedZones[zoneName] or nil
@@ -1078,7 +1078,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = "Select zones to view eggs",
                     TextColor3 = Theme.Gray,
                     Font = Enum.Font.Gotham,
-                    TextSize = 10
+                    TextSize = 9
                 })
                 return
             end
@@ -1104,7 +1104,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = eggName,
                     TextColor3 = Theme.Text,
                     Font = Enum.Font.Gotham,
-                    TextSize = 10,
+                    TextSize = 9,
                     TextXAlignment = Enum.TextXAlignment.Left
                 })
                 local Checkmark = Create("TextLabel", {
@@ -1115,7 +1115,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = selected and "✓" or "○",
                     TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
                     Font = Enum.Font.GothamBold,
-                    TextSize = 14
+                    TextSize = 12
                 })
                 EggButton.MouseButton1Click:Connect(function()
                     if SelectedEggs[eggName] == false then
@@ -1485,7 +1485,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ConsoleCard = CreateCard(Page, "Debug Console", "")
         ConsoleCard.Size = UDim2.new(1, 0, 0, 190)
         local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
-        if consoleTitle then consoleTitle.Position = UDim2.fromOffset(11, 7); consoleTitle.TextSize = 11 end
+        if consoleTitle then consoleTitle.Position = UDim2.fromOffset(11, 7); consoleTitle.TextSize = 10 end
         local ClearLogsButton = Create("TextButton", {
             Name = "ClearLogs",
             Parent = ConsoleCard,
@@ -1596,7 +1596,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local base = FindOwnedBase()
             if not base then
                 BaseStatus.Text = "Your Base not found"
-                local waiting = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "Waiting for Your Base...", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 10, LayoutOrder = 1})
+                local waiting = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "Waiting for Your Base...", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
                 return
             end
             local placed = base:FindFirstChild("PlacedAnimals")
@@ -1609,7 +1609,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             table.sort(records, function(a, b) if a.value == b.value then return a.name < b.name end return a.value > b.value end)
             if #records == 0 then
-                Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No placed animals found.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 10, LayoutOrder = 1})
+                Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No placed animals found.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
             end
             for order, record in ipairs(records) do
                 local row = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 25), BackgroundColor3 = Theme.Card, BorderSizePixel = 0, Text = "  " .. record.name .. "  |  " .. record.display, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = order})
