@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.113"
+local testver = "Test v1.114"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1186,26 +1186,26 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         UpdateSortButtons()
         local TitanicPriorityEnabled = false
-        local TitanicPriorityToggle = CreateToggle(Card1, "Titanic priority", false, function(enabled)
+        local TitanicPriorityToggle = CreateToggle(Card1, "TITANIC priority", false, function(enabled)
             TitanicPriorityEnabled = enabled
             AddDebugLog("[Auto Break] Titanic priority " .. (enabled and "ON" or "OFF"))
         end)
-        TitanicPriorityToggle.Position = UDim2.fromOffset(15, 108)
-        TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 24)
-        Card1.Size = UDim2.new(1, 0, 0, 144)
+        TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
+        TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 26)
+        Card1.Size = UDim2.new(1, 0, 0, 150)
         local function UpdateFilterPanelWithTitanic()
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
             SortFrame.Visible = true
-            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 254 or 144)
+            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 260 or 150)
             SortFrame.Position = UDim2.fromOffset(15, 78)
             SortFrame.Size = UDim2.new(1, -30, 0, 30)
-            TitanicPriorityToggle.Position = UDim2.fromOffset(15, 108)
-            TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 24)
+            TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
+            TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 26)
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
-            ZoneList.Position = UDim2.fromOffset(15, 138)
-            EggFilterList.Position = UDim2.fromOffset(15, 138)
+            ZoneList.Position = UDim2.fromOffset(15, 142)
+            EggFilterList.Position = UDim2.fromOffset(15, 142)
         end
         ZoneFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
         EggFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
