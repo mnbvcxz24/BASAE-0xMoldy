@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.79"
+local testver = "Test v1.80"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1325,14 +1325,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return -1, "CPS unavailable: CashPerSecond TextLabel missing"
             end
             local raw = cpsLabel.Text
-            local cleaned = raw:gsub(",", ""):gsub("%s+", "")
-            local numberText, suffix = cleaned:match("^([%d%.]+)([%a]*)")
+            local cleaned = raw:gsub(",", ""):gsub("%s+", ""):gsub("%$", ""):gsub("/[sS]$", "")
+            local numberText, suffix = cleaned:match("^([%d%.]+)([%a]*)$")
             local number = tonumber(numberText)
             local scales = {k=1e3, m=1e6, b=1e9, t=1e12, qa=1e15, q=1e15, qi=1e18}
             local scale = scales[(suffix or ""):lower()]
+            if not number or number < 0 then
+                return -1, raw .. " (invalid CPS text)"
+            end
             if suffix and suffix ~= "" and not scale then
                 return -1, raw .. " (unknown CPS suffix)"
             end
+            return number * (scale or 1), raw
+        end
             if not number or number < 0 then
                 return -1, raw .. " (invalid CPS text)"
             end
