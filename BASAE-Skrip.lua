@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.40"
+local testver = "Test v1.41"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -375,21 +375,22 @@ local function CreateCard(parent, title, description)
     AddStroke(Card, Theme.Border, 1)
     local CardTitle = Create("TextLabel", {
         Parent = Card,
-        Position = UDim2.fromOffset(15, 12),
-        Size = UDim2.new(1, -30, 0, 22),
+        Position = UDim2.fromOffset(11, 8),
+        Size = UDim2.new(1, -22, 0, 18),
         BackgroundTransparency = 1,
         Text = title,
         TextColor3 = Theme.Text,
         Font = Enum.Font.GothamBold,
-        TextSize = 13,
+        TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     local CardDescription = Create("TextLabel", {
         Parent = Card,
-        Position = UDim2.fromOffset(15, 37),
-        Size = UDim2.new(1, -30, 0, 40),
+        Position = UDim2.fromOffset(11, 29),
+        Size = UDim2.new(1, -22, 0, 30),
         BackgroundTransparency = 1,
         Text = description or "",
+        Visible = description ~= nil and description ~= "",
         TextColor3 = Theme.Gray,
         Font = Enum.Font.Gotham,
         TextSize = 10,
@@ -724,7 +725,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
         local AutoPickupCard = CreateCard(Page, "Auto pickup", "")
-        AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 320 or 160)
+        AutoPickupCard.Size = UDim2.new(1, 0, 0, 142)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
@@ -742,24 +743,24 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local RarityFilterButton
         RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
-            AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 320 or 160)
+            AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 270 or 142)
             RarityFilterButton.Text = RarityFilterOpen and "Filter for Rarity  ▲" or "Filter for Rarity  ▼"
             RarityList.Visible = RarityFilterOpen
         end)
-        RarityFilterButton.Position = UDim2.fromOffset(15, 80)
-        RarityFilterButton.Size = UDim2.new(1, -30, 0, 28)
+        RarityFilterButton.Position = UDim2.fromOffset(11, 43)
+        RarityFilterButton.Size = UDim2.new(1, -22, 0, 25)
         local HighestCashEnabled = false
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Highest CPS", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Highest CPS filter ON." or "Highest CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(15, 113)
-        HighestCashToggle.Size = UDim2.new(1, -30, 0, 30)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 73)
+        HighestCashToggle.Size = UDim2.new(1, -22, 0, 27)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(15, 150),
-            Size = UDim2.new(1, -30, 0, 160),
+            Position = UDim2.fromOffset(11, 104),
+            Size = UDim2.new(1, -22, 0, 155),
             CanvasSize = UDim2.new(0, 0, 0, 0),
             ScrollBarThickness = 3,
             ScrollBarImageColor3 = Theme.Gray,
@@ -1482,9 +1483,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
     elseif index == 2 then
         local ConsoleCard = CreateCard(Page, "Debug Console", "")
-        ConsoleCard.Size = UDim2.new(1, 0, 0, 202)
+        ConsoleCard.Size = UDim2.new(1, 0, 0, 190)
         local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
-        if consoleTitle then consoleTitle.Position = UDim2.fromOffset(15, 10) end
+        if consoleTitle then consoleTitle.Position = UDim2.fromOffset(11, 7); consoleTitle.TextSize = 11 end
         local ClearLogsButton = Create("TextButton", {
             Name = "ClearLogs",
             Parent = ConsoleCard,
