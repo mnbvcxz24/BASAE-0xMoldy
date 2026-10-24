@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.20"
+local testver = "Test v1.21"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1144,7 +1144,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         .. " | tracking matching EggHitConfirmed events now.")
                     return
                 end
-                humanoid:Move(offset.Unit, false)
+                local localDirection = root.CFrame:VectorToObjectSpace(offset.Unit)
+                humanoid:Move(Vector3.new(localDirection.X, 0, localDirection.Z), true)
             end)
         end
     else
