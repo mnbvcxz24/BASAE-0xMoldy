@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.19"
+local testver = "Test v1.20"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -796,7 +796,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Name = "SortLargest",
             Parent = SortFrame,
             Position = UDim2.fromOffset(46, 2),
-            Size = UDim2.new(0.5, -48, 0, 26),
+            Size = UDim2.new(0.5, -26, 0, 26),
             BackgroundColor3 = Theme.Selected,
             Text = "● Largest",
             TextColor3 = Theme.SelectedText,
@@ -809,8 +809,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         SortSmallestButton = Create("TextButton", {
             Name = "SortSmallest",
             Parent = SortFrame,
-            Position = UDim2.new(0.5, 0, 0, 2),
-            Size = UDim2.new(0.5, -2, 0, 26),
+            Position = UDim2.new(0.5, 26, 0, 2),
+            Size = UDim2.new(0.5, -26, 0, 26),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "○ Smallest",
             TextColor3 = Theme.Gray,
@@ -1073,6 +1073,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     table.insert(selectedZoneNames, zoneName)
                 end
             end
+            if #selectedZoneNames == 0 then
+                for _, zone in ipairs(ZoneBuilds:GetChildren()) do
+                    if zone:IsA("Model") then
+                        table.insert(selectedZoneNames, zone.Name)
+                    end
+                end
+            end
             table.sort(selectedZoneNames)
             local target
             for _, zoneName in ipairs(selectedZoneNames) do
@@ -1137,8 +1144,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         .. " | tracking matching EggHitConfirmed events now.")
                     return
                 end
-                local localDirection = root.CFrame:VectorToObjectSpace(offset.Unit)
-                humanoid:Move(Vector3.new(localDirection.X, 0, localDirection.Z), true)
+                humanoid:Move(offset.Unit, false)
             end)
         end
     else
