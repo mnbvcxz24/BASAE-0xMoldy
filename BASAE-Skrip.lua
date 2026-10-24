@@ -1596,8 +1596,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 task.wait(0.05)
             end
+            if PickupMovementConnection == animalMoveConnection then
+                PickupMovementConnection:Disconnect()
+                PickupMovementConnection = nil
+            end
             if animalMoveConnection then animalMoveConnection:Disconnect(); animalMoveConnection = nil end
-            if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             moveHumanoid:Move(Vector3.zero, false)
             if PickupGeneration ~= pickupToken then return end
             if not PickupRequested or not pickup.Parent or not pickupPosition then
@@ -1762,8 +1765,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     task.wait(0.05)
                 end
+                if PickupMovementConnection == promptMoveConnection then
+                    PickupMovementConnection:Disconnect()
+                    PickupMovementConnection = nil
+                end
                 if promptMoveConnection then promptMoveConnection:Disconnect(); promptMoveConnection = nil end
-                if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
                 humanoid:Move(Vector3.zero, false)
                 if PickupGeneration ~= pickupToken then return end
                 if not PickupRequested or not pickup.Parent then
