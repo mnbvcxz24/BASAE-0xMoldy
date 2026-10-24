@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.8"
+local testver = "Test v1.9"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -659,23 +659,9 @@ end
 for index, name in ipairs(UIConfig.SidebarNames) do
     local Page = CreatePage(index, name)
     if index == 1 then
-        local Card1 = CreateCard(Page, "Auto break egg", "Status: Inactive")
+        local Card1 = CreateCard(Page, "Auto break egg", "")
         Card1.Size = UDim2.new(1, 0, 0, 122)
-        local StatusText = Create("TextLabel", {
-            Name = "StatusValue",
-            Parent = Card1,
-            Position = UDim2.fromOffset(82, 37),
-            Size = UDim2.new(1, -160, 0, 20),
-            BackgroundTransparency = 1,
-            Text = "Inactive",
-            TextColor3 = Theme.Gray,
-            Font = Enum.Font.GothamMedium,
-            TextSize = 10,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
         local StatusToggle = CreateToggle(Card1, "Status", false, function(state)
-            StatusText.Text = state and "Active" or "Inactive"
-            StatusText.TextColor3 = state and Color3.fromRGB(110, 205, 145) or Theme.Gray
         end)
         StatusToggle.Position = UDim2.fromOffset(15, 34)
         StatusToggle.Size = UDim2.new(1, -30, 0, 26)
