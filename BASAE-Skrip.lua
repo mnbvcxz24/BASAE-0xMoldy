@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.86"
+local testver = "Test v1.87"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1507,28 +1507,54 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             local animalMoveStarted = os.clock()
+            local lastAnimalMoveTo = 0
+            local lastAnimalProgressAt = os.clock()
+            local bestAnimalDistance = math.huge
             while PickupRequested and PickupGeneration == pickupToken and pickup.Parent and moveHumanoid.Health > 0 do
-                local animalOffset = Vector3.new(pickupPosition.X - moveRoot.Position.X, 0, pickupPosition.Z - moveRoot.Position.Z)
-                if animalOffset.Magnitude <= 4 then break end
-                if os.clock() - animalMoveStarted >= 25 then
-                    moveHumanoid:Move(Vector3.zero, false)
+                if LocalPlayer.Character ~= moveCharacter or not moveCharacter.Parent or not moveRoot.Parent then
                     if PickupGeneration ~= pickupToken then return end
                     PickupRequested = false
                     ActivePickup = nil
                     ActivePickupCPS = -1
-                    SetTrackerStatus("Pickup cancelled: timed out reaching animal location.")
+                    SetTrackerStatus("Pickup cancelled: character changed while moving to animal.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
-                moveHumanoid:Move(animalOffset.Unit, false)
-                task.wait(0.05)
                 local ok, currentPosition = pcall(function()
                     if pickup:IsA("Model") then return pickup:GetPivot().Position end
                     if pickup:IsA("BasePart") then return pickup.Position end
                 end)
                 if ok and currentPosition then pickupPosition = currentPosition end
+                local animalOffset = Vector3.new(pickupPosition.X - moveRoot.Position.X, 0, pickupPosition.Z - moveRoot.Position.Z)
+                local animalDistance = animalOffset.Magnitude
+                if animalDistance <= 4 then break end
+                local now = os.clock()
+                if now - animalMoveStarted >= 25 then
+                    moveHumanoid:MoveTo(moveRoot.Position)
+                    if PickupGeneration ~= pickupToken then return end
+                    PickupRequested = false
+                    ActivePickup = nil
+                    ActivePickupCPS = -1
+                    SetTrackerStatus(string.format("Pickup cancelled: timed out reaching animal location (%.1f studs away).", animalDistance))
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                if animalDistance < bestAnimalDistance - 0.75 then
+                    bestAnimalDistance = animalDistance
+                    lastAnimalProgressAt = now
+                elseif now - lastAnimalProgressAt >= 2.5 then
+                    lastAnimalProgressAt = now
+                    bestAnimalDistance = animalDistance
+                    SetTrackerStatus(string.format("PICKUP MOVEMENT: no progress toward %s; retrying MoveTo (%.1f studs).", pickup.Name, animalDistance))
+                    lastAnimalMoveTo = 0
+                end
+                if now - lastAnimalMoveTo >= 1 then
+                    moveHumanoid:MoveTo(Vector3.new(pickupPosition.X, moveRoot.Position.Y, pickupPosition.Z))
+                    lastAnimalMoveTo = now
+                end
+                task.wait(0.1)
             end
-            moveHumanoid:Move(Vector3.zero, false)
+            moveHumanoid:MoveTo(moveRoot.Position)
             if PickupGeneration ~= pickupToken then return end
             if not PickupRequested or not pickup.Parent or not pickupPosition then
                 PickupRequested = false
@@ -1624,24 +1650,50 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 local moveStarted = os.clock()
+                local lastPromptMoveTo = 0
+                local lastPromptProgressAt = os.clock()
+                local bestPromptDistance = math.huge
                 while PickupRequested and PickupGeneration == pickupToken and pickup.Parent and prompt.Parent and humanoid.Health > 0 do
-                    local offset = Vector3.new(promptPosition.X - root.Position.X, 0, promptPosition.Z - root.Position.Z)
-                    if offset.Magnitude <= math.max(4, prompt.MaxActivationDistance - 1) then break end
-                    if os.clock() - moveStarted >= 25 then
-                        humanoid:Move(Vector3.zero, false)
+                    if LocalPlayer.Character ~= character or not character.Parent or not root.Parent then
                         if PickupGeneration ~= pickupToken then return end
                         PickupRequested = false
                         ActivePickup = nil
                         ActivePickupCPS = -1
-                        SetTrackerStatus("Pickup cancelled: timed out reaching animal prompt.")
+                        SetTrackerStatus("Pickup cancelled: character changed while moving to animal prompt.")
                         if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                         return
                     end
-                    humanoid:Move(offset.Unit, false)
-                    task.wait(0.05)
                     promptPosition = getPromptPosition(prompt) or promptPosition
+                    local offset = Vector3.new(promptPosition.X - root.Position.X, 0, promptPosition.Z - root.Position.Z)
+                    local promptDistance = offset.Magnitude
+                    if promptDistance <= math.max(4, prompt.MaxActivationDistance - 1) then break end
+                    local now = os.clock()
+                    if now - moveStarted >= 25 then
+                        humanoid:MoveTo(root.Position)
+                        if PickupGeneration ~= pickupToken then return end
+                        PickupRequested = false
+                        ActivePickup = nil
+                        ActivePickupCPS = -1
+                        SetTrackerStatus(string.format("Pickup cancelled: timed out reaching animal prompt (%.1f studs away).", promptDistance))
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        return
+                    end
+                    if promptDistance < bestPromptDistance - 0.75 then
+                        bestPromptDistance = promptDistance
+                        lastPromptProgressAt = now
+                    elseif now - lastPromptProgressAt >= 2.5 then
+                        lastPromptProgressAt = now
+                        bestPromptDistance = promptDistance
+                        SetTrackerStatus(string.format("PICKUP MOVEMENT: no progress toward StealPrompt; retrying MoveTo (%.1f studs).", promptDistance))
+                        lastPromptMoveTo = 0
+                    end
+                    if now - lastPromptMoveTo >= 1 then
+                        humanoid:MoveTo(Vector3.new(promptPosition.X, root.Position.Y, promptPosition.Z))
+                        lastPromptMoveTo = now
+                    end
+                    task.wait(0.1)
                 end
-                humanoid:Move(Vector3.zero, false)
+                humanoid:MoveTo(root.Position)
                 if PickupGeneration ~= pickupToken then return end
                 if not PickupRequested or not pickup.Parent then
                     PickupRequested = false
