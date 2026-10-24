@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.24"
+local testver = "Test v1.25"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -280,6 +280,51 @@ local Content = Create("Frame", {
 local Pages = {}
 local SidebarButtons = {}
 local CurrentPage = 1
+-- DEBUG CONSOLE
+local DebugConsoleList
+local DebugConsoleLayout
+local DebugLogCount = 0
+local MaxDebugLogs = 100
+local function AddDebugLog(message)
+    local timestamp = os.date("%H:%M:%S")
+    local lineText = "[" .. timestamp .. "] " .. tostring(message)
+    print("[BASAE-Skrip] " .. lineText)
+    if not DebugConsoleList or not DebugConsoleLayout then
+        return
+    end
+    DebugLogCount += 1
+    local LogLine = Create("TextLabel", {
+        Name = "Log_" .. DebugLogCount,
+        Parent = DebugConsoleList,
+        Size = UDim2.new(1, -8, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
+        BackgroundTransparency = 1,
+        Text = lineText,
+        TextColor3 = Theme.Text,
+        Font = Enum.Font.Code,
+        TextSize = 10,
+        TextWrapped = true,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        LayoutOrder = DebugLogCount
+    })
+    local logs = {}
+    for _, child in ipairs(DebugConsoleList:GetChildren()) do
+        if child:IsA("TextLabel") then
+            table.insert(logs, child)
+        end
+    end
+    while #logs > MaxDebugLogs do
+        logs[1]:Destroy()
+        table.remove(logs, 1)
+    end
+    task.defer(function()
+        if DebugConsoleList and DebugConsoleLayout then
+            DebugConsoleList.CanvasSize = UDim2.new(0, 0, 0, DebugConsoleLayout.AbsoluteContentSize.Y + 8)
+            DebugConsoleList.CanvasPosition = Vector2.new(0, math.max(0, DebugConsoleLayout.AbsoluteContentSize.Y - DebugConsoleList.AbsoluteSize.Y))
+        end
+    end)
+end
 -- CREATE PAGE
 local function CreatePage(pageNumber, pageName)
     local Page = Create("ScrollingFrame", {
@@ -1022,7 +1067,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return false
         end
         local function SetTrackerStatus(message)
-            print("[BASAE-Skrip][Egg Tracker] " .. tostring(message))
+            AddDebugLog("[Egg Tracker] " .. tostring(message))
         end
         HitEvent.OnClientEvent:Connect(function(eggReference, hitCounter, health)
             local target = CurrentTarget
@@ -1139,6 +1184,67 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 humanoid:Move(Vector3.new(localDirection.X, 0, localDirection.Z), true)
             end)
         end
+    elseif index == 2 then
+        local ConsoleCard = CreateCard(Page, "Debug Console", "Live script logs and Auto Break diagnostics.")
+        ConsoleCard.Size = UDim2.new(1, 0, 0, 202)
+        local ClearLogsButton = Create("TextButton", {
+            Name = "ClearLogs",
+            Parent = ConsoleCard,
+            Position = UDim2.new(1, -75, 0, 10),
+            Size = UDim2.fromOffset(60, 22),
+            BackgroundColor3 = Theme.Selected,
+            Text = "CLEAR",
+            TextColor3 = Theme.SelectedText,
+            Font = Enum.Font.GothamBold,
+            TextSize = 9,
+            BorderSizePixel = 0,
+            AutoButtonColor = true
+        })
+        AddCorner(ClearLogsButton, 5)
+        local ConsoleBackground = Create("Frame", {
+            Name = "ConsoleBackground",
+            Parent = ConsoleCard,
+            Position = UDim2.fromOffset(10, 58),
+            Size = UDim2.new(1, -20, 1, -68),
+            BackgroundColor3 = Color3.fromRGB(20, 22, 26),
+            BorderSizePixel = 0,
+            ClipsDescendants = true
+        })
+        AddCorner(ConsoleBackground, 6)
+        local ConsoleScroll = Create("ScrollingFrame", {
+            Name = "ConsoleLogs",
+            Parent = ConsoleBackground,
+            Position = UDim2.fromOffset(5, 5),
+            Size = UDim2.new(1, -10, 1, -10),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Theme.Gray,
+            ScrollingDirection = Enum.ScrollingDirection.Y,
+            AutomaticCanvasSize = Enum.AutomaticSize.None,
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            ClipsDescendants = true
+        })
+        DebugConsoleList = ConsoleScroll
+        DebugConsoleLayout = Create("UIListLayout", {
+            Parent = ConsoleScroll,
+            Padding = UDim.new(0, 3),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        DebugConsoleLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            ConsoleScroll.CanvasSize = UDim2.new(0, 0, 0, DebugConsoleLayout.AbsoluteContentSize.Y + 8)
+        end)
+        ClearLogsButton.MouseButton1Click:Connect(function()
+            for _, child in ipairs(ConsoleScroll:GetChildren()) do
+                if child:IsA("TextLabel") then
+                    child:Destroy()
+                end
+            end
+            DebugLogCount = 0
+            ConsoleScroll.CanvasPosition = Vector2.zero
+            AddDebugLog("Console cleared.")
+        end)
+        AddDebugLog("Debug console ready.")
     else
         local Card1 = CreateCard(Page, name, "This is a reusable UI page. Backend code is not connected.")
         CreateButton(Card1, "Example Button", function()
