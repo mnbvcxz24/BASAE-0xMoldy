@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.92"
+local testver = "Test v1.93"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1780,41 +1780,54 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
-                local holdOk, holdErr = pcall(function()
-                    if typeof(fireproximityprompt) == "function" then
-                        fireproximityprompt(prompt)
-                    else
-                        prompt:InputHoldBegin()
-                        task.wait(prompt.HoldDuration + 0.1)
-                        prompt:InputHoldEnd()
-                    end
-                end)
-                if not holdOk then
-                    pcall(function() prompt:InputHoldEnd() end)
-                    if PickupGeneration ~= pickupToken then return end
-                    PickupRequested = false
-                    ActivePickup = nil
-                    ActivePickupCPS = -1
-                    SetTrackerStatus("StealPrompt hold failed: " .. tostring(holdErr))
-                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
-                    return
-                end
-                if PickupGeneration ~= pickupToken then return end
-                local pickupDeadline = os.clock() + 1.25
                 local pickupConfirmed = false
-                while os.clock() < pickupDeadline and PickupGeneration == pickupToken do
-                    if not pickup.Parent then
-                        pickupConfirmed = true
+                local activationErrors = {}
+                for activationAttempt = 1, 2 do
+                    if PickupGeneration ~= pickupToken or not PickupRequested then return end
+                    if not prompt.Parent or not prompt.Enabled then break end
+                    local currentPromptPosition = getPromptPosition(prompt)
+                    local currentPromptDistance = currentPromptPosition and (currentPromptPosition - root.Position).Magnitude or math.huge
+                    if currentPromptDistance > prompt.MaxActivationDistance then
+                        SetTrackerStatus(string.format("StealPrompt activation attempt %d skipped: %.1f studs away (range %.1f).", activationAttempt, currentPromptDistance, prompt.MaxActivationDistance))
                         break
                     end
-                    task.wait(0.05)
+                    local holdOk, holdErr = pcall(function()
+                        if typeof(fireproximityprompt) == "function" then
+                            fireproximityprompt(prompt)
+                            if prompt.HoldDuration > 0 then
+                                task.wait(prompt.HoldDuration + 0.15)
+                            end
+                        else
+                            prompt:InputHoldBegin()
+                            task.wait(prompt.HoldDuration + 0.1)
+                            prompt:InputHoldEnd()
+                        end
+                    end)
+                    if not holdOk then
+                        table.insert(activationErrors, tostring(holdErr))
+                        pcall(function() prompt:InputHoldEnd() end)
+                    end
+                    local pickupDeadline = os.clock() + 1.25
+                    while os.clock() < pickupDeadline and PickupGeneration == pickupToken do
+                        if not pickup.Parent then
+                            pickupConfirmed = true
+                            break
+                        end
+                        task.wait(0.05)
+                    end
+                    if pickupConfirmed then break end
+                    if activationAttempt == 1 and prompt.Parent and prompt.Enabled then
+                        SetTrackerStatus("StealPrompt did not collect the animal on first attempt; retrying hold.")
+                        task.wait(0.2)
+                    end
                 end
                 if PickupGeneration ~= pickupToken then return end
                 if not pickupConfirmed then
                     PickupRequested = false
                     ActivePickup = nil
                     ActivePickupCPS = -1
-                    SetTrackerStatus("StealPrompt hold finished, but the animal is still in AnimalPickups; not returning to base.")
+                    local detail = #activationErrors > 0 and (" Activation error: " .. table.concat(activationErrors, " | ")) or ""
+                    SetTrackerStatus("StealPrompt activation did not collect " .. pickup.Name .. "; check prompt range/requirements." .. detail)
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
