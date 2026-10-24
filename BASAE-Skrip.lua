@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.25"
+local testver = "Test v1.26"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1204,8 +1204,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ConsoleBackground = Create("Frame", {
             Name = "ConsoleBackground",
             Parent = ConsoleCard,
-            Position = UDim2.fromOffset(10, 58),
-            Size = UDim2.new(1, -20, 1, -68),
+            Position = UDim2.fromOffset(10, 80),
+            Size = UDim2.new(1, -20, 1, -90),
             BackgroundColor3 = Color3.fromRGB(20, 22, 26),
             BorderSizePixel = 0,
             ClipsDescendants = true
