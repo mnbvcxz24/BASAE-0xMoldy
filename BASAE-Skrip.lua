@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.97"
+local testver = "Test v1.98"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1178,6 +1178,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ArrivedAtTarget = false
         local WaitingForPickup = false
         local MovementConnection
+        local PickupMovementConnection
         local BaselinePickups = {}
         local PickupRequested = false
         local ReturningAfterPickup = false
@@ -1337,13 +1338,22 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local overhead = attachment:FindFirstChild("AnimalOverhead", true) or attachment
                     local label = overhead:FindFirstChild("CashPerSecond", true)
                     if label and label:IsA("TextLabel") then
-                        local valueObject = label:FindFirstChild("Text")
-                        local display = valueObject and valueObject:IsA("TextLabel") and valueObject.Text or label.Text
+                        for _, childName in ipairs({"Text", "ContentText"}) do
+                            local valueObject = label:FindFirstChild(childName, true)
+                            if valueObject and (valueObject:IsA("TextLabel") or valueObject:IsA("TextButton") or valueObject:IsA("TextBox")) then
+                                local display = valueObject.Text
+                                local value = ParseCPS(display)
+                                if value >= 0 then
+                                    return value, display
+                                end
+                            end
+                        end
+                        local display = label.Text
                         local value = ParseCPS(display)
                         if value >= 0 then
                             return value, display
                         end
-                        return -1, "CPS unavailable: invalid CashPerSecond.Text value (" .. tostring(display) .. ")"
+                        return -1, "CPS unavailable: invalid CashPerSecond text/content (" .. tostring(display) .. ")"
                     end
                 end
             end
@@ -1471,6 +1481,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetPickupTracking(pickup, "Replacing lower-CPS pickup", cpsText)
                     PickupGeneration += 1
                     PickupRequested = false
+                    if PickupMovementConnection then
+                        PickupMovementConnection:Disconnect()
+                        PickupMovementConnection = nil
+                    end
                     local oldPickupName = ActivePickup.Name
                     SetTrackerStatus(string.format("PICKUP LOCK PREEMPT: %s (%.2f CPS) replaces %s (%.2f CPS) during phase %s.", pickup.Name, cps, oldPickupName, ActivePickupCPS, PickupPhase))
                     local oldCharacter = LocalPlayer.Character
@@ -1518,6 +1532,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local animalMoveStarted = os.clock()
             local lastAnimalProgressAt = os.clock()
             local bestAnimalDistance = math.huge
+            if PickupMovementConnection then
+                PickupMovementConnection:Disconnect()
+                PickupMovementConnection = nil
+            end
             local animalMoveConnection = RunService.Heartbeat:Connect(function()
                 if not PickupRequested or PickupGeneration ~= pickupToken or not pickup.Parent
                     or LocalPlayer.Character ~= moveCharacter or not moveRoot.Parent
@@ -1538,6 +1556,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end
             end)
+            PickupMovementConnection = animalMoveConnection
             while PickupRequested and PickupGeneration == pickupToken and pickup.Parent and moveHumanoid.Health > 0 do
                 if LocalPlayer.Character ~= moveCharacter or not moveCharacter.Parent or not moveRoot.Parent then
                     if PickupGeneration ~= pickupToken then return end
@@ -1578,6 +1597,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 task.wait(0.05)
             end
             if animalMoveConnection then animalMoveConnection:Disconnect(); animalMoveConnection = nil end
+            if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             moveHumanoid:Move(Vector3.zero, false)
             if PickupGeneration ~= pickupToken then return end
             if not PickupRequested or not pickup.Parent or not pickupPosition then
@@ -1675,6 +1695,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local moveStarted = os.clock()
                 local lastPromptProgressAt = os.clock()
                 local bestPromptDistance = math.huge
+                if PickupMovementConnection then
+                    PickupMovementConnection:Disconnect()
+                    PickupMovementConnection = nil
+                end
                 local promptMoveConnection = RunService.Heartbeat:Connect(function()
                     if not PickupRequested or PickupGeneration ~= pickupToken or not pickup.Parent or not prompt.Parent
                         or LocalPlayer.Character ~= character or not root.Parent or humanoid.Health <= 0 then
@@ -1696,6 +1720,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         humanoid:Move(Vector3.zero, false)
                     end
                 end)
+                PickupMovementConnection = promptMoveConnection
                 while PickupRequested and PickupGeneration == pickupToken and pickup.Parent and prompt.Parent and humanoid.Health > 0 do
                     if LocalPlayer.Character ~= character or not character.Parent or not root.Parent then
                         if PickupGeneration ~= pickupToken then return end
@@ -1738,6 +1763,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     task.wait(0.05)
                 end
                 if promptMoveConnection then promptMoveConnection:Disconnect(); promptMoveConnection = nil end
+                if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
                 humanoid:Move(Vector3.zero, false)
                 if PickupGeneration ~= pickupToken then return end
                 if not PickupRequested or not pickup.Parent then
@@ -1862,7 +1888,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | return-to-base owns movement; ignored.")
                     return
                 end
-                SetTrackerStatus("NEW ANIMAL detected: " .. pickup.Name .. " | checking filters and pickup priority.")
+                SetTrackerStatus("NEW ANIMAL detected: " .. pickup.Name .. " | pausing Auto Break and checking filters/priority.")
+                if AutoPickupEnabled and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
+                    if StopAutoBreak then StopAutoBreak("Auto Break paused: evaluating new animal pickup.") end
+                end
                 task.defer(function()
                     if not pickup.Parent or not AutoBreakEnabled or not AutoPickupEnabled or ReturningAfterPickup then
                         return
