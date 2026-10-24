@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.81"
+local testver = "Test v1.82"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1397,12 +1397,23 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus(message .. " | drop ignored; Auto Break continues.")
             end
         end
+        local function SetPickupTracking(pickup, status, cpsText)
+            if not pickup or not pickup.Parent then return end
+            pickup:SetAttribute("BASAE_CPSCheckStatus", tostring(status or "Not checked"))
+            if cpsText ~= nil then
+                pickup:SetAttribute("BASAE_CPSCheckValue", tostring(cpsText))
+            end
+            pickup:SetAttribute("BASAE_CPSCheckedAt", os.time())
+        end
         local function EvaluatePickup(pickup)
+            SetPickupTracking(pickup, "Checking")
             if ReturningAfterPickup then
+                SetPickupTracking(pickup, "Skipped: returning to base")
                 SetTrackerStatus("Eligible pet " .. pickup.Name .. " ignored: already returning to base.")
                 return
             end
             if not AutoPickupEnabled then
+                SetPickupTracking(pickup, "Skipped: Auto Pickup OFF")
                 if CurrentTarget then CompletedEggs[CurrentTarget] = true end
                 WaitingForPickup = false
                 SetTrackerStatus("New pet detected (Auto Pickup OFF): " .. pickup.Name .. " | continuing to next egg.")
@@ -1414,6 +1425,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             if not IsRarityAllowed(pickup) then
+                SetPickupTracking(pickup, "Rejected: rarity filter")
                 RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown"))
                 return
             end
@@ -1421,17 +1433,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local targetZone = CurrentTarget and CurrentTarget.Parent and CurrentTarget.Parent.Parent
             local targetZoneName = targetZone and targetZone.Name
             if petZone and targetZoneName and petZone:lower() ~= targetZoneName:lower() then
+                SetPickupTracking(pickup, "Rejected: zone mismatch")
                 RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | zone=" .. petZone .. " (target zone " .. targetZoneName .. ")")
                 return
             end
             local cps, cpsText = GetPetCPS(pickup)
+            SetPickupTracking(pickup, cps >= 0 and "CPS checked" or "CPS read failed", cpsText)
             if HighestCashEnabled and cps < 0 then
+                SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
                 RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
                 return
             end
             if HighestCashEnabled then
                 local lowestPlaced = GetLowestPlacedCPS()
                 if lowestPlaced >= 0 and cps <= lowestPlaced then
+                    SetPickupTracking(pickup, "Rejected: below lowest placed CPS", cpsText)
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. cpsText
                         .. " is not above your lowest placed CPS (" .. tostring(lowestPlaced) .. ").")
                     return
@@ -1439,6 +1455,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             if PickupRequested then
                 if HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS then
+                    SetPickupTracking(pickup, "Replacing lower-CPS pickup", cpsText)
                     PickupGeneration += 1
                     PickupRequested = false
                     local oldPickupName = ActivePickup.Name
@@ -1448,6 +1465,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if oldHumanoid then oldHumanoid:Move(Vector3.zero, false) end
                     task.wait()
                 else
+                    SetPickupTracking(pickup, "Checked: another pickup has priority", cpsText)
                     SetTrackerStatus(string.format("Eligible pet %s ignored while %s is locked (CPS %.2f vs %.2f).", pickup.Name, tostring(ActivePickup and ActivePickup.Name or "another pickup"), cps, ActivePickupCPS))
                     return
                 end
@@ -1456,6 +1474,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local pickupToken = PickupGeneration
             ActivePickup = pickup
             ActivePickupCPS = cps
+            SetPickupTracking(pickup, "Selected for pickup", cpsText)
             PickupRequested = true
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
@@ -1703,6 +1722,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
+                SetPickupTracking(pickup, "Collected", cpsText)
                 SetTrackerStatus("Pickup confirmed: animal disappeared from AnimalPickups. Returning to base.")
                 ActivePickup = nil
                 ActivePickupCPS = -1
@@ -2157,6 +2177,59 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return -1, "CPS unavailable"
         end
+        local PickupCard = CreateCard(Page, "Animal Pick ups", "")
+        PickupCard.Size = UDim2.new(1, 0, 0, 230)
+        local pickupTitle = PickupCard:FindFirstChildWhichIsA("TextLabel")
+        if pickupTitle then pickupTitle.Position = UDim2.fromOffset(15, 10) end
+        local PickupStatus = Create("TextLabel", {
+            Parent = PickupCard, Position = UDim2.fromOffset(15, 42),
+            Size = UDim2.new(1, -30, 0, 18), BackgroundTransparency = 1,
+            Text = "Waiting for AnimalPickups...", TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left
+        })
+        local PickupList = Create("ScrollingFrame", {
+            Parent = PickupCard, Position = UDim2.fromOffset(10, 64),
+            Size = UDim2.new(1, -20, 1, -74), BackgroundColor3 = Theme.SurfaceInput,
+            BorderSizePixel = 0, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Gray,
+            CanvasSize = UDim2.new(0, 0, 0, 0)
+        })
+        AddCorner(PickupList, 6)
+        local PickupLayout = Create("UIListLayout", {Parent = PickupList, Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder})
+        Create("UIPadding", {Parent = PickupList, PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)})
+        local function RefreshAnimalPickups()
+            for _, child in ipairs(PickupList:GetChildren()) do
+                if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
+            end
+            local folder = workspace:FindFirstChild("AnimalPickups")
+            if not folder then
+                PickupStatus.Text = "AnimalPickups folder not found"
+                Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "Waiting for AnimalPickups...", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
+                return
+            end
+            PickupStatus.Text = tostring(#folder:GetChildren()) .. " animals | tracking status per pickup"
+            local records = {}
+            for _, pickup in ipairs(folder:GetChildren()) do
+                local state = pickup:GetAttribute("BASAE_CPSCheckStatus") or "Not checked"
+                local cps = pickup:GetAttribute("BASAE_CPSCheckValue")
+                table.insert(records, {name = pickup.Name, state = tostring(state), cps = cps and tostring(cps) or ""})
+            end
+            table.sort(records, function(a, b)
+                if a.state == b.state then return a.name < b.name end
+                return a.state < b.state
+            end)
+            if #records == 0 then
+                Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No animal pickups found.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
+            end
+            for order, record in ipairs(records) do
+                local detail = record.cps ~= "" and (" | CPS: " .. record.cps) or ""
+                local row = Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 30), BackgroundColor3 = Theme.Card, BorderSizePixel = 0, Text = "  " .. record.name .. "  |  " .. record.state .. detail, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, LayoutOrder = order})
+                AddCorner(row, 4)
+            end
+            PickupList.CanvasSize = UDim2.new(0, 0, 0, PickupLayout.AbsoluteContentSize.Y + 10)
+        end
+        PickupLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            PickupList.CanvasSize = UDim2.new(0, 0, 0, PickupLayout.AbsoluteContentSize.Y + 10)
+        end)
         local function RefreshPlacedAnimals()
             for _, child in ipairs(AnimalsList:GetChildren()) do
                 if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
@@ -2191,6 +2264,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         task.spawn(function()
             while ScreenGui.Parent and Page.Parent do
                 RefreshPlacedAnimals()
+                RefreshAnimalPickups()
                 task.wait(2)
             end
         end)
