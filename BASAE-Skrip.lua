@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.116"
+local testver = "Test v1.117"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1252,6 +1252,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ScriptShuttingDown = false
         local AnimalFolderConnection
         local FlingRemoteConnection
+        local FlingRecoveryActive = false
         local HitEventConnection
         local SetTrackerStatus
         local function SetPickupPhase(phase, message)
@@ -1343,7 +1344,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end
                 if #tools > 0 then
-                    return tools[#tools]
+                    return tools[1]
                 end
                 for _, item in ipairs(character:GetChildren()) do
                     if item:IsA("Tool") then
@@ -1398,6 +1399,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if ReturningAfterPickup then return end
             ClearPickupLock()
             ReturningAfterPickup = true
+            local returnToken = PickupGeneration
             SetTrackerStatus(reason or "Pickup hold completed. Returning to the pickup point.")
             task.spawn(function()
                 local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -1407,7 +1409,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local moveStarted = os.clock()
                 local connection
                 connection = game:GetService("RunService").RenderStepped:Connect(function()
-                    if not ReturningAfterPickup or not character.Parent or humanoid.Health <= 0 then
+                    if PickupGeneration ~= returnToken or not ReturningAfterPickup or LocalPlayer.Character ~= character or not character.Parent or not root.Parent or humanoid.Health <= 0 then
                         humanoid:Move(Vector3.zero, false)
                         connection:Disconnect()
                         connection = nil
@@ -1433,7 +1435,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         ReturningAfterPickup = false
                         SetTrackerStatus("Reached base; waiting 2 seconds before equipping hotbar 1.")
                         task.delay(2, function()
-                            if not ScriptShuttingDown and AutoPickupEnabled and LocalPlayer.Character == character then
+                            if not ScriptShuttingDown and PickupGeneration == returnToken and not PickupRequested and not ReturningAfterPickup and AutoPickupEnabled and LocalPlayer.Character == character then
                                 local equipped = EquipHotbarOne()
                                 if equipped then
                                     SetTrackerStatus("Returned to base; hotbar 1 tool equipped.")
@@ -1442,7 +1444,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         end)
                         if AutoBreakEnabled and StartAutoBreak then
                             task.delay(0.2, function()
-                                if AutoBreakEnabled then StartAutoBreak() end
+                                if PickupGeneration == returnToken and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
                             end)
                         end
                         return
@@ -2154,16 +2156,27 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
         FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
             if tostring(action):lower() ~= "fling" or typeof(flingPosition) ~= "Vector3" then return end
-            if not AutoPickupEnabled then
-                SetTrackerStatus("Fling recovery ignored: Auto Pickup is off.")
+            if not AutoBreakEnabled or not AutoPickupEnabled then
+                SetTrackerStatus("Fling recovery ignored: Auto Break and Auto Pickup must both be ON.")
                 return
             end
+            if FlingRecoveryActive then
+                SetTrackerStatus("Fling recovery event ignored: recovery is already active.")
+                return
+            end
+            FlingRecoveryActive = true
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
             local interruptedCharacter = LocalPlayer.Character
             local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
-            if interruptedHumanoid then interruptedHumanoid:Move(Vector3.zero, false) end
+            if interruptedHumanoid then
+                interruptedHumanoid:Move(Vector3.zero, false)
+                pcall(function()
+                    local oldRoot = interruptedCharacter and interruptedCharacter:FindFirstChild("HumanoidRootPart")
+                    if oldRoot then interruptedHumanoid:MoveTo(oldRoot.Position) end
+                end)
+            end
             ReturningAfterPickup = false
             PickupGeneration += 1
             local flingToken = PickupGeneration
@@ -2175,9 +2188,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             SetTrackerStatus(string.format("FLING RECOVERY: received location (%.1f, %.1f, %.1f); moving there before searching for StealPrompt.", flingPosition.X, flingPosition.Y, flingPosition.Z))
             task.spawn(function()
+                local function finishFlingRecovery()
+                    FlingRecoveryActive = false
+                end
                 local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
                 local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                if PickupGeneration ~= flingToken or not PickupRequested or not AutoBreakEnabled or not AutoPickupEnabled then
+                    finishFlingRecovery()
+                    finishFlingRecovery()
+                    return
+                end
                 local moveStarted = os.clock()
                 local lastMoveTo = 0
                 local lastProgressAt = os.clock()
@@ -2187,6 +2208,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         PickupRequested = false
                         SetTrackerStatus("FLING RECOVERY cancelled: character changed or root became unavailable.")
                         if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        finishFlingRecovery()
                         return
                     end
                     local offset = Vector3.new(flingPosition.X - root.Position.X, 0, flingPosition.Z - root.Position.Z)
@@ -2198,6 +2220,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         PickupRequested = false
                         SetTrackerStatus(string.format("FLING RECOVERY cancelled: timed out reaching reported animal location (%.1f studs away).", distance))
                         if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        finishFlingRecovery()
                         return
                     end
                     if distance < bestDistance - 0.75 then
@@ -2234,6 +2257,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupRequested = false
                     SetTrackerStatus(string.format("FLING RECOVERY cancelled: arrival verification failed (%.1f studs).", arrivalDistance))
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
                     return
                 end
                 SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); searching nearest PromptAnchor StealPrompt.", arrivalDistance))
@@ -2275,6 +2299,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY failed: no enabled StealPrompt within 12 studs of reported fling location.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
                     return
                 end
                 SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - flingPosition).Magnitude))
@@ -2287,6 +2312,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         PickupRequested = false
                         SetTrackerStatus(string.format("FLING RECOVERY cancelled: prompt moved %.1f studs from reported location.", locationError))
                         if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        finishFlingRecovery()
                         return
                     end
                     local offset = Vector3.new(promptPosition.X - root.Position.X, 0, promptPosition.Z - root.Position.Z)
@@ -2297,6 +2323,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         PickupRequested = false
                         SetTrackerStatus("FLING RECOVERY cancelled: timed out reaching the verified prompt.")
                         if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        finishFlingRecovery()
                         return
                     end
                     humanoid:Move(offset.Magnitude > 0 and offset.Unit or Vector3.zero, false)
@@ -2308,6 +2335,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY cancelled: prompt or character became unavailable.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
                     return
                 end
                 promptPosition = positionOf(prompt) or promptPosition
@@ -2317,6 +2345,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupRequested = false
                     SetTrackerStatus(string.format("FLING RECOVERY blocked by location verification: player=%.1f studs, fling mismatch=%.1f studs.", finalPlayerDistance, finalLocationError))
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
                     return
                 end
                 task.wait(0.15)
@@ -2329,6 +2358,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY blocked: prompt moved outside the verified pickup range.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
                     return
                 end
                 local ok, err = pcall(function()
@@ -2346,6 +2376,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY pickup failed: " .. tostring(err))
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
                     return
                 end
                 SetTrackerStatus("FLING RECOVERY prompt activated; confirming animal collection.")
@@ -2374,9 +2405,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY: prompt activated but collection was not confirmed; staying in place.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
                     return
                 end
                 SetTrackerStatus("FLING RECOVERY collection confirmed; returning to base.")
+                finishFlingRecovery()
                 ReturnToPickup("Fling recovery pickup confirmed. Returning to base.")
             end)
         end)
@@ -2405,6 +2438,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         StartAutoBreak = function()
+            if not AutoBreakEnabled then
+                SetTrackerStatus("Auto Break start ignored: toggle is OFF.")
+                return
+            end
             if PickupRequested or ReturningAfterPickup then
                 SetTrackerStatus("Auto Break start ignored: pickup/return is in progress.")
                 return
