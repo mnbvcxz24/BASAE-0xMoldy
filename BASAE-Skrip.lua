@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.112"
+local testver = "Test v1.113"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1324,7 +1324,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return false
             end
 
-            local function FindFirstTool()
+            local function FindHotbarOneTool()
                 local tools = {}
                 for _, item in ipairs(backpack:GetChildren()) do
                     if item:IsA("Tool") then
@@ -1348,7 +1348,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return false
                 end
 
-                local tool = FindFirstTool()
+                local tool = FindHotbarOneTool()
                 if not tool then
                     if attempt < 5 then
                         SetTrackerStatus("Waiting for a hotbar tool... (" .. attempt .. "/5)")
@@ -1423,14 +1423,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         SetTrackerStatus("Reached base; waiting 2 seconds before equipping hotbar 1.")
                         task.delay(2, function()
                             if not ScriptShuttingDown and AutoPickupEnabled and LocalPlayer.Character == character then
-                                EquipHotbarOne()
-                            end
-                        end)
-                        SetTrackerStatus("Reached base; waiting 2 seconds before equipping hotbar 1.")
-                        task.delay(2, function()
-                            if not ScriptShuttingDown and AutoPickupEnabled and AutoBreakEnabled and LocalPlayer.Character == character then
-                                EquipHotbarOne()
-                                SetTrackerStatus("Returned to base; hotbar 1 equip attempted.")
+                                local equipped = EquipHotbarOne()
+                                if equipped then
+                                    SetTrackerStatus("Returned to base; hotbar 1 tool equipped.")
+                                end
                             end
                         end)
                         if AutoBreakEnabled and StartAutoBreak then
@@ -2645,8 +2641,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     luck = luckLabel.Text
                 end
             end
-            local weightKG = GetESPValue(eggModel, {"WeightKG"})
-                or GetESPValue(info, {"WeightKG"})
+            local weightKG = GetESPValue(eggModel, {"WeightKg"})
+                or GetESPValue(info, {"WeightKg"})
             local category = GetESPValue(eggModel, {"WeightBracket"})
                 or GetESPValue(info, {"WeightBracket"})
             return luck or "?", weightKG or "?", category or "?"
