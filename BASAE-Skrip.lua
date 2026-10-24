@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.80"
+local testver = "Test v1.81"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1307,9 +1307,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             local pivot = pickup:FindFirstChild("Pivot")
             local primary = pivot and (pivot:FindFirstChild("PrimaryPart") or pivot:FindFirstChild("Primary Pivot"))
-            if not primary then
-                primary = pickup.PrimaryPart
-            end
+            if not primary then primary = pickup.PrimaryPart end
             if not primary or not primary:IsA("BasePart") then
                 return -1, "CPS unavailable: Pivot primary part missing"
             end
@@ -1335,11 +1333,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             if suffix and suffix ~= "" and not scale then
                 return -1, raw .. " (unknown CPS suffix)"
-            end
-            return number * (scale or 1), raw
-        end
-            if not number or number < 0 then
-                return -1, raw .. " (invalid CPS text)"
             end
             return number * (scale or 1), raw
         end
