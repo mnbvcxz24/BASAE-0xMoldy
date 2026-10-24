@@ -732,7 +732,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local SelectedRarities = {}
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno"}
         local RarityList
-        local RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
+        local RarityFilterButton
+        RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
             AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 282 or 128)
             RarityFilterButton.Text = RarityFilterOpen and "Filter for Rarity  ▲" or "Filter for Rarity  ▼"
@@ -1340,6 +1341,87 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AddDebugLog("Console cleared.")
         end)
         AddDebugLog("Debug console ready.")
+
+    elseif index == 3 then
+        local AnimalsCard = CreateCard(Page, "Placed Animals", "Animals on your own base and their Cash Per Second.")
+        AnimalsCard.Size = UDim2.new(1, 0, 0, 190)
+        local BaseStatus = Create("TextLabel", {
+            Parent = AnimalsCard, Position = UDim2.fromOffset(15, 38),
+            Size = UDim2.new(1, -30, 0, 18), BackgroundTransparency = 1,
+            Text = "Searching for Your Base...", TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left
+        })
+        local AnimalsList = Create("ScrollingFrame", {
+            Parent = AnimalsCard, Position = UDim2.fromOffset(10, 62),
+            Size = UDim2.new(1, -20, 1, -72), BackgroundColor3 = Theme.SurfaceInput,
+            BorderSizePixel = 0, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Gray,
+            CanvasSize = UDim2.new(0, 0, 0, 0)
+        })
+        AddCorner(AnimalsList, 6)
+        local AnimalsLayout = Create("UIListLayout", {Parent = AnimalsList, Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder})
+        Create("UIPadding", {Parent = AnimalsList, PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)})
+        local function FindOwnedBase()
+            local plots = workspace:FindFirstChild("Plots")
+            if not plots then return nil end
+            for _, base in ipairs(plots:GetChildren()) do
+                local hitbox = base:FindFirstChild("Hitbox")
+                local info = hitbox and hitbox:FindFirstChild("PlayerInfoUi")
+                local nameLabel = info and info:FindFirstChild("Name")
+                if nameLabel and nameLabel:IsA("TextLabel") and nameLabel.Text == "Your Base" then return base end
+            end
+            return nil
+        end
+        local function ReadCPS(animal)
+            for _, item in ipairs(animal:GetDescendants()) do
+                if item.Name == "CashPerSecond" and item:IsA("TextLabel") then
+                    local display = item.Text
+                    local raw = display:gsub(",", ""):gsub("%s+", "")
+                    local number = tonumber(raw:match("[%d%.]+"))
+                    local suffix = raw:match("[KkMmBbTt]$")
+                    local scale = ({k=1e3,m=1e6,b=1e9,t=1e12})[suffix and suffix:lower() or ""]
+                    return number and number * (scale or 1) or -1, display
+                end
+            end
+            return -1, "CPS unavailable"
+        end
+        local function RefreshPlacedAnimals()
+            for _, child in ipairs(AnimalsList:GetChildren()) do
+                if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
+            end
+            local base = FindOwnedBase()
+            if not base then
+                BaseStatus.Text = "Your Base not found"
+                local waiting = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "Waiting for Your Base...", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 10, LayoutOrder = 1})
+                return
+            end
+            local placed = base:FindFirstChild("PlacedAnimals")
+            BaseStatus.Text = base.Name .. (placed and " | Placed animals" or " | PlacedAnimals not found")
+            if not placed then return end
+            local records = {}
+            for _, animal in ipairs(placed:GetChildren()) do
+                local value, display = ReadCPS(animal)
+                table.insert(records, {name = animal.Name, value = value, display = display})
+            end
+            table.sort(records, function(a, b) if a.value == b.value then return a.name < b.name end return a.value > b.value end)
+            if #records == 0 then
+                Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No placed animals found.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 10, LayoutOrder = 1})
+            end
+            for order, record in ipairs(records) do
+                local row = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 25), BackgroundColor3 = Theme.Card, BorderSizePixel = 0, Text = "  " .. record.name .. "  |  " .. record.display, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = order})
+                AddCorner(row, 4)
+            end
+            AnimalsList.CanvasSize = UDim2.new(0, 0, 0, AnimalsLayout.AbsoluteContentSize.Y + 10)
+        end
+        AnimalsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            AnimalsList.CanvasSize = UDim2.new(0, 0, 0, AnimalsLayout.AbsoluteContentSize.Y + 10)
+        end)
+        task.spawn(function()
+            while ScreenGui.Parent and Page.Parent do
+                RefreshPlacedAnimals()
+                task.wait(2)
+            end
+        end)
+
     else
         local Card1 = CreateCard(Page, name, "This is a reusable UI page. Backend code is not connected.")
         CreateButton(Card1, "Example Button", function()
