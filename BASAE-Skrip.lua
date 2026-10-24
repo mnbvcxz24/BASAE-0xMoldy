@@ -951,7 +951,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     TextSize = 14
                 })
                 EggButton.MouseButton1Click:Connect(function()
-                    SelectedEggs[eggName] = SelectedEggs[eggName] == false and nil or false
+                    if SelectedEggs[eggName] == false then
+                        SelectedEggs[eggName] = nil
+                    else
+                        SelectedEggs[eggName] = false
+                    end
                     RefreshEggList()
                 end)
             end
