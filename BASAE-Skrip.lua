@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.109"
+local testver = "Test v1.110"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1278,10 +1278,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
 
             local function FindFirstTool()
+                local tools = {}
                 for _, item in ipairs(backpack:GetChildren()) do
                     if item:IsA("Tool") then
-                        return item
+                        table.insert(tools, item)
                     end
+                end
+                if #tools > 0 then
+                    return tools[#tools]
                 end
                 for _, item in ipairs(character:GetChildren()) do
                     if item:IsA("Tool") then
