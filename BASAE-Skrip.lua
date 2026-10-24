@@ -110,6 +110,16 @@ local TopBar = Create("Frame", {
     BackgroundColor3 = Theme.Background,
     BorderSizePixel = 0
 })
+AddCorner(TopBar, 12)
+Create("Frame", {
+    Name = "TopBarCornerCover",
+    Parent = TopBar,
+    Position = UDim2.fromOffset(0, 12),
+    Size = UDim2.new(1, 0, 1, -12),
+    BackgroundColor3 = Theme.Background,
+    BorderSizePixel = 0,
+    ZIndex = 0
+})
 -- Title
 local Title = Create("TextLabel", {
     Name = "Title",
