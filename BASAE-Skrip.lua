@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.68"
+local testver = "Test v1.69"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1298,16 +1298,43 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return attribute and tostring(attribute) or nil
         end
         local function GetPetCPS(pickup)
-            for _, item in ipairs(pickup:GetDescendants()) do
-                if item.Name == "CashPerSecond" and item:IsA("TextLabel") then
-                    local raw = item.Text:gsub(",", ""):gsub("%s+", "")
-                    local number = tonumber(raw:match("[%d%.]+"))
-                    local suffix = raw:match("[KkMmBbTt]$")
-                    local scale = ({k=1e3,m=1e6,b=1e9,t=1e12})[suffix and suffix:lower() or ""]
-                    return number and number * (scale or 1) or -1, item.Text
+            if not pickup or not pickup:IsA("Model") then
+                return -1, "CPS unavailable: animal model missing"
+            end
+            local primary = pickup.PrimaryPart
+            if not primary then
+                return -1, "CPS unavailable: PrimaryPart missing"
+            end
+            local dataFolder = pickup:FindFirstChild(primary.Name)
+            if not dataFolder then
+                return -1, "CPS unavailable: " .. primary.Name .. " data missing"
+            end
+            local overheadAttachment = dataFolder:FindFirstChild("AnimalOverheadAttachment", true)
+            local overhead = overheadAttachment and overheadAttachment:FindFirstChild("AnimalOverhead")
+            local cpsContainer = overhead and overhead:FindFirstChild("CashPerSecond")
+            local cpsItem = cpsContainer and cpsContainer:FindFirstChild("CashPerSecond")
+            if not cpsItem then
+                return -1, "CPS unavailable: expected path missing"
+            end
+            local raw
+            if cpsItem:IsA("TextLabel") or cpsItem:IsA("TextButton") or cpsItem:IsA("TextBox") then
+                raw = cpsItem.Text
+            elseif cpsItem:IsA("ValueBase") then
+                raw = tostring(cpsItem.Value)
+            else
+                local textObject = cpsItem:FindFirstChildWhichIsA("TextLabel", true)
+                    or cpsItem:FindFirstChildWhichIsA("TextButton", true)
+                if textObject then
+                    raw = textObject.Text
+                else
+                    return -1, "CPS unavailable: value text missing"
                 end
             end
-            return -1, "CPS unavailable"
+            local cleaned = raw:gsub(",", ""):gsub("%s+", "")
+            local number = tonumber(cleaned:match("[%d%.]+"))
+            local suffix = cleaned:match("[KkMmBbTt]$")
+            local scale = ({k=1e3,m=1e6,b=1e9,t=1e12})[suffix and suffix:lower() or ""]
+            return number and number * (scale or 1) or -1, raw
         end
         local function IsRarityAllowed(pickup)
             local selectedCount = 0
@@ -1414,45 +1441,68 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local prompt
             local promptState = "StealPrompt not found"
             local promptDeadline = os.clock() + 5
+            local promptMatchRadius = 12
+            local function getPromptPosition(candidate)
+                local parent = candidate and candidate.Parent
+                while parent and parent ~= workspace do
+                    if parent:IsA("Attachment") then
+                        return parent.WorldPosition
+                    elseif parent:IsA("BasePart") then
+                        return parent.Position
+                    elseif parent:IsA("Model") then
+                        return parent:GetPivot().Position
+                    end
+                    parent = parent.Parent
+                end
+                return nil
+            end
             repeat
+                prompt = nil
+                local eggPosition
+                if CurrentTarget and CurrentTarget.Parent then
+                    local ok, position = pcall(function()
+                        if CurrentTarget:IsA("Model") then return CurrentTarget:GetPivot().Position end
+                        if CurrentTarget:IsA("BasePart") then return CurrentTarget.Position end
+                    end)
+                    if ok then eggPosition = position end
+                end
                 local eggRoot = CurrentTarget
                 while eggRoot and eggRoot.Parent and eggRoot.Parent ~= workspace do
                     eggRoot = eggRoot.Parent
                 end
-                local eggIndex
-                if eggRoot and eggRoot.Parent == workspace then
-                    for index, child in ipairs(workspace:GetChildren()) do
-                        if child == eggRoot then
-                            eggIndex = index
-                            break
-                        end
-                    end
-                end
-                local workspaceChild = eggIndex and workspace:GetChildren()[eggIndex]
-                prompt = workspaceChild and workspaceChild:FindFirstChild("StealPrompt")
-                if not prompt then
-                    local anchor = workspace:FindFirstChild("PromptAnchor")
-                    if anchor then
-                        local anchorPrompt = anchor:FindFirstChild("StealPrompt", true)
-                        if anchorPrompt then
-                            prompt = anchorPrompt
-                            promptState = "matched PromptAnchor path: " .. prompt:GetFullName()
-                        else
-                            promptState = "PromptAnchor found, but StealPrompt is missing beneath it"
-                        end
-                    end
-                end
-                if prompt and not prompt:IsA("ProximityPrompt") then
-                    promptState = "Wrong prompt class: " .. prompt.ClassName
-                    prompt = nil
-                    break
-                elseif prompt and prompt.Enabled then
-                    promptState = "ready at " .. prompt:GetFullName()
-                    break
-                elseif prompt then
-                    promptState = "Prompt disabled at " .. prompt:GetFullName()
+                local directPrompt = eggRoot and eggRoot.Parent == workspace and eggRoot:FindFirstChild("StealPrompt")
+                if directPrompt and directPrompt:IsA("ProximityPrompt") and directPrompt.Enabled then
+                    prompt = directPrompt
+                    promptState = "ready at direct path: " .. prompt:GetFullName()
                 else
-                    promptState = "Prompt not found at either location"
+                    local anchor = workspace:FindFirstChild("PromptAnchor")
+                    local nearestDistance = math.huge
+                    if anchor and eggPosition then
+                        for _, candidate in ipairs(anchor:GetDescendants()) do
+                            if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
+                                local position = getPromptPosition(candidate)
+                                if position then
+                                    local distance = (position - eggPosition).Magnitude
+                                    if distance < nearestDistance and distance <= promptMatchRadius then
+                                        nearestDistance = distance
+                                        prompt = candidate
+                                    end
+                                end
+                            end
+                        end
+                        if prompt then
+                            promptState = string.format("matched nearest PromptAnchor path: %s (%.2f studs from egg)", prompt:GetFullName(), nearestDistance)
+                        else
+                            promptState = "No enabled PromptAnchor StealPrompt within " .. promptMatchRadius .. " studs of the egg"
+                        end
+                    elseif not anchor then
+                        promptState = "PromptAnchor not found"
+                    else
+                        promptState = "Could not read broken egg position for PromptAnchor matching"
+                    end
+                end
+                if prompt and prompt:IsA("ProximityPrompt") and prompt.Enabled then
+                    break
                 end
                 task.wait(0.25)
             until os.clock() >= promptDeadline
