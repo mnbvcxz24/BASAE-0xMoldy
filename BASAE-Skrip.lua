@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.3"
+local testver = "Test v1.4"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -13,7 +13,7 @@ local UIConfig = {
     Height = 200,
     SidebarWidth = 72,
     SidebarNames = {
-        "Sidebar 1",
+        "Auto",
         "Sidebar 2",
         "Sidebar 3",
         "Sidebar 4",
@@ -658,65 +658,32 @@ end
 -- CREATE ALL PAGES
 for index, name in ipairs(UIConfig.SidebarNames) do
     local Page = CreatePage(index, name)
-    -- PAGE CONTENT
-    --
-    -- Replace these example cards with your own UI.
-    local Card1 = CreateCard(
-        Page,
-        name,
-        "This is a reusable UI page. Backend code is not connected."
-    )
-    CreateButton(
-        Card1,
-        "Example Button",
-        function()
-            -- BACKEND PLACEHOLDER
+    if index == 1 then
+        local Card1 = CreateCard(Page, "Auto break egg", "")
+        Card1.Size = UDim2.new(1, 0, 0, 122)
+        CreateToggle(Card1, "Status", false, function(state)
+            -- Connect auto-break logic here.
+        end).Position = UDim2.fromOffset(15, 36)
+        CreateButton(Card1, "Filter list", function()
+            -- Open the egg filter list here.
+        end).Position = UDim2.fromOffset(15, 76)
+    else
+        local Card1 = CreateCard(Page, name, "This is a reusable UI page. Backend code is not connected.")
+        CreateButton(Card1, "Example Button", function()
             -- Put your actual function here.
-        end
-    )
-    local Card2 = CreateCard(
-        Page,
-        "Example Settings",
-        "Example controls that only change the UI state."
-    )
-    CreateToggle(
-        Card2,
-        "Example Toggle",
-        false,
-        function(state)
-            -- BACKEND PLACEHOLDER
+        end)
+        local Card2 = CreateCard(Page, "Example Settings", "Example controls that only change the UI state.")
+        CreateToggle(Card2, "Example Toggle", false, function(state)
             -- state = true / false
-        end
-    )
-    local Card3 = CreateCard(
-        Page,
-        "Example Options",
-        "Dropdown and slider examples."
-    )
-    CreateDropdown(
-        Card3,
-        "Mode",
-        {
-            "Option 1",
-            "Option 2",
-            "Option 3"
-        },
-        function(selection)
-            -- BACKEND PLACEHOLDER
+        end)
+        local Card3 = CreateCard(Page, "Example Options", "Dropdown and slider examples.")
+        CreateDropdown(Card3, "Mode", {"Option 1", "Option 2", "Option 3"}, function(selection)
             -- selection contains the selected option.
-        end
-    )
-    CreateSlider(
-        Card3,
-        "Example Slider",
-        0,
-        100,
-        50,
-        function(value)
-            -- BACKEND PLACEHOLDER
+        end)
+        CreateSlider(Card3, "Example Slider", 0, 100, 50, function(value)
             -- value contains the current slider value.
-        end
-    )
+        end)
+    end
 end
 -- SHOW FIRST PAGE
 Pages[1].Visible = true
