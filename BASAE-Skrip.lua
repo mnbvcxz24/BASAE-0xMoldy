@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.61"
+local testver = "Test v1.62"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1458,14 +1458,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
-                local pickupDeadline = os.clock() + 4
+                local pickupDeadline = os.clock() + 1.25
                 local pickupConfirmed = false
                 while os.clock() < pickupDeadline do
                     if not pickup.Parent then
                         pickupConfirmed = true
                         break
                     end
-                    task.wait(0.1)
+                    task.wait(0.05)
                 end
                 if not pickupConfirmed then
                     PickupRequested = false
