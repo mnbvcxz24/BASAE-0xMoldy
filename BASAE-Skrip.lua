@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.39"
+local testver = "Test v1.40"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -288,7 +288,6 @@ local MaxDebugLogs = 100
 local function AddDebugLog(message)
     local timestamp = os.date("%H:%M:%S")
     local lineText = "[" .. timestamp .. "] " .. tostring(message)
-    print("[BASAE-Skrip] " .. lineText)
     if not DebugConsoleList or not DebugConsoleLayout then
         return
     end
