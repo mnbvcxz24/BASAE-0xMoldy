@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.108"
+local testver = "Test v1.109"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -723,6 +723,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         CurrentPage = index
     end)
 end
+local ShutdownAutomation
 -- CREATE ALL PAGES
 for index, name in ipairs(UIConfig.SidebarNames) do
     local Page = CreatePage(index, name)
@@ -1212,6 +1213,25 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if humanoid then humanoid:Move(Vector3.zero, false) end
             if SetTrackerStatus then SetTrackerStatus(tostring(reason) .. "; all pickup/return movement stopped.") end
+        end
+        ShutdownAutomation = function()
+            ScriptShuttingDown = true
+            PickupGeneration += 1
+            PickupRequested = false
+            ReturningAfterPickup = false
+            ActivePickup = nil
+            ActivePickupCPS = -1
+            AutoBreakEnabled = false
+            AutoPickupEnabled = false
+            if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+            if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+            if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+            if HitEventConnection then HitEventConnection:Disconnect(); HitEventConnection = nil end
+            if FlingRemoteConnection then FlingRemoteConnection:Disconnect(); FlingRemoteConnection = nil end
+            if AnimalFolderConnection then AnimalFolderConnection:Disconnect(); AnimalFolderConnection = nil end
+            local character = LocalPlayer.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid:Move(Vector3.zero, false) end
         end
         local function ClearPickupLock(token)
             if token and token ~= PickupGeneration then return false end
@@ -2622,23 +2642,7 @@ RestoreButton.MouseButton1Click:Connect(function()
 end)
 -- CLOSE
 CloseButton.MouseButton1Click:Connect(function()
-    ScriptShuttingDown = true
-    PickupGeneration += 1
-    PickupRequested = false
-    ReturningAfterPickup = false
-    ActivePickup = nil
-    ActivePickupCPS = -1
-    AutoBreakEnabled = false
-    AutoPickupEnabled = false
-    if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
-    if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
-    if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
-    if HitEventConnection then HitEventConnection:Disconnect(); HitEventConnection = nil end
-    if FlingRemoteConnection then FlingRemoteConnection:Disconnect(); FlingRemoteConnection = nil end
-    if AnimalFolderConnection then AnimalFolderConnection:Disconnect(); AnimalFolderConnection = nil end
-    local character = LocalPlayer.Character
-    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-    if humanoid then humanoid:Move(Vector3.zero, false) end
+    if ShutdownAutomation then ShutdownAutomation() end
     ScreenGui:Destroy()
 end)
 -- DRAGGING
