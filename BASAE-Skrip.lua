@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.22"
+local testver = "Test v1.23"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1086,26 +1086,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local zone = ZoneBuilds:FindFirstChild(zoneName)
                 local eggsFolder = zone and zone:FindFirstChild("Eggs")
                 if eggsFolder then
-                    local candidates = {}
                     for _, egg in ipairs(eggsFolder:GetChildren()) do
                         if (egg:IsA("Model") or egg:IsA("BasePart"))
                         and egg.Name:lower():find("egg", 1, true) then
                             local eggName = GetEggTypeName(egg.Name)
                             if SelectedEggs[eggName] ~= false then
-                                local size = egg:IsA("Model") and egg:GetExtentsSize().Magnitude or egg.Size.Magnitude
-                                table.insert(candidates, {instance = egg, name = eggName, size = size, order = #candidates + 1})
+                                target = egg
+                                break
                             end
                         end
                     end
-                    table.sort(candidates, function(a, b)
-                        if a.size == b.size then return a.order < b.order end
-                        if SortOrder == "Largest" then return a.size > b.size end
-                        return a.size < b.size
-                    end)
-                    if candidates[1] then
-                        target = candidates[1].instance
-                        break
-                    end
+                    if target then break end
                 end
             end
             if not target then
@@ -1144,7 +1135,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         .. " | tracking matching EggHitConfirmed events now.")
                     return
                 end
-                humanoid:Move(offset.Unit, false)
+                local localDirection = root.CFrame:VectorToObjectSpace(offset.Unit)
+                humanoid:Move(Vector3.new(localDirection.X, 0, localDirection.Z), true)
             end)
         end
     else
