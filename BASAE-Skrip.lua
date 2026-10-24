@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.75"
+local testver = "Test v1.76"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1206,6 +1206,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         connection = nil
                         ReturningAfterPickup = false
                         SetTrackerStatus("Return movement stopped: character unavailable.")
+                        if AutoBreakEnabled and StartAutoBreak then
+                            task.delay(0.2, function()
+                                if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
+                            end)
+                        end
                         return
                     end
                     local offset = Vector3.new(
@@ -1233,6 +1238,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         ReturningAfterPickup = false
                         SetTrackerStatus("Return timed out; horizontal distance="
                             .. math.floor(offset.Magnitude) .. ".")
+                        if AutoBreakEnabled and StartAutoBreak then
+                            task.delay(0.2, function()
+                                if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
+                            end)
+                        end
                         return
                     end
                     humanoid:Move(offset.Unit, false)
@@ -1321,8 +1331,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local raw = textLabel.Text
             local cleaned = raw:gsub(",", ""):gsub("%s+", "")
             local number = tonumber(cleaned:match("[%d%.]+"))
-            local suffix = cleaned:match("[KkMmBbTt]$")
-            local scale = ({k=1e3,m=1e6,b=1e9,t=1e12})[suffix and suffix:lower() or ""]
+            local suffix = cleaned:match("([%a]+)$")
+            local scales = {k=1e3, m=1e6, b=1e9, t=1e12, qa=1e15, q=1e15, qi=1e18}
+            local scale = scales[suffix and suffix:lower() or ""]
+            if suffix and suffix ~= "" and not scale then
+                return -1, raw .. " (unknown CPS suffix)"
+            end
             return number and number * (scale or 1) or -1, raw
         end
         local function IsRarityAllowed(pickup)
@@ -1365,6 +1379,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return -1
         end
         local function RejectPickupAndRestart(message)
+            if PickupRequested then
+                SetTrackerStatus(message .. " | candidate rejected; current pickup remains active.")
+                return
+            end
+            if ReturningAfterPickup then
+                SetTrackerStatus(message .. " | candidate rejected while returning to base.")
+                return
+            end
             if WaitingForPickup and CurrentTarget then
                 CompletedEggs[CurrentTarget] = true
                 PickupRequested = false
@@ -1379,6 +1401,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         local function EvaluatePickup(pickup)
+            if ReturningAfterPickup then
+                SetTrackerStatus("Eligible pet " .. pickup.Name .. " ignored: already returning to base.")
+                return
+            end
             if not AutoPickupEnabled then
                 if CurrentTarget then CompletedEggs[CurrentTarget] = true end
                 WaitingForPickup = false
@@ -1402,6 +1428,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             local cps, cpsText = GetPetCPS(pickup)
+            if HighestCashEnabled and cps < 0 then
+                RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
+                return
+            end
             if HighestCashEnabled then
                 local lowestPlaced = GetLowestPlacedCPS()
                 if lowestPlaced >= 0 and cps <= lowestPlaced then
@@ -1409,10 +1439,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         .. " is not above your lowest placed CPS (" .. tostring(lowestPlaced) .. ").")
                     return
                 end
-            end
-            if ReturningAfterPickup then
-                SetTrackerStatus("Eligible pet " .. pickup.Name .. " ignored: already returning to base.")
-                return
             end
             if PickupRequested then
                 if HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS then
@@ -1607,6 +1633,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus("Reached animal prompt. Waiting 1 second before pickup.")
                 task.wait(1)
                 if PickupGeneration ~= pickupToken then return end
+                if LocalPlayer.Character ~= character or not character.Parent or humanoid.Health <= 0 or not root.Parent then
+                    PickupRequested = false
+                    ActivePickup = nil
+                    ActivePickupCPS = -1
+                    SetTrackerStatus("Pickup cancelled: character changed or became unavailable.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
                 if not PickupRequested or not pickup.Parent then
                     PickupRequested = false
                     ActivePickup = nil
@@ -1621,6 +1655,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     ActivePickup = nil
                     ActivePickupCPS = -1
                     SetTrackerStatus("Pickup cancelled: StealPrompt became unavailable after the 3-second wait.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                local latestPromptPosition = getPromptPosition(prompt)
+                local latestPromptDistance = latestPromptPosition and (latestPromptPosition - root.Position).Magnitude or math.huge
+                if not prompt.Parent or not prompt.Enabled or latestPromptDistance > math.max(4, prompt.MaxActivationDistance) then
+                    PickupRequested = false
+                    ActivePickup = nil
+                    ActivePickupCPS = -1
+                    SetTrackerStatus(string.format("Pickup cancelled: prompt range changed before activation (%.1f studs).", latestPromptDistance))
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
@@ -1682,13 +1726,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | Auto Pickup/Auto Break not both enabled; ignored.")
                     return
                 end
-                if PickupRequested or ReturningAfterPickup then
-                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | pickup already in progress; ignored.")
+                if ReturningAfterPickup then
+                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | return-to-base owns movement; ignored.")
                     return
                 end
-                SetTrackerStatus("NEW ANIMAL detected while Auto Break is running: " .. pickup.Name .. " | checking filters.")
+                SetTrackerStatus("NEW ANIMAL detected: " .. pickup.Name .. " | checking filters and pickup priority.")
                 task.defer(function()
-                    if pickup.Parent and AutoBreakEnabled and AutoPickupEnabled then
+                    if pickup.Parent and AutoBreakEnabled and AutoPickupEnabled and not ReturningAfterPickup then
                         EvaluatePickup(pickup)
                     end
                 end)
@@ -1701,10 +1745,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
         CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
             if tostring(action):lower() ~= "fling" or typeof(flingPosition) ~= "Vector3" then return end
-            if not AutoPickupEnabled or PickupRequested or ReturningAfterPickup then
-                SetTrackerStatus("Fling recovery ignored: Auto Pickup is off or another pickup/return is active.")
+            if not AutoPickupEnabled or ReturningAfterPickup then
+                SetTrackerStatus("Fling recovery ignored: Auto Pickup is off or return-to-base is active.")
                 return
             end
+            if PickupRequested then
+                SetTrackerStatus("Fling recovery ignored: an active animal pickup already owns movement.")
+                return
+            end
+            PickupGeneration += 1
+            local flingToken = PickupGeneration
+            ActivePickup = nil
+            ActivePickupCPS = -1
             PickupRequested = true
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
@@ -1715,7 +1767,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
                 local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
                 local moveStarted = os.clock()
-                while PickupRequested and humanoid.Health > 0 do
+                while PickupRequested and PickupGeneration == flingToken and humanoid.Health > 0 do
                     local offset = Vector3.new(flingPosition.X - root.Position.X, 0, flingPosition.Z - root.Position.Z)
                     if offset.Magnitude <= 4 then break end
                     if os.clock() - moveStarted >= 25 then
@@ -1730,6 +1782,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 humanoid:Move(Vector3.zero, false)
                 local arrivalDistance = (Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z) - root.Position).Magnitude
+                if PickupGeneration ~= flingToken then return end
                 if not PickupRequested or humanoid.Health <= 0 or arrivalDistance > 5 then
                     PickupRequested = false
                     SetTrackerStatus(string.format("FLING RECOVERY cancelled: arrival verification failed (%.1f studs).", arrivalDistance))
@@ -1769,7 +1822,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     if prompt then break end
                     task.wait(0.2)
-                until os.clock() >= searchDeadline
+                until os.clock() >= searchDeadline or PickupGeneration ~= flingToken
+                if PickupGeneration ~= flingToken then return end
                 if not prompt or not prompt.Parent or not prompt.Enabled or not promptPosition then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY failed: no enabled StealPrompt within 12 studs of reported fling location.")
@@ -1778,7 +1832,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - flingPosition).Magnitude))
                 local moveStarted = os.clock()
-                while PickupRequested and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
+                while PickupRequested and PickupGeneration == flingToken and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
                     promptPosition = positionOf(prompt) or promptPosition
                     local locationError = (promptPosition - flingPosition).Magnitude
                     if locationError > 14 then
@@ -1802,6 +1856,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     task.wait(0.05)
                 end
                 humanoid:Move(Vector3.zero, false)
+                if PickupGeneration ~= flingToken then return end
                 if not PickupRequested or not prompt.Parent or not prompt.Enabled or humanoid.Health <= 0 then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY cancelled: prompt or character became unavailable.")
@@ -1818,8 +1873,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 task.wait(0.15)
+                if PickupGeneration ~= flingToken then return end
                 promptPosition = positionOf(prompt) or promptPosition
-                if not prompt.Parent or not prompt.Enabled or (promptPosition - root.Position).Magnitude > math.min(prompt.MaxActivationDistance, 5) or (promptPosition - flingPosition).Magnitude > 14 then
+                if LocalPlayer.Character ~= character or not character.Parent or humanoid.Health <= 0
+                    or not prompt.Parent or not prompt.Enabled
+                    or (promptPosition - root.Position).Magnitude > math.min(prompt.MaxActivationDistance, 5)
+                    or (promptPosition - flingPosition).Magnitude > 14 then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY blocked: prompt moved outside the verified pickup range.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
@@ -1834,6 +1893,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         prompt:InputHoldEnd()
                     end
                 end)
+                if PickupGeneration ~= flingToken then return end
                 if not ok then
                     pcall(function() prompt:InputHoldEnd() end)
                     PickupRequested = false
@@ -1841,8 +1901,36 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
-                SetTrackerStatus("FLING RECOVERY prompt activated at verified location; returning to base.")
-                ReturnToPickup("Fling recovery pickup attempted. Returning to base.")
+                SetTrackerStatus("FLING RECOVERY prompt activated; confirming animal collection.")
+                local confirmed = false
+                local confirmDeadline = os.clock() + 4
+                while os.clock() < confirmDeadline and PickupGeneration == flingToken and PickupRequested do
+                    local foundNearby = false
+                    local folder = workspace:FindFirstChild("AnimalPickups")
+                    if folder then
+                        for _, animal in ipairs(folder:GetChildren()) do
+                            local okPosition, animalPosition = pcall(function()
+                                if animal:IsA("Model") then return animal:GetPivot().Position end
+                                if animal:IsA("BasePart") then return animal.Position end
+                            end)
+                            if okPosition and animalPosition and (animalPosition - flingPosition).Magnitude <= 12 then
+                                foundNearby = true
+                                break
+                            end
+                        end
+                    end
+                    if not foundNearby then confirmed = true; break end
+                    task.wait(0.1)
+                end
+                if PickupGeneration ~= flingToken then return end
+                if not confirmed then
+                    PickupRequested = false
+                    SetTrackerStatus("FLING RECOVERY: prompt activated but collection was not confirmed; staying in place.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                SetTrackerStatus("FLING RECOVERY collection confirmed; returning to base.")
+                ReturnToPickup("Fling recovery pickup confirmed. Returning to base.")
             end)
         end)
         workspace.ChildAdded:Connect(function(child)
