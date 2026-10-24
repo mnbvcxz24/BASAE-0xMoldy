@@ -20,10 +20,10 @@ local UIConfig = {
     Title = "BASAE-Skrip",
     Subtitle = "BASAE-Skrip UI Template",
 
-    Width = 450,
-    Height = 300,
+    Width = 200,
+    Height = 350,
 
-    SidebarWidth = 135,
+    SidebarWidth = 72,
 
     SidebarNames = {
         "Sidebar 1",
@@ -36,25 +36,23 @@ local UIConfig = {
 
 --========================================================--
 -- THEME
--- Pure light / black minimalist theme.
+-- Muted charcoal theme with soft slate accents.
 --========================================================--
 
 local Theme = {
-    Background = Color3.fromRGB(20, 20, 24),
-    Sidebar = Color3.fromRGB(25, 25, 30),
-
-    Card = Color3.fromRGB(30, 30, 36),
-    Border = Color3.fromRGB(55, 55, 62),
-
-    Black = Color3.fromRGB(255, 255, 255),
-    DarkGray = Color3.fromRGB(210, 210, 215),
-    Gray = Color3.fromRGB(160, 160, 165),
-    LightGray = Color3.fromRGB(45, 45, 52),
-
-    White = Color3.fromRGB(255, 255, 255),
-
-    Accent = Color3.fromRGB(255, 255, 255),
-    AccentText = Color3.fromRGB(20, 20, 24)
+    Background = Color3.fromRGB(28, 30, 34),
+    Sidebar = Color3.fromRGB(31, 34, 39),
+    Card = Color3.fromRGB(36, 39, 45),
+    Border = Color3.fromRGB(49, 53, 61),
+    Text = Color3.fromRGB(218, 222, 228),
+    DarkGray = Color3.fromRGB(178, 184, 193),
+    Gray = Color3.fromRGB(139, 146, 156),
+    LightGray = Color3.fromRGB(48, 53, 61),
+    SurfaceInput = Color3.fromRGB(39, 43, 50),
+    Selected = Color3.fromRGB(67, 78, 88),
+    SelectedText = Color3.fromRGB(231, 235, 240),
+    Accent = Color3.fromRGB(126, 151, 157),
+    AccentText = Color3.fromRGB(27, 32, 35)
 }
 
 --========================================================--
@@ -146,10 +144,11 @@ local Main = Create("Frame", {
     ),
 
     BackgroundColor3 = Theme.Background,
-    BorderSizePixel = 0
+    BorderSizePixel = 0,
+    ClipsDescendants = true
 })
 
-AddCorner(Main, 12)
+AddCorner(Main, 12
 AddStroke(Main, Theme.Border, 1)
 
 --========================================================--
@@ -172,16 +171,16 @@ local Title = Create("TextLabel", {
     Name = "Title",
     Parent = TopBar,
 
-    Position = UDim2.fromOffset(20, 8),
-    Size = UDim2.fromOffset(300, 22),
+    Position = UDim2.fromOffset(10, 7),
+    Size = UDim2.fromOffset(105, 20),
 
     BackgroundTransparency = 1,
 
     Text = UIConfig.Title,
-    TextColor3 = Theme.Black,
+    TextColor3 = Theme.Text,
 
     Font = Enum.Font.GothamBold,
-    TextSize = 16,
+    TextSize = 13,
 
     TextXAlignment = Enum.TextXAlignment.Left
 })
@@ -192,8 +191,8 @@ local Subtitle = Create("TextLabel", {
     Name = "Subtitle",
     Parent = TopBar,
 
-    Position = UDim2.fromOffset(20, 31),
-    Size = UDim2.fromOffset(350, 18),
+    Position = UDim2.fromOffset(10, 29),
+    Size = UDim2.fromOffset(130, 16),
 
     BackgroundTransparency = 1,
 
@@ -201,7 +200,7 @@ local Subtitle = Create("TextLabel", {
     TextColor3 = Theme.Gray,
 
     Font = Enum.Font.Gotham,
-    TextSize = 11,
+    TextSize = 8,
 
     TextXAlignment = Enum.TextXAlignment.Left
 })
@@ -212,16 +211,17 @@ local SearchBox = Create("TextBox", {
     Name = "Search",
     Parent = TopBar,
 
-    Position = UDim2.new(1, -210, 0, 12),
-    Size = UDim2.fromOffset(130, 34),
+    Position = UDim2.fromOffset(10, 36),
+    Size = UDim2.fromOffset(80, 18),
 
-    BackgroundColor3 = Theme.White,
+    BackgroundColor3 = Theme.SurfaceInput,
 
     PlaceholderText = "Search...",
     PlaceholderColor3 = Theme.Gray,
+    Visible = false,
 
     Text = "",
-    TextColor3 = Theme.Black,
+    TextColor3 = Theme.Text,
 
     Font = Enum.Font.Gotham,
     TextSize = 11,
@@ -240,13 +240,13 @@ local MinimizeButton = Create("TextButton", {
     Name = "Minimize",
     Parent = TopBar,
 
-    Position = UDim2.new(1, -70, 0, 12),
-    Size = UDim2.fromOffset(28, 34),
+    Position = UDim2.new(1, -52, 0, 16),
+    Size = UDim2.fromOffset(22, 26),
 
-    BackgroundColor3 = Theme.White,
+    BackgroundColor3 = Theme.SurfaceInput,
 
     Text = "-",
-    TextColor3 = Theme.Black,
+    TextColor3 = Theme.Text,
 
     Font = Enum.Font.GothamBold,
     TextSize = 15,
@@ -263,13 +263,13 @@ local CloseButton = Create("TextButton", {
     Name = "Close",
     Parent = TopBar,
 
-    Position = UDim2.new(1, -35, 0, 12),
-    Size = UDim2.fromOffset(28, 34),
+    Position = UDim2.new(1, -27, 0, 16),
+    Size = UDim2.fromOffset(22, 26),
 
-    BackgroundColor3 = Theme.White,
+    BackgroundColor3 = Theme.SurfaceInput,
 
     Text = "×",
-    TextColor3 = Theme.Black,
+    TextColor3 = Theme.Text,
 
     Font = Enum.Font.GothamBold,
     TextSize = 17,
@@ -307,8 +307,8 @@ local NavigationTitle = Create("TextLabel", {
     Name = "NavigationTitle",
     Parent = Sidebar,
 
-    Position = UDim2.fromOffset(18, 20),
-    Size = UDim2.new(1, -36, 0, 20),
+    Position = UDim2.fromOffset(8, 20),
+    Size = UDim2.new(1, -16, 0, 20),
 
     BackgroundTransparency = 1,
 
@@ -323,14 +323,21 @@ local NavigationTitle = Create("TextLabel", {
 
 -- Sidebar container
 
-local SidebarContainer = Create("Frame", {
+local SidebarContainer = Create("ScrollingFrame", {
     Name = "Buttons",
     Parent = Sidebar,
 
-    Position = UDim2.fromOffset(10, 52),
-    Size = UDim2.new(1, -20, 1, -65),
+    Position = UDim2.fromOffset(5, 52),
+    Size = UDim2.new(1, -10, 1, -60),
 
-    BackgroundTransparency = 1
+    BackgroundTransparency = 1,
+    BorderSizePixel = 0,
+    ScrollBarThickness = 3,
+    ScrollBarImageColor3 = Theme.Gray,
+    ScrollingDirection = Enum.ScrollingDirection.Y,
+    AutomaticCanvasSize = Enum.AutomaticSize.Y,
+    CanvasSize = UDim2.new(0, 0, 0, 0),
+    ClipsDescendants = true
 })
 
 local SidebarLayout = Create("UIListLayout", {
@@ -461,7 +468,7 @@ local function CreateCard(parent, title, description)
 
         Text = title,
 
-        TextColor3 = Theme.Black,
+        TextColor3 = Theme.Text,
 
         Font = Enum.Font.GothamBold,
         TextSize = 13,
@@ -506,11 +513,11 @@ local function CreateButton(parent, text, callback)
 
         Position = UDim2.fromOffset(15, 68),
 
-        BackgroundColor3 = Theme.Black,
+        BackgroundColor3 = Theme.Selected,
 
         Text = text,
 
-        TextColor3 = Theme.White,
+        TextColor3 = Theme.SelectedText,
 
         Font = Enum.Font.GothamMedium,
         TextSize = 10,
@@ -524,13 +531,13 @@ local function CreateButton(parent, text, callback)
 
     Button.MouseEnter:Connect(function()
         Tween(Button, {
-            BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+            BackgroundColor3 = Theme.Selected
         })
     end)
 
     Button.MouseLeave:Connect(function()
         Tween(Button, {
-            BackgroundColor3 = Theme.Black
+            BackgroundColor3 = Theme.Selected
         })
     end)
 
@@ -574,7 +581,7 @@ local function CreateToggle(parent, text, default, callback)
 
         Text = text,
 
-        TextColor3 = Theme.Black,
+        TextColor3 = Theme.Text,
 
         Font = Enum.Font.Gotham,
         TextSize = 11,
@@ -603,7 +610,7 @@ local function CreateToggle(parent, text, default, callback)
 
         Size = UDim2.fromOffset(14, 14),
 
-        BackgroundColor3 = Theme.White,
+        BackgroundColor3 = Theme.SurfaceInput,
 
         BorderSizePixel = 0
     })
@@ -617,7 +624,7 @@ local function CreateToggle(parent, text, default, callback)
         if Enabled then
 
             Tween(Switch, {
-                BackgroundColor3 = Theme.Black
+                BackgroundColor3 = Theme.Selected
             })
 
             Tween(Circle, {
@@ -668,7 +675,7 @@ local function CreateDropdown(parent, text, options, callback)
 
         Position = UDim2.fromOffset(15, 68),
 
-        BackgroundColor3 = Theme.White,
+        BackgroundColor3 = Theme.SurfaceInput,
 
         Text = "",
 
@@ -691,7 +698,7 @@ local function CreateDropdown(parent, text, options, callback)
 
         Text = text .. ": " .. tostring(options[1]),
 
-        TextColor3 = Theme.Black,
+        TextColor3 = Theme.Text,
 
         Font = Enum.Font.Gotham,
         TextSize = 10,
@@ -725,7 +732,7 @@ local function CreateDropdown(parent, text, options, callback)
 
         Size = UDim2.new(1, 0, 0, #options * 30),
 
-        BackgroundColor3 = Theme.White,
+        BackgroundColor3 = Theme.SurfaceInput,
 
         BorderSizePixel = 0,
 
@@ -754,7 +761,7 @@ local function CreateDropdown(parent, text, options, callback)
 
             Text = tostring(option),
 
-            TextColor3 = Theme.Black,
+            TextColor3 = Theme.Text,
 
             Font = Enum.Font.Gotham,
             TextSize = 10,
@@ -815,7 +822,7 @@ local function CreateSlider(parent, text, minimum, maximum, default, callback)
 
         Text = text,
 
-        TextColor3 = Theme.Black,
+        TextColor3 = Theme.Text,
 
         Font = Enum.Font.Gotham,
         TextSize = 10,
@@ -866,7 +873,7 @@ local function CreateSlider(parent, text, minimum, maximum, default, callback)
             0
         ),
 
-        BackgroundColor3 = Theme.Black,
+        BackgroundColor3 = Theme.Selected,
 
         BorderSizePixel = 0
     })
@@ -949,7 +956,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
         Parent = SidebarContainer,
 
-        Size = UDim2.new(1, 0, 0, 38),
+        Size = UDim2.new(1, -2, 0, 34),
 
         BackgroundColor3 = Theme.Sidebar,
 
@@ -958,7 +965,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         TextColor3 = Theme.DarkGray,
 
         Font = Enum.Font.GothamMedium,
-        TextSize = 11,
+        TextSize = 9,
 
         TextXAlignment = Enum.TextXAlignment.Left,
 
@@ -991,8 +998,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
             if buttonIndex == index then
 
-                sidebarButton.BackgroundColor3 = Theme.Black
-                sidebarButton.TextColor3 = Theme.White
+                sidebarButton.BackgroundColor3 = Theme.Selected
+                sidebarButton.TextColor3 = Theme.SelectedText
 
             else
 
@@ -1110,8 +1117,8 @@ end
 
 Pages[1].Visible = true
 
-SidebarButtons[1].BackgroundColor3 = Theme.Black
-SidebarButtons[1].TextColor3 = Theme.White
+SidebarButtons[1].BackgroundColor3 = Theme.Selected
+SidebarButtons[1].TextColor3 = Theme.SelectedText
 
 --========================================================--
 -- MINIMIZE
