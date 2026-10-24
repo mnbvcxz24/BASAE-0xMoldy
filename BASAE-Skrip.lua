@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.71"
+local testver = "Test v1.72"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1362,20 +1362,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return -1
         end
         local function RejectPickupAndRestart(message)
-            if CurrentTarget then
+            if WaitingForPickup and CurrentTarget then
                 CompletedEggs[CurrentTarget] = true
+                PickupRequested = false
+                SetTrackerStatus(message .. " | skipping this drop and resuming Auto Break.")
+                task.defer(function()
+                    if StopAutoBreak then StopAutoBreak() end
+                    task.wait(0.2)
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                end)
+            else
+                SetTrackerStatus(message .. " | drop ignored; Auto Break continues.")
             end
-            PickupRequested = false
-            SetTrackerStatus(message .. " | skipping egg and searching for another.")
-            task.defer(function()
-                if StopAutoBreak then
-                    StopAutoBreak()
-                end
-                task.wait(0.2)
-                if StartAutoBreak then
-                    StartAutoBreak()
-                end
-            end)
         end
         local function EvaluatePickup(pickup)
             if not AutoPickupEnabled then
@@ -1414,16 +1412,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             PickupRequested = true
-            if MovementConnection then
-                MovementConnection:Disconnect()
-                MovementConnection = nil
-            end
+            if CurrentTarget then CompletedEggs[CurrentTarget] = true end
+            if StopAutoBreak then StopAutoBreak() end
+            if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             local activeCharacter = LocalPlayer.Character
             local activeHumanoid = activeCharacter and activeCharacter:FindFirstChildOfClass("Humanoid")
-            if activeHumanoid then
-                activeHumanoid:Move(Vector3.zero, false)
-            end
-            SetTrackerStatus("Pickup locked for " .. pickup.Name .. "; locating StealPrompt before Auto Break can resume.")
+            if activeHumanoid then activeHumanoid:Move(Vector3.zero, false) end
+            SetTrackerStatus("PICKUP PRIORITY LOCK: " .. pickup.Name .. " | Auto Break paused; matching prompt to animal position.")
             local prompt
             local promptState = "StealPrompt not found"
             local promptDeadline = os.clock() + 5
@@ -1444,31 +1439,25 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             repeat
                 prompt = nil
-                local eggPosition
-                if CurrentTarget and CurrentTarget.Parent then
-                    local ok, position = pcall(function()
-                        if CurrentTarget:IsA("Model") then return CurrentTarget:GetPivot().Position end
-                        if CurrentTarget:IsA("BasePart") then return CurrentTarget.Position end
-                    end)
-                    if ok then eggPosition = position end
-                end
-                local eggRoot = CurrentTarget
-                while eggRoot and eggRoot.Parent and eggRoot.Parent ~= workspace do
-                    eggRoot = eggRoot.Parent
-                end
-                local directPrompt = eggRoot and eggRoot.Parent == workspace and eggRoot:FindFirstChild("StealPrompt")
+                local pickupPosition
+                local positionOk, position = pcall(function()
+                    if pickup:IsA("Model") then return pickup:GetPivot().Position end
+                    if pickup:IsA("BasePart") then return pickup.Position end
+                end)
+                if positionOk then pickupPosition = position end
+                local directPrompt = pickup:FindFirstChild("StealPrompt", true)
                 if directPrompt and directPrompt:IsA("ProximityPrompt") and directPrompt.Enabled then
                     prompt = directPrompt
-                    promptState = "ready at direct path: " .. prompt:GetFullName()
+                    promptState = "ready at animal path: " .. prompt:GetFullName()
                 else
                     local anchor = workspace:FindFirstChild("PromptAnchor")
                     local nearestDistance = math.huge
-                    if anchor and eggPosition then
+                    if anchor and pickupPosition then
                         for _, candidate in ipairs(anchor:GetDescendants()) do
                             if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
                                 local position = getPromptPosition(candidate)
                                 if position then
-                                    local distance = (position - eggPosition).Magnitude
+                                    local distance = (position - pickupPosition).Magnitude
                                     if distance < nearestDistance and distance <= promptMatchRadius then
                                         nearestDistance = distance
                                         prompt = candidate
@@ -1477,14 +1466,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             end
                         end
                         if prompt then
-                            promptState = string.format("matched nearest PromptAnchor path: %s (%.2f studs from egg)", prompt:GetFullName(), nearestDistance)
+                            promptState = string.format("matched nearest PromptAnchor path: %s (%.2f studs from animal)", prompt:GetFullName(), nearestDistance)
                         else
-                            promptState = "No enabled PromptAnchor StealPrompt within " .. promptMatchRadius .. " studs of the egg"
+                            promptState = "No enabled PromptAnchor StealPrompt within " .. promptMatchRadius .. " studs of animal"
                         end
                     elseif not anchor then
                         promptState = "PromptAnchor not found"
                     else
-                        promptState = "Could not read broken egg position for PromptAnchor matching"
+                        promptState = "Could not read animal position for PromptAnchor matching"
                     end
                 end
                 if prompt and prompt:IsA("ProximityPrompt") and prompt.Enabled then
@@ -1502,8 +1491,41 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SetTrackerStatus("ELIGIBLE PET: " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown")
                 .. " | zone=" .. tostring(petZone or "unknown") .. " | CPS=" .. cpsText .. " | movement locked for pickup.")
             task.spawn(function()
-                SetTrackerStatus("Pet data displayed in AnimalPickups. Waiting 3 seconds before pickup.")
-                task.wait(3)
+                SetTrackerStatus("Pickup locked for " .. pickup.Name .. ". Moving to its matching prompt.")
+                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
+                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                local promptPosition = getPromptPosition(prompt)
+                if not promptPosition then
+                    PickupRequested = false
+                    SetTrackerStatus("Pickup cancelled: could not read matched prompt position.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                local moveStarted = os.clock()
+                while PickupRequested and pickup.Parent and prompt.Parent and humanoid.Health > 0 do
+                    local offset = Vector3.new(promptPosition.X - root.Position.X, 0, promptPosition.Z - root.Position.Z)
+                    if offset.Magnitude <= math.max(4, prompt.MaxActivationDistance - 1) then break end
+                    if os.clock() - moveStarted >= 25 then
+                        humanoid:Move(Vector3.zero, false)
+                        PickupRequested = false
+                        SetTrackerStatus("Pickup cancelled: timed out reaching animal prompt.")
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        return
+                    end
+                    humanoid:Move(offset.Unit, false)
+                    task.wait(0.05)
+                    promptPosition = getPromptPosition(prompt) or promptPosition
+                end
+                humanoid:Move(Vector3.zero, false)
+                if not PickupRequested or not pickup.Parent then
+                    PickupRequested = false
+                    SetTrackerStatus("Pickup cancelled: animal disappeared before reaching its prompt.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                SetTrackerStatus("Reached animal prompt. Waiting 1 second before pickup.")
+                task.wait(1)
                 if not PickupRequested or not pickup.Parent then
                     PickupRequested = false
                     SetTrackerStatus("Pickup cancelled: pet disappeared during the 3-second wait.")
@@ -1556,14 +1578,22 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             AnimalPickups = folder
+            for _, existing in ipairs(folder:GetChildren()) do
+                BaselinePickups[existing] = true
+            end
             folder.ChildAdded:Connect(function(pickup)
-                if not WaitingForPickup or BaselinePickups[pickup] then
+                if BaselinePickups[pickup] then return end
+                if not AutoBreakEnabled or not AutoPickupEnabled then
+                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | Auto Pickup/Auto Break not both enabled; ignored.")
                     return
                 end
-                WaitingForPickup = false
-                SetTrackerStatus("NEW PET after target egg break: " .. pickup.Name .. " | class=" .. pickup.ClassName)
+                if PickupRequested or ReturningAfterPickup then
+                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | pickup already in progress; ignored.")
+                    return
+                end
+                SetTrackerStatus("NEW ANIMAL detected while Auto Break is running: " .. pickup.Name .. " | checking filters.")
                 task.defer(function()
-                    if pickup.Parent then
+                    if pickup.Parent and AutoBreakEnabled and AutoPickupEnabled then
                         EvaluatePickup(pickup)
                     end
                 end)
