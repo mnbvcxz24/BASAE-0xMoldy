@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.46"
+local testver = "Test v1.47"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -269,9 +269,9 @@ local Content = Create("Frame", {
     ),
     Size = UDim2.new(
         1,
-        -UIConfig.SidebarWidth,
+        -UIConfig.SidebarWidth - 12,
         1,
-        -48
+        -60
     ),
     BackgroundColor3 = Theme.Background,
     BorderSizePixel = 0
