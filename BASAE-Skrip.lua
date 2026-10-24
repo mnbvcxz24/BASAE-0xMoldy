@@ -9,8 +9,8 @@ local testver = "Test v1.15"
 local UIConfig = {
     Title = "BASAE-Skrip",
     Subtitle = testver,
-    Width = 250,
-    Height = 300,
+    Width = 300,
+    Height = 250,
     SidebarWidth = 72,
     SidebarNames = {
         "Auto",
