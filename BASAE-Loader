@@ -1,0 +1,33 @@
+local url = "https://raw.githubusercontent.com/mnbvcxz24/BASAE-0xMoldy/main/BASAE-Skrip.lua"
+
+if type(loadstring) ~= "function" then
+    warn("[BASAE-Skrip] loadstring is unavailable")
+    return
+end
+
+if type(game.HttpGet) ~= "function" then
+    warn("[BASAE-Skrip] HttpGet is unavailable")
+    return
+end
+
+local ok, source = pcall(function()
+    return game:HttpGet(url)
+end)
+
+if not ok then
+    warn("[BASAE-Skrip] Download failed: " .. tostring(source))
+    return
+end
+
+local compileOk, scriptFunction = pcall(loadstring, source)
+
+if not compileOk or type(scriptFunction) ~= "function" then
+    warn("[BASAE-Skrip] Compile failed: " .. tostring(scriptFunction))
+    return
+end
+
+local runOk, err = pcall(scriptFunction)
+
+if not runOk then
+    warn("[BASAE-Skrip] Runtime error: " .. tostring(err))
+end
