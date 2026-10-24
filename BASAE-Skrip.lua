@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.119"
+local testver = "Test v1.120"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -817,7 +817,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         HighestCashToggle.Position = UDim2.fromOffset(11, 73)
         HighestCashToggle.Size = UDim2.new(1, -22, 0, 26)
         local UnindexedOnlyEnabled = false
-        local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed animals (???)", false, function(enabled)
+        local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Pick Up Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
@@ -1724,6 +1724,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end)
                 return
             end
+            local forceUnindexedPickup = false
             if UnindexedOnlyEnabled then
                 local isUnindexed, indexDisplay = EvaluateUnindexedStatus(pickup)
                 if isUnindexed == nil then
@@ -1735,60 +1736,66 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     RejectPickupAndRestart("Skipped " .. pickup.Name .. " | already indexed as " .. tostring(indexDisplay))
                     return
                 end
-                SetPickupTracking(pickup, "Unindexed (???); continuing verification", "???")
+                forceUnindexedPickup = true
+                SetPickupTracking(pickup, "Unindexed (???); bypassing filters", "???")
             end
-            if not IsRarityAllowed(pickup) then
-                SetPickupTracking(pickup, "Rejected: rarity filter")
-                RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown"))
-                return
-            end
-            local petZone = GetPickupZone(pickup)
-            local targetZone = CurrentTarget and CurrentTarget.Parent and CurrentTarget.Parent.Parent
-            local targetZoneName = targetZone and targetZone.Name
-            if petZone and targetZoneName and petZone:lower() ~= targetZoneName:lower() then
-                SetPickupTracking(pickup, "Rejected: zone mismatch")
-                RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | zone=" .. petZone .. " (target zone " .. targetZoneName .. ")")
-                return
-            end
-            SetPickupTracking(pickup, "CPS scan 1/2: warming up")
-            local firstScanCPS, firstScanText = GetPetCPS(pickup)
-            if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
-                SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
-                return
-            end
-            task.wait(0.15)
-            if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
-                SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
-                return
-            end
-            SetPickupTracking(pickup, "CPS scan 2/2: using this result")
-            local cps, cpsText = GetPetCPS(pickup)
-            if cps < 0 then
-                for attempt = 1, 8 do
-                    if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then break end
-                    SetPickupTracking(pickup, string.format("Waiting for valid second CPS scan (%d/8)", attempt), cpsText)
-                    task.wait(0.25)
-                    cps, cpsText = GetPetCPS(pickup)
-                    if cps >= 0 then break end
+            if not forceUnindexedPickup then
+                if not IsRarityAllowed(pickup) then
+                    SetPickupTracking(pickup, "Rejected: rarity filter")
+                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown"))
+                    return
                 end
-            end
-            SetPickupTracking(pickup, cps >= 0 and "CPS checked (second scan)" or "CPS read failed", cpsText)
-            if HighestCashEnabled and cps < 0 then
-                SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
-                RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
-                return
-            end
-            if HighestCashEnabled then
-                local lowestPlaced = GetLowestPlacedCPS()
-                if lowestPlaced >= 0 and cps <= lowestPlaced then
-                    SetPickupTracking(pickup, "Rejected: below lowest placed CPS", cpsText)
-                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. cpsText
-                        .. " is not above your lowest placed CPS (" .. tostring(lowestPlaced) .. ").")
+                local petZone = GetPickupZone(pickup)
+                local targetZone = CurrentTarget and CurrentTarget.Parent and CurrentTarget.Parent.Parent
+                local targetZoneName = targetZone and targetZone.Name
+                if petZone and targetZoneName and petZone:lower() ~= targetZoneName:lower() then
+                    SetPickupTracking(pickup, "Rejected: zone mismatch")
+                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | zone=" .. petZone .. " (target zone " .. targetZoneName .. ")")
                     return
                 end
             end
+            local cps, cpsText = -1, "CPS skipped for unindexed animal"
+            if not forceUnindexedPickup then
+                SetPickupTracking(pickup, "CPS scan 1/2: warming up")
+                local firstScanCPS, firstScanText = GetPetCPS(pickup)
+                if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                    SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
+                    return
+                end
+                task.wait(0.15)
+                if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                    SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
+                    return
+                end
+                SetPickupTracking(pickup, "CPS scan 2/2: using this result")
+                cps, cpsText = GetPetCPS(pickup)
+                if cps < 0 then
+                    for attempt = 1, 8 do
+                        if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then break end
+                        SetPickupTracking(pickup, string.format("Waiting for valid second CPS scan (%d/8)", attempt), cpsText)
+                        task.wait(0.25)
+                        cps, cpsText = GetPetCPS(pickup)
+                        if cps >= 0 then break end
+                    end
+                end
+                SetPickupTracking(pickup, cps >= 0 and "CPS checked (second scan)" or "CPS read failed", cpsText)
+                if HighestCashEnabled and cps < 0 then
+                    SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
+                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
+                    return
+                end
+                if HighestCashEnabled then
+                    local lowestPlaced = GetLowestPlacedCPS()
+                    if lowestPlaced >= 0 and cps <= lowestPlaced then
+                        SetPickupTracking(pickup, "Rejected: below lowest placed CPS", cpsText)
+                        RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. cpsText
+                            .. " is not above your lowest placed CPS (" .. tostring(lowestPlaced) .. ").")
+                        return
+                    end
+                end
+            end
             if PickupRequested then
-                if HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS then
+                if forceUnindexedPickup or (HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS) then
                     SetPickupTracking(pickup, "Replacing lower-CPS pickup", cpsText)
                     PickupGeneration += 1
                     PickupRequested = false
