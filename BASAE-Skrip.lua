@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.73"
+local testver = "Test v1.74"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1418,7 +1418,56 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local activeCharacter = LocalPlayer.Character
             local activeHumanoid = activeCharacter and activeCharacter:FindFirstChildOfClass("Humanoid")
             if activeHumanoid then activeHumanoid:Move(Vector3.zero, false) end
-            SetTrackerStatus("PICKUP PRIORITY LOCK: " .. pickup.Name .. " | Auto Break paused; matching prompt to animal position.")
+            SetTrackerStatus("PICKUP PRIORITY LOCK: " .. pickup.Name .. " | Auto Break paused; moving to animal location first.")
+            local pickupPosition
+            local positionOk, position = pcall(function()
+                if pickup:IsA("Model") then return pickup:GetPivot().Position end
+                if pickup:IsA("BasePart") then return pickup.Position end
+            end)
+            if positionOk then pickupPosition = position end
+            local moveCharacter = LocalPlayer.Character
+            local moveHumanoid = moveCharacter and moveCharacter:FindFirstChildOfClass("Humanoid")
+            local moveRoot = moveCharacter and moveCharacter:FindFirstChild("HumanoidRootPart")
+            if not pickupPosition or not moveHumanoid or not moveRoot then
+                PickupRequested = false
+                SetTrackerStatus("Pickup cancelled: animal location or character position unavailable.")
+                if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                return
+            end
+            local animalMoveStarted = os.clock()
+            while PickupRequested and pickup.Parent and moveHumanoid.Health > 0 do
+                local animalOffset = Vector3.new(pickupPosition.X - moveRoot.Position.X, 0, pickupPosition.Z - moveRoot.Position.Z)
+                if animalOffset.Magnitude <= 4 then break end
+                if os.clock() - animalMoveStarted >= 25 then
+                    moveHumanoid:Move(Vector3.zero, false)
+                    PickupRequested = false
+                    SetTrackerStatus("Pickup cancelled: timed out reaching animal location.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                moveHumanoid:Move(animalOffset.Unit, false)
+                task.wait(0.05)
+                local ok, currentPosition = pcall(function()
+                    if pickup:IsA("Model") then return pickup:GetPivot().Position end
+                    if pickup:IsA("BasePart") then return pickup.Position end
+                end)
+                if ok and currentPosition then pickupPosition = currentPosition end
+            end
+            moveHumanoid:Move(Vector3.zero, false)
+            if not PickupRequested or not pickup.Parent or not pickupPosition then
+                PickupRequested = false
+                SetTrackerStatus("Pickup cancelled: animal disappeared before location verification.")
+                if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                return
+            end
+            local verifiedAnimalDistance = (Vector3.new(pickupPosition.X, moveRoot.Position.Y, pickupPosition.Z) - moveRoot.Position).Magnitude
+            if verifiedAnimalDistance > 5 then
+                PickupRequested = false
+                SetTrackerStatus(string.format("Pickup cancelled: animal location verification failed (%.1f studs).", verifiedAnimalDistance))
+                if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                return
+            end
+            SetTrackerStatus(string.format("Animal location verified (%.1f studs). Searching nearest PromptAnchor StealPrompt.", verifiedAnimalDistance))
             local prompt
             local promptState = "StealPrompt not found"
             local promptDeadline = os.clock() + 5
@@ -1439,42 +1488,31 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             repeat
                 prompt = nil
-                local pickupPosition
-                local positionOk, position = pcall(function()
-                    if pickup:IsA("Model") then return pickup:GetPivot().Position end
-                    if pickup:IsA("BasePart") then return pickup.Position end
-                end)
-                if positionOk then pickupPosition = position end
-                local directPrompt = pickup:FindFirstChild("StealPrompt", true)
-                if directPrompt and directPrompt:IsA("ProximityPrompt") and directPrompt.Enabled then
-                    prompt = directPrompt
-                    promptState = "ready at animal path: " .. prompt:GetFullName()
-                else
-                    local anchor = workspace:FindFirstChild("PromptAnchor")
-                    local nearestDistance = math.huge
-                    if anchor and pickupPosition then
-                        for _, candidate in ipairs(anchor:GetDescendants()) do
-                            if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
-                                local position = getPromptPosition(candidate)
-                                if position then
-                                    local distance = (position - pickupPosition).Magnitude
-                                    if distance < nearestDistance and distance <= promptMatchRadius then
-                                        nearestDistance = distance
-                                        prompt = candidate
-                                    end
+                prompt = nil
+                local anchor = workspace:FindFirstChild("PromptAnchor")
+                local nearestDistance = math.huge
+                if anchor and pickupPosition then
+                    for _, candidate in ipairs(anchor:GetDescendants()) do
+                        if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
+                            local candidatePosition = getPromptPosition(candidate)
+                            if candidatePosition then
+                                local distance = (candidatePosition - pickupPosition).Magnitude
+                                if distance < nearestDistance and distance <= promptMatchRadius then
+                                    nearestDistance = distance
+                                    prompt = candidate
                                 end
                             end
                         end
-                        if prompt then
-                            promptState = string.format("matched nearest PromptAnchor path: %s (%.2f studs from animal)", prompt:GetFullName(), nearestDistance)
-                        else
-                            promptState = "No enabled PromptAnchor StealPrompt within " .. promptMatchRadius .. " studs of animal"
-                        end
-                    elseif not anchor then
-                        promptState = "PromptAnchor not found"
-                    else
-                        promptState = "Could not read animal position for PromptAnchor matching"
                     end
+                    if prompt then
+                        promptState = string.format("nearest PromptAnchor StealPrompt: %s (%.2f studs from animal)", prompt:GetFullName(), nearestDistance)
+                    else
+                        promptState = "No enabled PromptAnchor StealPrompt within " .. promptMatchRadius .. " studs of animal"
+                    end
+                elseif not anchor then
+                    promptState = "PromptAnchor not found"
+                else
+                    promptState = "Could not read animal position for PromptAnchor matching"
                 end
                 if prompt and prompt:IsA("ProximityPrompt") and prompt.Enabled then
                     break
@@ -1614,8 +1652,34 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
-            SetTrackerStatus(string.format("FLING RECOVERY: received location (%.1f, %.1f, %.1f); searching for matching StealPrompt.", flingPosition.X, flingPosition.Y, flingPosition.Z))
+            SetTrackerStatus(string.format("FLING RECOVERY: received location (%.1f, %.1f, %.1f); moving there before searching for StealPrompt.", flingPosition.X, flingPosition.Y, flingPosition.Z))
             task.spawn(function()
+                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
+                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                local moveStarted = os.clock()
+                while PickupRequested and humanoid.Health > 0 do
+                    local offset = Vector3.new(flingPosition.X - root.Position.X, 0, flingPosition.Z - root.Position.Z)
+                    if offset.Magnitude <= 4 then break end
+                    if os.clock() - moveStarted >= 25 then
+                        humanoid:Move(Vector3.zero, false)
+                        PickupRequested = false
+                        SetTrackerStatus("FLING RECOVERY cancelled: timed out reaching reported animal location.")
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        return
+                    end
+                    humanoid:Move(offset.Unit, false)
+                    task.wait(0.05)
+                end
+                humanoid:Move(Vector3.zero, false)
+                local arrivalDistance = (Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z) - root.Position).Magnitude
+                if not PickupRequested or humanoid.Health <= 0 or arrivalDistance > 5 then
+                    PickupRequested = false
+                    SetTrackerStatus(string.format("FLING RECOVERY cancelled: arrival verification failed (%.1f studs).", arrivalDistance))
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    return
+                end
+                SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); searching nearest PromptAnchor StealPrompt.", arrivalDistance))
                 local anchor = workspace:FindFirstChild("PromptAnchor")
                 local prompt, promptPosition
                 local searchDeadline = os.clock() + 8
@@ -1655,10 +1719,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
-                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
-                SetTrackerStatus(string.format("FLING RECOVERY locked prompt %.1f studs from fling location; moving to verify position.", (promptPosition - flingPosition).Magnitude))
+                SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - flingPosition).Magnitude))
                 local moveStarted = os.clock()
                 while PickupRequested and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
                     promptPosition = positionOf(prompt) or promptPosition
