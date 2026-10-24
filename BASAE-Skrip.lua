@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.10"
+local testver = "Test v1.11"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -701,53 +701,65 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             PaddingLeft = UDim.new(0, 4),
             PaddingRight = UDim.new(0, 4)
         })
-        local TempEggs = {"Blackhole", "Solaris", "Cherub", "Volcanic"}
-        for eggIndex, eggName in ipairs(TempEggs) do
-            local EggButton = Create("TextButton", {
-                Name = eggName,
-                Parent = EggList,
-                Size = UDim2.new(1, -8, 0, 24),
-                BackgroundColor3 = Theme.Card,
-                Text = "",
-                BorderSizePixel = 0,
-                LayoutOrder = eggIndex,
-                AutoButtonColor = false
-            })
-            AddCorner(EggButton, 5)
-            Create("TextLabel", {
-                Parent = EggButton,
-                Position = UDim2.fromOffset(8, 0),
-                Size = UDim2.new(1, -34, 1, 0),
-                BackgroundTransparency = 1,
-                Text = eggName,
-                TextColor3 = Theme.Text,
-                Font = Enum.Font.Gotham,
-                TextSize = 10,
-                TextXAlignment = Enum.TextXAlignment.Left
-            })
-            local Checkmark = Create("TextLabel", {
-                Parent = EggButton,
-                Position = UDim2.new(1, -26, 0, 0),
-                Size = UDim2.fromOffset(22, 24),
-                BackgroundTransparency = 1,
-                Text = "○",
-                TextColor3 = Theme.Gray,
-                Font = Enum.Font.GothamBold,
-                TextSize = 14
-            })
-            EggButton.MouseButton1Click:Connect(function()
-                if SelectedEggs[eggName] then
-                    SelectedEggs[eggName] = nil
-                else
-                    SelectedEggs[eggName] = true
-                end
-                local selected = SelectedEggs[eggName] == true
-                Checkmark.Text = selected and "✓" or "○"
-                Checkmark.TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray
-                EggButton.BackgroundColor3 = selected and Theme.Selected or Theme.Card
-            end)
+        local ZoneBuilds = workspace:WaitForChild("Build"):WaitForChild("ZoneBuilds")
+        local function RefreshZoneList()
+            for _, item in ipairs(EggList:GetChildren()) do
+                if item:IsA("TextButton") then item:Destroy() end
+            end
+            local Zones = {}
+            for _, zone in ipairs(ZoneBuilds:GetChildren()) do
+                if zone:IsA("Model") then table.insert(Zones, zone) end
+            end
+            table.sort(Zones, function(a, b) return a.Name < b.Name end)
+            for zoneIndex, zone in ipairs(Zones) do
+                local zoneName = zone.Name
+                local ZoneButton = Create("TextButton", {
+                    Name = zoneName,
+                    Parent = EggList,
+                    Size = UDim2.new(1, -8, 0, 24),
+                    BackgroundColor3 = SelectedEggs[zoneName] and Theme.Selected or Theme.Card,
+                    Text = "",
+                    BorderSizePixel = 0,
+                    LayoutOrder = zoneIndex,
+                    AutoButtonColor = false
+                })
+                AddCorner(ZoneButton, 5)
+                Create("TextLabel", {
+                    Parent = ZoneButton,
+                    Position = UDim2.fromOffset(8, 0),
+                    Size = UDim2.new(1, -34, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = zoneName,
+                    TextColor3 = Theme.Text,
+                    Font = Enum.Font.Gotham,
+                    TextSize = 10,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+                local Checkmark = Create("TextLabel", {
+                    Parent = ZoneButton,
+                    Position = UDim2.new(1, -26, 0, 0),
+                    Size = UDim2.fromOffset(22, 24),
+                    BackgroundTransparency = 1,
+                    Text = SelectedEggs[zoneName] and "✓" or "○",
+                    TextColor3 = SelectedEggs[zoneName] and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                    Font = Enum.Font.GothamBold,
+                    TextSize = 14
+                })
+                ZoneButton.MouseButton1Click:Connect(function()
+                    SelectedEggs[zoneName] = not SelectedEggs[zoneName] or nil
+                    local selected = SelectedEggs[zoneName] == true
+                    Checkmark.Text = selected and "✓" or "○"
+                    Checkmark.TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray
+                    ZoneButton.BackgroundColor3 = selected and Theme.Selected or Theme.Card
+                end)
+            end
         end
+        RefreshZoneList()
+        ZoneBuilds.ChildAdded:Connect(RefreshZoneList)
+        ZoneBuilds.ChildRemoved:Connect(RefreshZoneList)
         EggLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            EggList.CanvasSize = UDim2.new(0, 0, 0, EggLayout.AbsoluteContentSize.Y + 8)
+        end)        EggLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             EggList.CanvasSize = UDim2.new(0, 0, 0, EggLayout.AbsoluteContentSize.Y + 8)
         end)
     else
