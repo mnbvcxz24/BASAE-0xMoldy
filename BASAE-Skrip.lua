@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.27"
+local testver = "Test v1.28"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -706,7 +706,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
     if index == 1 then
         local Card1 = CreateCard(Page, "Auto break", "")
         Card1.Size = UDim2.new(1, 0, 0, 114)
+        local AutoBreakToggleInitialized = false
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
+            if not AutoBreakToggleInitialized then
+                AutoBreakToggleInitialized = true
+                return
+            end
+            AddDebugLog("[Auto Break] Toggle " .. (enabled and "ON" or "OFF"))
             if enabled then
                 if StartAutoBreak then StartAutoBreak() end
             elseif StopAutoBreak then
