@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.58"
+local testver = "Test v1.59"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1190,44 +1190,50 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ReturningAfterPickup = true
             SetTrackerStatus(reason or "Pickup hold completed. Returning to the pickup point.")
             task.spawn(function()
-                local character = LocalPlayer.Character
-                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                local root = character and character:FindFirstChild("HumanoidRootPart")
-                if not humanoid or not root then
-                    ReturningAfterPickup = false
-                    SetTrackerStatus("Return failed: character or HumanoidRootPart unavailable.")
-                    return
-                end
-                SetTrackerStatus("Moving straight to return position.")
+                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
+                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                SetTrackerStatus("Moving to static return position.")
                 local moveStarted = os.clock()
-                while character.Parent and humanoid.Health > 0
-                    and Vector2.new(root.Position.X - ReturnPosition.X, root.Position.Z - ReturnPosition.Z).Magnitude > 4
-                    and os.clock() - moveStarted < 25 do
+                local connection
+                connection = game:GetService("RunService").RenderStepped:Connect(function()
+                    if not ReturningAfterPickup or not character.Parent or humanoid.Health <= 0 then
+                        humanoid:Move(Vector3.zero, false)
+                        connection:Disconnect()
+                        connection = nil
+                        ReturningAfterPickup = false
+                        SetTrackerStatus("Return movement stopped: character unavailable.")
+                        return
+                    end
                     local offset = Vector3.new(
                         ReturnPosition.X - root.Position.X,
                         0,
                         ReturnPosition.Z - root.Position.Z
                     )
-                    if offset.Magnitude > 0.1 then
-                        humanoid:Move(offset.Unit, false)
-                    else
+                    if offset.Magnitude <= 4 then
                         humanoid:Move(Vector3.zero, false)
+                        connection:Disconnect()
+                        connection = nil
+                        ReturningAfterPickup = false
+                        SetTrackerStatus("Returned to pickup point.")
+                        if AutoBreakEnabled and StartAutoBreak then
+                            task.delay(0.2, function()
+                                if AutoBreakEnabled then StartAutoBreak() end
+                            end)
+                        end
+                        return
                     end
-                    game:GetService("RunService").Heartbeat:Wait()
-                end
-                humanoid:Move(Vector3.zero, false)
-                if Vector2.new(root.Position.X - ReturnPosition.X, root.Position.Z - ReturnPosition.Z).Magnitude <= 4 then
-                    ReturningAfterPickup = false
-                    SetTrackerStatus("Returned to pickup point.")
-                else
-                    ReturningAfterPickup = false
-                    SetTrackerStatus("Straight movement did not reach pickup point; horizontal distance=" .. math.floor(Vector2.new(root.Position.X - ReturnPosition.X, root.Position.Z - ReturnPosition.Z).Magnitude) .. ".")
-                    return
-                end
-                if AutoBreakEnabled and StartAutoBreak then
-                    task.wait(0.2)
-                    if AutoBreakEnabled then StartAutoBreak() end
-                end
+                    if os.clock() - moveStarted >= 25 then
+                        humanoid:Move(Vector3.zero, false)
+                        connection:Disconnect()
+                        connection = nil
+                        ReturningAfterPickup = false
+                        SetTrackerStatus("Return timed out; horizontal distance="
+                            .. math.floor(offset.Magnitude) .. ".")
+                        return
+                    end
+                    humanoid:Move(offset.Unit, false)
+                end)
             end)
         end
         local function IsTargetReference(reference, target)
