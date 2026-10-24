@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.12"
+local testver = "Test v1.13"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -664,18 +664,24 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoBreakToggle = CreateToggle(Card1, "", false)
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
+        local SelectedZones = {}
         local SelectedEggs = {}
         local ZoneFilterOpen = false
         local EggFilterOpen = false
-        local EggList
+        local SortOrder = "Largest"
+        local ZoneList
         local EggFilterList
+        local SortFrame
         local ZoneFilterButton
         local EggFilterButton
+        local SortLargestButton
+        local SortSmallestButton
+        local ZoneBuilds = workspace:WaitForChild("Build"):WaitForChild("ZoneBuilds")
         local function UpdateFilterPanel()
-            local isOpen = ZoneFilterOpen or EggFilterOpen
-            EggList.Visible = ZoneFilterOpen
+            ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
-            Card1.Size = UDim2.new(1, 0, 0, isOpen and 194 or 90)
+            SortFrame.Visible = EggFilterOpen
+            Card1.Size = UDim2.new(1, 0, 0, EggFilterOpen and 234 or (ZoneFilterOpen and 194 or 90))
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
         end
@@ -693,7 +699,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         EggFilterButton.Position = UDim2.new(0.5, 5, 0, 44)
         EggFilterButton.Size = UDim2.new(0.5, -20, 0, 30)
-        EggList = Create("ScrollingFrame", {
+        ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
             Parent = Card1,
             Position = UDim2.fromOffset(15, 82),
@@ -706,70 +712,158 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             Visible = false
         })
-        EggFilterList = Create("Frame", {
+        AddCorner(ZoneList, 6)
+        local ZoneLayout = Create("UIListLayout", {
+            Parent = ZoneList,
+            Padding = UDim.new(0, 4),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        Create("UIPadding", {
+            Parent = ZoneList,
+            PaddingTop = UDim.new(0, 4),
+            PaddingBottom = UDim.new(0, 4),
+            PaddingLeft = UDim.new(0, 4),
+            PaddingRight = UDim.new(0, 4)
+        })
+        EggFilterList = Create("ScrollingFrame", {
             Name = "EggFilterList",
             Parent = Card1,
             Position = UDim2.fromOffset(15, 82),
             Size = UDim2.new(1, -30, 0, 102),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Theme.Gray,
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
             Visible = false
         })
         AddCorner(EggFilterList, 6)
-        Create("TextLabel", {
-            Name = "DefaultEggSelection",
-            Parent = EggFilterList,
-            Position = UDim2.fromOffset(8, 8),
-            Size = UDim2.new(1, -16, 0, 28),
-            BackgroundTransparency = 1,
-            Text = "All eggs selected (default)",
-            TextColor3 = Theme.Text,
-            Font = Enum.Font.Gotham,
-            TextSize = 10,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
-        Create("TextLabel", {
-            Name = "EggSortOrder",
-            Parent = EggFilterList,
-            Position = UDim2.fromOffset(8, 38),
-            Size = UDim2.new(1, -16, 0, 28),
-            BackgroundTransparency = 1,
-            Text = "Sort: Largest to Smallest",
-            TextColor3 = Theme.Gray,
-            Font = Enum.Font.Gotham,
-            TextSize = 10,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
-        AddCorner(EggList, 6)
         local EggLayout = Create("UIListLayout", {
-            Parent = EggList,
+            Parent = EggFilterList,
             Padding = UDim.new(0, 4),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
-        local EggPadding = Create("UIPadding", {
-            Parent = EggList,
+        Create("UIPadding", {
+            Parent = EggFilterList,
             PaddingTop = UDim.new(0, 4),
             PaddingBottom = UDim.new(0, 4),
             PaddingLeft = UDim.new(0, 4),
             PaddingRight = UDim.new(0, 4)
         })
-        local ZoneBuilds = workspace:WaitForChild("Build"):WaitForChild("ZoneBuilds")
+        SortFrame = Create("Frame", {
+            Name = "EggSortOptions",
+            Parent = Card1,
+            Position = UDim2.fromOffset(15, 190),
+            Size = UDim2.new(1, -30, 0, 32),
+            BackgroundTransparency = 1,
+            Visible = false
+        })
+        Create("TextLabel", {
+            Parent = SortFrame,
+            Size = UDim2.fromOffset(38, 30),
+            BackgroundTransparency = 1,
+            Text = "Sort",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham,
+            TextSize = 10,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        local function UpdateSortButtons()
+            for _, pair in ipairs({
+                {SortLargestButton, "Largest"},
+                {SortSmallestButton, "Smallest"}
+            }) do
+                local button, order = pair[1], pair[2]
+                local selected = SortOrder == order
+                button.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
+                button.TextColor3 = selected and Theme.SelectedText or Theme.Gray
+                button.Text = (selected and "● " or "○ ") .. order
+            end
+        end
+        SortLargestButton = Create("TextButton", {
+            Name = "SortLargest",
+            Parent = SortFrame,
+            Position = UDim2.fromOffset(40, 2),
+            Size = UDim2.new(0.5, -44, 0, 28),
+            BackgroundColor3 = Theme.Selected,
+            Text = "● Largest",
+            TextColor3 = Theme.SelectedText,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            BorderSizePixel = 0,
+            AutoButtonColor = false
+        })
+        AddCorner(SortLargestButton, 5)
+        SortSmallestButton = Create("TextButton", {
+            Name = "SortSmallest",
+            Parent = SortFrame,
+            Position = UDim2.new(0.5, 0, 0, 2),
+            Size = UDim2.new(0.5, -2, 0, 28),
+            BackgroundColor3 = Theme.SurfaceInput,
+            Text = "○ Smallest",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            BorderSizePixel = 0,
+            AutoButtonColor = false
+        })
+        AddCorner(SortSmallestButton, 5)
+        local function GetEggTypeName(name)
+            return (name:gsub("^%d+:%s*", ""))
+        end
+        local function GetEggRecords()
+            local records = {}
+            local byName = {}
+            for zoneName, selected in pairs(SelectedZones) do
+                if selected then
+                    local zone = ZoneBuilds:FindFirstChild(zoneName)
+                    local eggsFolder = zone and zone:FindFirstChild("Eggs")
+                    if eggsFolder then
+                        for _, egg in ipairs(eggsFolder:GetChildren()) do
+                            if egg:IsA("Model") or egg:IsA("BasePart") then
+                                local eggName = GetEggTypeName(egg.Name)
+                                local size = egg:IsA("Model") and egg:GetExtentsSize().Magnitude or egg.Size.Magnitude
+                                if not byName[eggName] then
+                                    byName[eggName] = {name = eggName, size = size}
+                                    table.insert(records, byName[eggName])
+                                elseif size > byName[eggName].size then
+                                    byName[eggName].size = size
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            table.sort(records, function(a, b)
+                if a.size == b.size then
+                    return a.name < b.name
+                end
+                if SortOrder == "Largest" then
+                    return a.size > b.size
+                end
+                return a.size < b.size
+            end)
+            return records
+        end
+        local RefreshEggList
         local function RefreshZoneList()
-            for _, item in ipairs(EggList:GetChildren()) do
+            for _, item in ipairs(ZoneList:GetChildren()) do
                 if item:IsA("TextButton") then item:Destroy() end
             end
-            local Zones = {}
+            local zones = {}
             for _, zone in ipairs(ZoneBuilds:GetChildren()) do
-                if zone:IsA("Model") then table.insert(Zones, zone) end
+                if zone:IsA("Model") then table.insert(zones, zone) end
             end
-            table.sort(Zones, function(a, b) return a.Name < b.Name end)
-            for zoneIndex, zone in ipairs(Zones) do
+            table.sort(zones, function(a, b) return a.Name < b.Name end)
+            for zoneIndex, zone in ipairs(zones) do
                 local zoneName = zone.Name
+                local selected = SelectedZones[zoneName] == true
                 local ZoneButton = Create("TextButton", {
-                    Name = zoneName,
-                    Parent = EggList,
+                    Name = "Zone_" .. zoneName,
+                    Parent = ZoneList,
                     Size = UDim2.new(1, -8, 0, 24),
-                    BackgroundColor3 = SelectedEggs[zoneName] and Theme.Selected or Theme.Card,
+                    BackgroundColor3 = selected and Theme.Selected or Theme.Card,
                     Text = "",
                     BorderSizePixel = 0,
                     LayoutOrder = zoneIndex,
@@ -792,25 +886,102 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Position = UDim2.new(1, -26, 0, 0),
                     Size = UDim2.fromOffset(22, 24),
                     BackgroundTransparency = 1,
-                    Text = SelectedEggs[zoneName] and "✓" or "○",
-                    TextColor3 = SelectedEggs[zoneName] and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                    Text = selected and "✓" or "○",
+                    TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
                     Font = Enum.Font.GothamBold,
                     TextSize = 14
                 })
                 ZoneButton.MouseButton1Click:Connect(function()
-                    SelectedEggs[zoneName] = not SelectedEggs[zoneName] or nil
-                    local selected = SelectedEggs[zoneName] == true
-                    Checkmark.Text = selected and "✓" or "○"
-                    Checkmark.TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray
-                    ZoneButton.BackgroundColor3 = selected and Theme.Selected or Theme.Card
+                    SelectedZones[zoneName] = not SelectedZones[zoneName] or nil
+                    RefreshZoneList()
+                    RefreshEggList()
                 end)
             end
         end
+        RefreshEggList = function()
+            for _, item in ipairs(EggFilterList:GetChildren()) do
+                if item:IsA("TextButton") or item:IsA("TextLabel") then item:Destroy() end
+            end
+            local records = GetEggRecords()
+            if #records == 0 then
+                Create("TextLabel", {
+                    Parent = EggFilterList,
+                    Size = UDim2.new(1, -8, 0, 28),
+                    BackgroundTransparency = 1,
+                    Text = "Select zones to view eggs",
+                    TextColor3 = Theme.Gray,
+                    Font = Enum.Font.Gotham,
+                    TextSize = 10
+                })
+                return
+            end
+            for eggIndex, record in ipairs(records) do
+                local eggName = record.name
+                local selected = SelectedEggs[eggName] ~= false
+                local EggButton = Create("TextButton", {
+                    Name = "Egg_" .. eggName:gsub("[^%w_]", ""),
+                    Parent = EggFilterList,
+                    Size = UDim2.new(1, -8, 0, 24),
+                    BackgroundColor3 = selected and Theme.Selected or Theme.Card,
+                    Text = "",
+                    BorderSizePixel = 0,
+                    LayoutOrder = eggIndex,
+                    AutoButtonColor = false
+                })
+                AddCorner(EggButton, 5)
+                Create("TextLabel", {
+                    Parent = EggButton,
+                    Position = UDim2.fromOffset(8, 0),
+                    Size = UDim2.new(1, -34, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = eggName,
+                    TextColor3 = Theme.Text,
+                    Font = Enum.Font.Gotham,
+                    TextSize = 10,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                })
+                local Checkmark = Create("TextLabel", {
+                    Parent = EggButton,
+                    Position = UDim2.new(1, -26, 0, 0),
+                    Size = UDim2.fromOffset(22, 24),
+                    BackgroundTransparency = 1,
+                    Text = selected and "✓" or "○",
+                    TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                    Font = Enum.Font.GothamBold,
+                    TextSize = 14
+                })
+                EggButton.MouseButton1Click:Connect(function()
+                    SelectedEggs[eggName] = SelectedEggs[eggName] == false and nil or false
+                    RefreshEggList()
+                end)
+            end
+        end
+        SortLargestButton.MouseButton1Click:Connect(function()
+            SortOrder = "Largest"
+            UpdateSortButtons()
+            RefreshEggList()
+        end)
+        SortSmallestButton.MouseButton1Click:Connect(function()
+            SortOrder = "Smallest"
+            UpdateSortButtons()
+            RefreshEggList()
+        end)
+        UpdateSortButtons()
         RefreshZoneList()
-        ZoneBuilds.ChildAdded:Connect(RefreshZoneList)
-        ZoneBuilds.ChildRemoved:Connect(RefreshZoneList)
+        RefreshEggList()
+        ZoneBuilds.ChildAdded:Connect(function()
+            RefreshZoneList()
+            RefreshEggList()
+        end)
+        ZoneBuilds.ChildRemoved:Connect(function()
+            RefreshZoneList()
+            RefreshEggList()
+        end)
+        ZoneLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            ZoneList.CanvasSize = UDim2.new(0, 0, 0, ZoneLayout.AbsoluteContentSize.Y + 8)
+        end)
         EggLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            EggList.CanvasSize = UDim2.new(0, 0, 0, EggLayout.AbsoluteContentSize.Y + 8)
+            EggFilterList.CanvasSize = UDim2.new(0, 0, 0, EggLayout.AbsoluteContentSize.Y + 8)
         end)
     else
         local Card1 = CreateCard(Page, name, "This is a reusable UI page. Backend code is not connected.")
