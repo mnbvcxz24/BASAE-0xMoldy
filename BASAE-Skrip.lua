@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.110"
+local testver = "Test v1.111"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -15,11 +15,9 @@ local UIConfig = {
     SidebarWidth = 94,
     SidebarNames = {
         "Auto",
-        "Debug Console",
-        "Placed Animals"
-        -- Future sidebar slots:
-        -- "Sidebar 4",
-        -- "Sidebar 5"
+        "ESP",
+        "Placed Animals",
+        "Debug Console"
     }
 }
 -- THEME
@@ -2455,7 +2453,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 humanoid:Move(offset.Unit, false)
             end)
         end
-    elseif index == 2 then
+    elseif index == 4 then
         local ConsoleCard = CreateCard(Page, "Debug Console", "")
         ConsoleCard.Size = UDim2.new(1, 0, 0, 190)
         local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
@@ -2518,6 +2516,144 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AddDebugLog("Console cleared.")
         end)
         AddDebugLog("Debug console ready.")
+
+    elseif index == 2 then
+        local ESPCard = CreateCard(Page, "Egg ESP", "")
+        ESPCard.Size = UDim2.new(1, 0, 0, 125)
+        local ESPStatus = Create("TextLabel", {
+            Parent = ESPCard,
+            Position = UDim2.fromOffset(15, 43),
+            Size = UDim2.new(1, -30, 0, 30),
+            BackgroundTransparency = 1,
+            Text = "ESP is off",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            TextWrapped = true,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top
+        })
+        local ESPEnabled = false
+        local ESPObjects = {}
+        local ESPFolder = Create("Folder", {Name = "BASE_Skrip_EggESP", Parent = LocalPlayer:WaitForChild("PlayerGui")})
+        local function ClearEggESP(egg)
+            local gui = ESPObjects[egg]
+            if gui then
+                gui:Destroy()
+                ESPObjects[egg] = nil
+            end
+        end
+        local function GetESPValue(object, names)
+            for _, name in ipairs(names) do
+                local value = object:GetAttribute(name)
+                if value ~= nil then return tostring(value) end
+                local child = object:FindFirstChild(name, true)
+                if child and (child:IsA("StringValue") or child:IsA("NumberValue") or child:IsA("IntValue")) then
+                    return tostring(child.Value)
+                end
+                if child and (child:IsA("TextLabel") or child:IsA("TextButton")) and child.Text ~= "" then
+                    return child.Text
+                end
+            end
+            return nil
+        end
+        local function GetEggESPInfo(egg)
+            local eggModel = egg:FindFirstChild("Egg") or egg
+            local info = eggModel:FindFirstChild("EggInfoUi", true)
+            local luck = GetESPValue(info or eggModel, {"LuckMulti", "Luck", "LuckMultiplier"})
+            if not luck and info then
+                local luckList = info:FindFirstChild("LuckMultiList", true)
+                local luckLabel = luckList and luckList:FindFirstChild("LuckMulti", true)
+                if luckLabel and (luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton")) then
+                    luck = luckLabel.Text
+                end
+            end
+            local size = GetESPValue(eggModel, {"Size", "EggSize", "SizeMultiplier"})
+            if not size then
+                local ok, extents = pcall(function()
+                    return eggModel:IsA("Model") and eggModel:GetExtentsSize() or eggModel.Size
+                end)
+                if ok and extents then
+                    size = string.format("%.1f x %.1f x %.1f", extents.X, extents.Y, extents.Z)
+                end
+            end
+            return luck or "?", size or "?"
+        end
+        local function UpdateEggESP()
+            local build = workspace:FindFirstChild("Build")
+            local zones = build and build:FindFirstChild("ZoneBuilds")
+            if not zones then
+                ESPStatus.Text = "Waiting for egg zones..."
+                return
+            end
+            local seen = {}
+            local count = 0
+            for _, zone in ipairs(zones:GetChildren()) do
+                local eggsFolder = zone:FindFirstChild("Eggs")
+                if eggsFolder then
+                    for _, egg in ipairs(eggsFolder:GetChildren()) do
+                        if (egg:IsA("Model") or egg:IsA("BasePart")) and egg.Name:lower():find("egg", 1, true) then
+                            local adornee = egg:IsA("BasePart") and egg or egg.PrimaryPart or egg:FindFirstChildWhichIsA("BasePart", true)
+                            if adornee then
+                                seen[egg] = true
+                                count += 1
+                                local gui = ESPObjects[egg]
+                                if not gui or not gui.Parent then
+                                    gui = Instance.new("BillboardGui")
+                                    gui.Name = "EggESP"
+                                    gui.Adornee = adornee
+                                    gui.Size = UDim2.fromOffset(180, 44)
+                                    gui.StudsOffset = Vector3.new(0, 3, 0)
+                                    gui.AlwaysOnTop = true
+                                    gui.MaxDistance = 250
+                                    gui.Parent = ESPFolder
+                                    local label = Instance.new("TextLabel")
+                                    label.Name = "Info"
+                                    label.Size = UDim2.fromScale(1, 1)
+                                    label.BackgroundColor3 = Color3.fromRGB(20, 22, 26)
+                                    label.BackgroundTransparency = 0.15
+                                    label.BorderSizePixel = 0
+                                    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                                    label.TextStrokeTransparency = 0.45
+                                    label.Font = Enum.Font.GothamBold
+                                    label.TextSize = 11
+                                    label.TextWrapped = true
+                                    label.Parent = gui
+                                    ESPObjects[egg] = gui
+                                end
+                                gui.Adornee = adornee
+                                local luck, size = GetEggESPInfo(egg)
+                                gui.Info.Text = egg.Name .. "\nLuck: " .. luck .. " | Size: " .. size
+                            end
+                        end
+                    end
+                end
+            end
+            for egg in pairs(ESPObjects) do
+                if not seen[egg] or not egg.Parent then
+                    ClearEggESP(egg)
+                end
+            end
+            ESPStatus.Text = "ESP " .. (ESPEnabled and "ON" or "OFF") .. " | Eggs: " .. count
+        end
+        CreateToggle(ESPCard, "Show egg Luck + Size", false, function(enabled)
+            ESPEnabled = enabled
+            if enabled then
+                ESPStatus.Text = "Scanning eggs..."
+                task.spawn(function()
+                    while ESPEnabled and not ScriptShuttingDown do
+                        UpdateEggESP()
+                        task.wait(0.75)
+                    end
+                end)
+            else
+                for egg in pairs(ESPObjects) do
+                    ClearEggESP(egg)
+                end
+                ESPStatus.Text = "ESP is off"
+            end
+        end)
+        ESPCard.Size = UDim2.new(1, 0, 0, 125)
 
     elseif index == 3 then
         local AnimalsCard = CreateCard(Page, "Placed Animals", "")
