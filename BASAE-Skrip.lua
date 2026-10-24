@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.63"
+local testver = "Test v1.64"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1382,6 +1382,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
             end
+            if PickupRequested or ReturningAfterPickup then
+                SetTrackerStatus("Eligible pet " .. pickup.Name .. " ignored: pickup/return already in progress.")
+                return
+            end
+            PickupRequested = true
+            if MovementConnection then
+                MovementConnection:Disconnect()
+                MovementConnection = nil
+            end
+            local activeCharacter = LocalPlayer.Character
+            local activeHumanoid = activeCharacter and activeCharacter:FindFirstChildOfClass("Humanoid")
+            if activeHumanoid then
+                activeHumanoid:Move(Vector3.zero, false)
+            end
+            SetTrackerStatus("Pickup locked for " .. pickup.Name .. "; locating StealPrompt before Auto Break can resume.")
             local prompt
             local promptState = "StealPrompt not found"
             local promptDeadline = os.clock() + 5
@@ -1420,23 +1435,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 task.wait(0.25)
             until os.clock() >= promptDeadline
             if not prompt or not prompt:IsA("ProximityPrompt") or not prompt.Enabled then
+                PickupRequested = false
                 SetTrackerStatus("Eligible pet " .. pickup.Name
                     .. " but pickup prompt unavailable after 5s: " .. promptState .. ".")
+                if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                 return
-            end
-            if PickupRequested or ReturningAfterPickup then
-                SetTrackerStatus("Eligible pet " .. pickup.Name .. " but a pickup/return is already in progress.")
-                return
-            end
-            PickupRequested = true
-            if MovementConnection then
-                MovementConnection:Disconnect()
-                MovementConnection = nil
-            end
-            local activeCharacter = LocalPlayer.Character
-            local activeHumanoid = activeCharacter and activeCharacter:FindFirstChildOfClass("Humanoid")
-            if activeHumanoid then
-                activeHumanoid:Move(Vector3.zero, false)
             end
             SetTrackerStatus("ELIGIBLE PET: " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown")
                 .. " | zone=" .. tostring(petZone or "unknown") .. " | CPS=" .. cpsText .. " | movement locked for pickup.")
