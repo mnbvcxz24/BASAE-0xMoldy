@@ -1411,15 +1411,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 connection = game:GetService("RunService").RenderStepped:Connect(function()
                     if PickupGeneration ~= returnToken then
                         connection:Disconnect()
-                        connection = nil
                         if ReturnMovementConnection == connection then ReturnMovementConnection = nil end
+                        connection = nil
                         return
                     end
                     if not ReturningAfterPickup or LocalPlayer.Character ~= character or not character.Parent or not root.Parent or humanoid.Health <= 0 then
                         humanoid:Move(Vector3.zero, false)
                         connection:Disconnect()
-                        connection = nil
                         if ReturnMovementConnection == connection then ReturnMovementConnection = nil end
+                        connection = nil
                         ReturningAfterPickup = false
                         SetTrackerStatus("Return movement stopped: character unavailable.")
                         if AutoBreakEnabled and StartAutoBreak then
