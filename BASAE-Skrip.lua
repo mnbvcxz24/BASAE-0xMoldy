@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.104"
+local testver = "Test v1.105"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1202,6 +1202,35 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
         local AnimalPickups = workspace:FindFirstChild("AnimalPickups")
         local ReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
+        local function EquipHotbarOne()
+            local character = LocalPlayer.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+            if not humanoid or not backpack then
+                SetTrackerStatus("Hotbar 1 equip skipped: character or Backpack unavailable.")
+                return false
+            end
+            local firstTool
+            for _, item in ipairs(backpack:GetChildren()) do
+                if item:IsA("Tool") then firstTool = item; break end
+            end
+            if not firstTool and character then
+                for _, item in ipairs(character:GetChildren()) do
+                    if item:IsA("Tool") then firstTool = item; break end
+                end
+            end
+            if not firstTool then
+                SetTrackerStatus("Hotbar 1 equip skipped: no tool found in Backpack or character.")
+                return false
+            end
+            local ok, err = pcall(function() humanoid:EquipTool(firstTool) end)
+            if ok then
+                SetTrackerStatus("Equipped hotbar 1 tool: " .. firstTool.Name)
+                return true
+            end
+            SetTrackerStatus("Hotbar 1 equip failed: " .. tostring(err))
+            return false
+        end
         local function ReturnToPickup(reason)
             if ReturningAfterPickup then return end
             ClearPickupLock()
@@ -1238,6 +1267,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         connection:Disconnect()
                         connection = nil
                         ReturningAfterPickup = false
+                        EquipHotbarOne()
                         SetTrackerStatus("Returned to pickup point.")
                         if AutoBreakEnabled and StartAutoBreak then
                             task.delay(0.2, function()
