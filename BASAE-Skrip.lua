@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.90"
+local testver = "Test v1.91"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1182,14 +1182,27 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ReturningAfterPickup = false
         local ActivePickup
         local ActivePickupCPS = -1
+        local PickupPhase = "IDLE"
         local PickupGeneration = 0
+        local function SetPickupPhase(phase, message)
+            PickupPhase = phase
+            if message then SetTrackerStatus("PICKUP LOCK [" .. phase .. "]: " .. message) end
+        end
+        local function ClearPickupLock(token)
+            if token and token ~= PickupGeneration then return false end
+            PickupRequested = false
+            ActivePickup = nil
+            ActivePickupCPS = -1
+            PickupPhase = "IDLE"
+            return true
+        end
         local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
         local AnimalPickups = workspace:FindFirstChild("AnimalPickups")
         local SetTrackerStatus
         local ReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
         local function ReturnToPickup(reason)
             if ReturningAfterPickup then return end
-            PickupRequested = false
+            ClearPickupLock()
             ReturningAfterPickup = true
             SetTrackerStatus(reason or "Pickup hold completed. Returning to the pickup point.")
             task.spawn(function()
@@ -1464,7 +1477,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupGeneration += 1
                     PickupRequested = false
                     local oldPickupName = ActivePickup.Name
-                    SetTrackerStatus(string.format("HIGHER CPS PREEMPT: %s (%.2f) replaces %s (%.2f).", pickup.Name, cps, oldPickupName, ActivePickupCPS))
+                    SetTrackerStatus(string.format("PICKUP LOCK PREEMPT: %s (%.2f CPS) replaces %s (%.2f CPS) during phase %s.", pickup.Name, cps, oldPickupName, ActivePickupCPS, PickupPhase))
                     local oldCharacter = LocalPlayer.Character
                     local oldHumanoid = oldCharacter and oldCharacter:FindFirstChildOfClass("Humanoid")
                     if oldHumanoid then oldHumanoid:Move(Vector3.zero, false) end
@@ -1479,6 +1492,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local pickupToken = PickupGeneration
             ActivePickup = pickup
             ActivePickupCPS = cps
+            PickupPhase = "ANIMAL_APPROACH"
             SetPickupTracking(pickup, "Selected for pickup", cpsText)
             PickupRequested = true
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
@@ -1487,7 +1501,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local activeCharacter = LocalPlayer.Character
             local activeHumanoid = activeCharacter and activeCharacter:FindFirstChildOfClass("Humanoid")
             if activeHumanoid then activeHumanoid:Move(Vector3.zero, false) end
-            SetTrackerStatus("PICKUP PRIORITY LOCK: " .. pickup.Name .. " | Auto Break paused; moving to animal location first.")
+            SetPickupPhase("ANIMAL_APPROACH", string.format("%s | %.2f CPS | Auto Break paused; animal target owns movement.", pickup.Name, cps))
             local pickupPosition
             local positionOk, position = pcall(function()
                 if pickup:IsA("Model") then return pickup:GetPivot().Position end
@@ -1588,7 +1602,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                 return
             end
-            SetTrackerStatus(string.format("Animal location verified (%.1f studs). Searching nearest PromptAnchor StealPrompt.", verifiedAnimalDistance))
+            SetPickupPhase("PROMPT_SEARCH", string.format("%s | animal reached (%.1f studs); finding its nearest matching StealPrompt.", pickup.Name, verifiedAnimalDistance))
             local prompt
             local promptState = "StealPrompt not found"
             local promptDeadline = os.clock() + 5
@@ -1650,10 +1664,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                 return
             end
-            SetTrackerStatus("ELIGIBLE PET: " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown")
-                .. " | zone=" .. tostring(petZone or "unknown") .. " | CPS=" .. cpsText .. " | movement locked for pickup.")
+            SetPickupPhase("PROMPT_APPROACH", pickup.Name .. " | moving to matching StealPrompt; target and movement remain locked.")
             task.spawn(function()
-                SetTrackerStatus("Pickup locked for " .. pickup.Name .. ". Moving to its matching prompt.")
+                SetPickupPhase("PROMPT_APPROACH", "Lock held by " .. pickup.Name .. "; moving to its matching prompt.")
                 local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
                 local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
@@ -1728,7 +1741,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
-                SetTrackerStatus("Reached animal prompt. Waiting 1 second before pickup.")
+                SetPickupPhase("ACTIVATING", "Reached " .. pickup.Name .. "'s matching StealPrompt; confirming range before activation.")
                 task.wait(1)
                 if PickupGeneration ~= pickupToken then return end
                 if LocalPlayer.Character ~= character or not character.Parent or humanoid.Health <= 0 or not root.Parent then
@@ -1805,7 +1818,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 SetPickupTracking(pickup, "Collected", cpsText)
-                SetTrackerStatus("Pickup confirmed: animal disappeared from AnimalPickups. Returning to base.")
+                SetPickupPhase("CONFIRMED", "Collected " .. pickup.Name .. "; releasing target lock and returning to base.")
                 ActivePickup = nil
                 ActivePickupCPS = -1
                 ReturnToPickup("Pickup confirmed. Returning straight to base.")
