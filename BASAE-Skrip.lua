@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.77"
+local testver = "Test v1.78"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1305,39 +1305,27 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not pickup or not pickup:IsA("Model") then
                 return -1, "CPS unavailable: animal model missing"
             end
-            local pivot = pickup:FindFirstChild("Pivot")
-            local primary = pivot and pivot:FindFirstChild("PrimaryPart")
-            if not primary then
-                primary = pickup.PrimaryPart
-            end
-            if not primary or not primary:IsA("BasePart") then
-                return -1, "CPS unavailable: Pivot.PrimaryPart missing"
-            end
-            local dataFolder = pickup:FindFirstChild(primary.Name)
-            if not dataFolder and pivot then
-                dataFolder = pivot:FindFirstChild(primary.Name)
-            end
-            if not dataFolder then
-                return -1, "CPS unavailable: " .. primary.Name .. " data missing"
-            end
-            local overheadAttachment = dataFolder:FindFirstChild("AnimalOverheadAttachment", true)
+            local animalPart = pickup:FindFirstChild(pickup.Name)
+            local overheadAttachment = animalPart and animalPart:FindFirstChild("AnimalOverheadAttachment", true)
             local overhead = overheadAttachment and overheadAttachment:FindFirstChild("AnimalOverhead")
             local cpsContainer = overhead and overhead:FindFirstChild("CashPerSecond")
-            local cpsItem = cpsContainer and cpsContainer:FindFirstChild("CashPerSecond")
-            local textLabel = cpsItem and cpsItem:FindFirstChildWhichIsA("TextLabel", true)
-            if not textLabel then
+            local cpsLabel = cpsContainer and cpsContainer:FindFirstChild("CashPerSecond")
+            if not cpsLabel or not cpsLabel:IsA("TextLabel") then
                 return -1, "CPS unavailable: CashPerSecond TextLabel missing"
             end
-            local raw = textLabel.Text
+            local raw = cpsLabel.Text
             local cleaned = raw:gsub(",", ""):gsub("%s+", "")
-            local number = tonumber(cleaned:match("[%d%.]+"))
-            local suffix = cleaned:match("([%a]+)$")
+            local numberText, suffix = cleaned:match("^([%d%.]+)([%a]*)")
+            local number = tonumber(numberText)
             local scales = {k=1e3, m=1e6, b=1e9, t=1e12, qa=1e15, q=1e15, qi=1e18}
-            local scale = scales[suffix and suffix:lower() or ""]
+            local scale = scales[(suffix or ""):lower()]
             if suffix and suffix ~= "" and not scale then
                 return -1, raw .. " (unknown CPS suffix)"
             end
-            return number and number * (scale or 1) or -1, raw
+            if not number or number < 0 then
+                return -1, raw .. " (invalid CPS text)"
+            end
+            return number * (scale or 1), raw
         end
         local function IsRarityAllowed(pickup)
             local selectedCount = 0
