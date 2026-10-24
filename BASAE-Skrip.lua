@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.7"
+local testver = "Test v1.8"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -687,7 +687,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local FilterOpen = false
         local EggList
         local FilterButton
-        FilterButton = CreateButton(Card1, "Filter list                         ▼", function(){
+        FilterButton = CreateButton(Card1, "Filter list                         ▼", function()
             FilterOpen = not FilterOpen
             EggList.Visible = FilterOpen
             Card1.Size = UDim2.new(1, 0, 0, FilterOpen and 226 or 122)
