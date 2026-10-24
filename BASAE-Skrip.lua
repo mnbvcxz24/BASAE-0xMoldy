@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.56"
+local testver = "Test v1.57"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -732,7 +732,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local StopAutoBreak
         local CompletedEggs = {}
         local AutoBreakToggleInitialized = false
+        local AutoBreakEnabled = false
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
+            AutoBreakEnabled = enabled
             if not AutoBreakToggleInitialized then
                 AutoBreakToggleInitialized = true
                 return
@@ -1200,7 +1202,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus("Moving straight to return position.")
                 local moveStarted = os.clock()
                 while character.Parent and humanoid.Health > 0
-                    and (root.Position - ReturnPosition).Magnitude > 4
+                    and Vector2.new(root.Position.X - ReturnPosition.X, root.Position.Z - ReturnPosition.Z).Magnitude > 4
                     and os.clock() - moveStarted < 25 do
                     local offset = Vector3.new(
                         ReturnPosition.X - root.Position.X,
@@ -1215,23 +1217,30 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     game:GetService("RunService").Heartbeat:Wait()
                 end
                 humanoid:Move(Vector3.zero, false)
-                if (root.Position - ReturnPosition).Magnitude <= 4 then
+                if Vector2.new(root.Position.X - ReturnPosition.X, root.Position.Z - ReturnPosition.Z).Magnitude <= 4 then
                     ReturningAfterPickup = false
                     SetTrackerStatus("Returned to pickup point.")
                 else
                     ReturningAfterPickup = false
-                    SetTrackerStatus("Straight movement did not reach pickup point; distance=" .. math.floor((root.Position - ReturnPosition).Magnitude) .. ".")
+                    SetTrackerStatus("Straight movement did not reach pickup point; horizontal distance=" .. math.floor(Vector2.new(root.Position.X - ReturnPosition.X, root.Position.Z - ReturnPosition.Z).Magnitude) .. ".")
                     return
                 end
-                if AutoBreakToggleInitialized and StartAutoBreak then
+                if AutoBreakEnabled and StartAutoBreak then
                     task.wait(0.2)
-                    StartAutoBreak()
+                    if AutoBreakEnabled then StartAutoBreak() end
                 end
             end)
         end
         AnimalBankedRemote.OnClientEvent:Connect(function()
             if not PickupRequested or ReturningAfterPickup then return end
             ReturnToPickup("AnimalBankedRemote confirmed the pet reached the base. Returning to the pickup point.")
+            task.delay(20, function()
+                if PickupRequested and not ReturningAfterPickup then
+                    PickupRequested = false
+                    SetTrackerStatus("Pickup confirmation timeout: AnimalBankedRemote was not received. Auto Break can continue.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                end
+            end)
         end)
         local function IsTargetReference(reference, target)
             if reference == target then
@@ -1433,11 +1442,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if not PickupRequested or not pickup.Parent then
                     PickupRequested = false
                     SetTrackerStatus("Pickup cancelled: pet disappeared during the 3-second wait.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
                 if not prompt.Parent or not prompt.Enabled then
                     PickupRequested = false
                     SetTrackerStatus("Pickup cancelled: StealPrompt became unavailable after the 3-second wait.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
                 local ok, err = pcall(function()
@@ -1446,8 +1457,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     prompt:InputHoldEnd()
                 end)
                 if not ok then
+                    pcall(function() prompt:InputHoldEnd() end)
                     PickupRequested = false
                     SetTrackerStatus("StealPrompt hold failed: " .. tostring(err))
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
                 SetTrackerStatus("StealPrompt hold completed; waiting for AnimalBankedRemote confirmation before returning.")
@@ -1571,8 +1584,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         .. " | tracking matching EggHitConfirmed events now.")
                     return
                 end
-                local localDirection = root.CFrame:VectorToObjectSpace(offset.Unit)
-                humanoid:Move(Vector3.new(localDirection.X, 0, localDirection.Z), true)
+                humanoid:Move(offset.Unit, false)
             end)
         end
     elseif index == 2 then
