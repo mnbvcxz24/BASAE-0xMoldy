@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.88"
+local testver = "Test v1.89"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1509,6 +1509,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local animalMoveStarted = os.clock()
             local lastAnimalProgressAt = os.clock()
             local bestAnimalDistance = math.huge
+            local lastAnimalMoveToAt = 0
             while PickupRequested and PickupGeneration == pickupToken and pickup.Parent and moveHumanoid.Health > 0 do
                 if LocalPlayer.Character ~= moveCharacter or not moveCharacter.Parent or not moveRoot.Parent then
                     if PickupGeneration ~= pickupToken then return end
@@ -1546,7 +1547,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     bestAnimalDistance = animalDistance
                     SetTrackerStatus(string.format("PICKUP MOVEMENT: no progress toward %s; retrying Move (%.1f studs).", pickup.Name, animalDistance))
                 end
-                moveHumanoid:Move(animalOffset.Unit, false)
+                if now - lastAnimalMoveToAt >= 0.5 then
+                    moveHumanoid:MoveTo(Vector3.new(pickupPosition.X, moveRoot.Position.Y, pickupPosition.Z))
+                    lastAnimalMoveToAt = now
+                end
                 task.wait(0.05)
             end
             moveHumanoid:Move(Vector3.zero, false)
@@ -1647,6 +1651,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local moveStarted = os.clock()
                 local lastPromptProgressAt = os.clock()
                 local bestPromptDistance = math.huge
+                local lastPromptMoveToAt = 0
                 while PickupRequested and PickupGeneration == pickupToken and pickup.Parent and prompt.Parent and humanoid.Health > 0 do
                     if LocalPlayer.Character ~= character or not character.Parent or not root.Parent then
                         if PickupGeneration ~= pickupToken then return end
@@ -1680,7 +1685,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         bestPromptDistance = promptDistance
                         SetTrackerStatus(string.format("PICKUP MOVEMENT: no progress toward StealPrompt; continuing Move (%.1f studs).", promptDistance))
                     end
-                    humanoid:Move(offset.Unit, false)
+                    if now - lastPromptMoveToAt >= 0.5 then
+                        humanoid:MoveTo(Vector3.new(promptPosition.X, root.Position.Y, promptPosition.Z))
+                        lastPromptMoveToAt = now
+                    end
                     task.wait(0.05)
                 end
                 humanoid:Move(Vector3.zero, false)
