@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.30"
+local testver = "Test v1.31"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -15,7 +15,7 @@ local UIConfig = {
     SidebarNames = {
         "Auto",
         "Debug Console",
-        "Sidebar 3",
+        "Placed Animals",
         "Sidebar 4",
         "Sidebar 5"
     }
@@ -730,7 +730,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoPickupToggle.Size = UDim2.fromOffset(58, 26)
         local RarityFilterOpen = false
         local SelectedRarities = {}
-        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret"}
+        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno"}
+        local RarityList
         local RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
             AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 282 or 128)
@@ -742,11 +743,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Pick up highest Cash Per Second", false, nil)
         HighestCashToggle.Position = UDim2.fromOffset(15, 76)
         HighestCashToggle.Size = UDim2.new(1, -30, 0, 30)
-        local RarityList = Create("Frame", {
+        RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
             Parent = AutoPickupCard,
             Position = UDim2.fromOffset(15, 112),
             Size = UDim2.new(1, -30, 0, 160),
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Theme.Gray,
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             Visible = false
@@ -764,6 +768,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             PaddingLeft = UDim.new(0, 5),
             PaddingRight = UDim.new(0, 5)
         })
+        RarityLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            RarityList.CanvasSize = UDim2.new(0, 0, 0, RarityLayout.AbsoluteContentSize.Y + 10)
+        end)
         for rarityIndex, rarityName in ipairs(RarityOptions) do
             local RarityButton = Create("TextButton", {
                 Name = "Rarity_" .. rarityName,
