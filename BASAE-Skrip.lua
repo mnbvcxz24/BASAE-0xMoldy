@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.100"
+local testver = "Test v1.101"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1186,6 +1186,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ActivePickupCPS = -1
         local PickupPhase = "IDLE"
         local PickupGeneration = 0
+        local SetTrackerStatus
         local function SetPickupPhase(phase, message)
             PickupPhase = phase
             if message then SetTrackerStatus("PICKUP LOCK [" .. phase .. "]: " .. message) end
@@ -1200,7 +1201,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
         local AnimalPickups = workspace:FindFirstChild("AnimalPickups")
-        local SetTrackerStatus
         local ReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
         local function ReturnToPickup(reason)
             if ReturningAfterPickup then return end
