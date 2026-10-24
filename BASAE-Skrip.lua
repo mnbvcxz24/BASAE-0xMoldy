@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.102"
+local testver = "Test v1.103"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -2448,7 +2448,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             for order, record in ipairs(records) do
                 local detail = record.cps ~= "" and (" | CPS: " .. record.cps) or ""
-                local row = Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 30), BackgroundColor3 = Theme.Card, BorderSizePixel = 0, Text = "  " .. record.name .. "  |  " .. record.state .. detail, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, LayoutOrder = order})
+                local row = Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 30), BackgroundColor3 = Theme.Card, BorderSizePixel = 0, Text = "  " .. record.name .. "  |  " .. record.state .. detail, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order})
                 AddCorner(row, 4)
             end
             PickupList.CanvasSize = UDim2.new(0, 0, 0, PickupLayout.AbsoluteContentSize.Y + 10)
