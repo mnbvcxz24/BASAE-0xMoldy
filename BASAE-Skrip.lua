@@ -4,17 +4,17 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.26"
+local testver = "Test v1.27"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
     Subtitle = testver,
     Width = 300,
     Height = 250,
-    SidebarWidth = 72,
+    SidebarWidth = 94,
     SidebarNames = {
         "Auto",
-        "Sidebar 2",
+        "Debug Console",
         "Sidebar 3",
         "Sidebar 4",
         "Sidebar 5"
