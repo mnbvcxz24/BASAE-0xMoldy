@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.37"
+local testver = "Test v1.38"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -734,8 +734,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoPickupToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoPickupToggle.Size = UDim2.fromOffset(58, 26)
         local RarityFilterOpen = false
-        local SelectedRarities = {}
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno"}
+        local SelectedRarities = {}
+        for _, rarityName in ipairs(RarityOptions) do
+            SelectedRarities[rarityName] = true
+        end
         local RarityList
         local RarityFilterButton
         RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
@@ -747,7 +750,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         RarityFilterButton.Position = UDim2.fromOffset(15, 80)
         RarityFilterButton.Size = UDim2.new(1, -30, 0, 28)
         local HighestCashEnabled = false
-        local HighestCashToggle = CreateToggle(AutoPickupCard, "Pick up highest Cash Per Second", false, function(enabled)
+        local HighestCashToggle = CreateToggle(AutoPickupCard, "Highest CPS", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Highest CPS filter ON." or "Highest CPS filter OFF."))
         end)
@@ -809,11 +812,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 Position = UDim2.new(1, -23, 0, 0),
                 Size = UDim2.fromOffset(20, 19),
                 BackgroundTransparency = 1,
-                Text = "○",
-                TextColor3 = Theme.Gray,
+                Text = SelectedRarities[rarityName] and "✓" or "○",
+                TextColor3 = SelectedRarities[rarityName] and Color3.fromRGB(110, 205, 145) or Theme.Gray,
                 Font = Enum.Font.GothamBold,
                 TextSize = 12
             })
+            if SelectedRarities[rarityName] then
+                RarityButton.BackgroundColor3 = Theme.Selected
+            end
             RarityButton.MouseButton1Click:Connect(function()
                 SelectedRarities[rarityName] = not SelectedRarities[rarityName] or nil
                 local selected = SelectedRarities[rarityName] == true
@@ -1306,27 +1312,43 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return -1
         end
+        local function RejectPickupAndRestart(message)
+            if CurrentTarget then
+                CompletedEggs[CurrentTarget] = true
+            end
+            PickupRequested = false
+            SetTrackerStatus(message .. " | skipping egg and searching for another.")
+            task.defer(function()
+                if StopAutoBreak then
+                    StopAutoBreak()
+                end
+                task.wait(0.2)
+                if StartAutoBreak then
+                    StartAutoBreak()
+                end
+            end)
+        end
         local function EvaluatePickup(pickup)
             if not AutoPickupEnabled then
                 SetTrackerStatus("New pet detected (Auto Pickup OFF): " .. pickup.Name)
                 return
             end
             if not IsRarityAllowed(pickup) then
-                SetTrackerStatus("Filtered out " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown"))
+                RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown"))
                 return
             end
             local petZone = GetPickupZone(pickup)
             local targetZone = CurrentTarget and CurrentTarget.Parent and CurrentTarget.Parent.Parent
             local targetZoneName = targetZone and targetZone.Name
             if petZone and targetZoneName and petZone:lower() ~= targetZoneName:lower() then
-                SetTrackerStatus("Filtered out " .. pickup.Name .. " | zone=" .. petZone .. " (target zone " .. targetZoneName .. ")")
+                RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | zone=" .. petZone .. " (target zone " .. targetZoneName .. ")")
                 return
             end
             local cps, cpsText = GetPetCPS(pickup)
             if HighestCashEnabled then
                 local highestPlaced = GetHighestPlacedCPS()
                 if highestPlaced >= 0 and cps <= highestPlaced then
-                    SetTrackerStatus("Filtered out " .. pickup.Name .. " | CPS " .. cpsText .. " is not above your highest placed CPS.")
+                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. cpsText .. " is not above your highest placed CPS.")
                     return
                 end
             end
@@ -1466,8 +1488,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end)
         end
     elseif index == 2 then
-        local ConsoleCard = CreateCard(Page, "Debug Console", "Live script logs and Auto Break diagnostics.")
+        local ConsoleCard = CreateCard(Page, "Debug Console", "")
         ConsoleCard.Size = UDim2.new(1, 0, 0, 202)
+        local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
+        if consoleTitle then consoleTitle.Position = UDim2.fromOffset(15, 10) end
         local ClearLogsButton = Create("TextButton", {
             Name = "ClearLogs",
             Parent = ConsoleCard,
@@ -1485,8 +1509,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ConsoleBackground = Create("Frame", {
             Name = "ConsoleBackground",
             Parent = ConsoleCard,
-            Position = UDim2.fromOffset(10, 80),
-            Size = UDim2.new(1, -20, 1, -90),
+            Position = UDim2.fromOffset(10, 48),
+            Size = UDim2.new(1, -20, 1, -58),
             BackgroundColor3 = Color3.fromRGB(20, 22, 26),
             BorderSizePixel = 0,
             ClipsDescendants = true
@@ -1528,17 +1552,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddDebugLog("Debug console ready.")
 
     elseif index == 3 then
-        local AnimalsCard = CreateCard(Page, "Placed Animals", "Animals on your own base and their Cash Per Second.")
+        local AnimalsCard = CreateCard(Page, "Placed Animals", "")
         AnimalsCard.Size = UDim2.new(1, 0, 0, 230)
+        local animalsTitle = AnimalsCard:FindFirstChildWhichIsA("TextLabel")
+        if animalsTitle then animalsTitle.Position = UDim2.fromOffset(15, 10) end
         local BaseStatus = Create("TextLabel", {
-            Parent = AnimalsCard, Position = UDim2.fromOffset(15, 80),
+            Parent = AnimalsCard, Position = UDim2.fromOffset(15, 42),
             Size = UDim2.new(1, -30, 0, 18), BackgroundTransparency = 1,
             Text = "Searching for Your Base...", TextColor3 = Theme.Gray,
             Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left
         })
         local AnimalsList = Create("ScrollingFrame", {
-            Parent = AnimalsCard, Position = UDim2.fromOffset(10, 104),
-            Size = UDim2.new(1, -20, 1, -114), BackgroundColor3 = Theme.SurfaceInput,
+            Parent = AnimalsCard, Position = UDim2.fromOffset(10, 64),
+            Size = UDim2.new(1, -20, 1, -74), BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Gray,
             CanvasSize = UDim2.new(0, 0, 0, 0)
         })
