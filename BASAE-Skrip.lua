@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.85"
+local testver = "Test v1.86"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1789,20 +1789,55 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
                 local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
                 local moveStarted = os.clock()
+                local lastMoveTo = 0
+                local lastProgressAt = os.clock()
+                local bestDistance = math.huge
                 while PickupRequested and PickupGeneration == flingToken and humanoid.Health > 0 do
-                    local offset = Vector3.new(flingPosition.X - root.Position.X, 0, flingPosition.Z - root.Position.Z)
-                    if offset.Magnitude <= 4 then break end
-                    if os.clock() - moveStarted >= 25 then
-                        humanoid:Move(Vector3.zero, false)
+                    if LocalPlayer.Character ~= character or not character.Parent or not root.Parent then
                         PickupRequested = false
-                        SetTrackerStatus("FLING RECOVERY cancelled: timed out reaching reported animal location.")
+                        SetTrackerStatus("FLING RECOVERY cancelled: character changed or root became unavailable.")
                         if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                         return
                     end
-                    humanoid:Move(offset.Unit, false)
-                    task.wait(0.05)
+                    local offset = Vector3.new(flingPosition.X - root.Position.X, 0, flingPosition.Z - root.Position.Z)
+                    local distance = offset.Magnitude
+                    if distance <= 4 then break end
+                    local now = os.clock()
+                    if now - moveStarted >= 45 then
+                        humanoid:Move(Vector3.zero, false)
+                        PickupRequested = false
+                        SetTrackerStatus(string.format("FLING RECOVERY cancelled: timed out reaching reported animal location (%.1f studs away).", distance))
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        return
+                    end
+                    if distance < bestDistance - 0.75 then
+                        bestDistance = distance
+                        lastProgressAt = now
+                    elseif now - lastProgressAt >= 2.5 then
+                        local state = humanoid:GetState()
+                        if state == Enum.HumanoidStateType.FallingDown
+                            or state == Enum.HumanoidStateType.Ragdoll
+                            or state == Enum.HumanoidStateType.Physics
+                            or state == Enum.HumanoidStateType.PlatformStanding then
+                            humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                        end
+                        lastProgressAt = now
+                        bestDistance = distance
+                        humanoid:MoveTo(Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z))
+                        lastMoveTo = now
+                        SetTrackerStatus(string.format("FLING RECOVERY: no walking progress; retrying MoveTo (%.1f studs away, state=%s).", distance, tostring(state)))
+                    elseif now - lastMoveTo >= 5 then
+                        humanoid:MoveTo(Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z))
+                        lastMoveTo = now
+                    end
+                    if now - lastMoveTo >= 1 then
+                        humanoid:MoveTo(Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z))
+                        lastMoveTo = now
+                    end
+                    task.wait(0.1)
                 end
                 humanoid:Move(Vector3.zero, false)
+                humanoid:MoveTo(root.Position)
                 local arrivalDistance = (Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z) - root.Position).Magnitude
                 if PickupGeneration ~= flingToken then return end
                 if not PickupRequested or humanoid.Health <= 0 or arrivalDistance > 5 then
