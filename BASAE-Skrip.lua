@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.13"
+local testver = "Test v1.14"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -680,8 +680,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function UpdateFilterPanel()
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
-            SortFrame.Visible = EggFilterOpen
-            Card1.Size = UDim2.new(1, 0, 0, EggFilterOpen and 234 or (ZoneFilterOpen and 194 or 90))
+            SortFrame.Visible = true
+            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 224 or 114)
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
         end
@@ -702,7 +702,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
             Parent = Card1,
-            Position = UDim2.fromOffset(15, 82),
+            Position = UDim2.fromOffset(15, 116),
             Size = UDim2.new(1, -30, 0, 102),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
@@ -754,10 +754,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         SortFrame = Create("Frame", {
             Name = "EggSortOptions",
             Parent = Card1,
-            Position = UDim2.fromOffset(15, 190),
+            Position = UDim2.fromOffset(15, 78),
             Size = UDim2.new(1, -30, 0, 32),
             BackgroundTransparency = 1,
-            Visible = false
+            Visible = true
         })
         Create("TextLabel", {
             Parent = SortFrame,
@@ -821,7 +821,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local eggsFolder = zone and zone:FindFirstChild("Eggs")
                     if eggsFolder then
                         for _, egg in ipairs(eggsFolder:GetChildren()) do
-                            if egg:IsA("Model") or egg:IsA("BasePart") then
+                            if (egg:IsA("Model") or egg:IsA("BasePart"))
+                            and egg.Name:lower():find("egg", 1, true) then
                                 local eggName = GetEggTypeName(egg.Name)
                                 local size = egg:IsA("Model") and egg:GetExtentsSize().Magnitude or egg.Size.Magnitude
                                 if not byName[eggName] then
