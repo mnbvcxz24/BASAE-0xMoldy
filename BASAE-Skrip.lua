@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.95"
+local testver = "Test v1.96"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1870,8 +1870,28 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 SetTrackerStatus("NEW ANIMAL detected: " .. pickup.Name .. " | checking filters and pickup priority.")
                 task.defer(function()
-                    if pickup.Parent and AutoBreakEnabled and AutoPickupEnabled and not ReturningAfterPickup then
+                    if not pickup.Parent or not AutoBreakEnabled or not AutoPickupEnabled or ReturningAfterPickup then
+                        return
+                    end
+                    local ok, err = xpcall(function()
                         EvaluatePickup(pickup)
+                    end, debug.traceback)
+                    if not ok then
+                        warn("[BASAE-Skrip] EvaluatePickup failed for " .. pickup.Name .. ": " .. tostring(err))
+                        if PickupRequested then
+                            PickupGeneration += 1
+                            PickupRequested = false
+                            ActivePickup = nil
+                            ActivePickupCPS = -1
+                            local character = LocalPlayer.Character
+                            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                            if humanoid then humanoid:Move(Vector3.zero, false) end
+                        end
+                        SetTrackerStatus("Pickup evaluation error for " .. pickup.Name .. ": " .. tostring(err):gsub("[%r\n]+", " "):sub(1, 220))
+                        if AutoBreakEnabled and AutoPickupEnabled and not ReturningAfterPickup and StartAutoBreak then
+                            task.wait(0.2)
+                            StartAutoBreak()
+                        end
                     end
                 end)
             end)
