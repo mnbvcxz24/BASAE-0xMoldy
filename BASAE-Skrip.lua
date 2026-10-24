@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.16"
+local testver = "Test v1.17"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -661,7 +661,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
     if index == 1 then
         local Card1 = CreateCard(Page, "Auto break", "")
         Card1.Size = UDim2.new(1, 0, 0, 90)
-        local AutoBreakToggle = CreateToggle(Card1, "", false)
+        local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
+            if enabled then
+                StartAutoBreak()
+            else
+                StopAutoBreak("Toggle disabled")
+            end
+        end)
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
         local SelectedZones = {}
@@ -676,6 +682,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local EggFilterButton
         local SortLargestButton
         local SortSmallestButton
+        local StartAutoBreak
+        local StopAutoBreak
         local ZoneBuilds = workspace:WaitForChild("Build"):WaitForChild("ZoneBuilds")
         local function UpdateFilterPanel()
             ZoneList.Visible = ZoneFilterOpen
@@ -702,7 +710,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
             Parent = Card1,
-            Position = UDim2.fromOffset(15, 116),
+            Position = UDim2.fromOffset(15, 112),
             Size = UDim2.new(1, -30, 0, 102),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
@@ -728,7 +736,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         EggFilterList = Create("ScrollingFrame", {
             Name = "EggFilterList",
             Parent = Card1,
-            Position = UDim2.fromOffset(15, 82),
+            Position = UDim2.fromOffset(15, 112),
             Size = UDim2.new(1, -30, 0, 102),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
@@ -989,6 +997,148 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         EggLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             EggFilterList.CanvasSize = UDim2.new(0, 0, 0, EggLayout.AbsoluteContentSize.Y + 8)
         end)
+        local CurrentTarget
+        local ArrivedAtTarget = false
+        local WaitingForPickup = false
+        local MovementConnection
+        local BaselinePickups = {}
+        local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
+        local AnimalPickups = workspace:WaitForChild("AnimalPickups")
+        local function IsTargetReference(reference, target)
+            if reference == target then
+                return true
+            end
+            if typeof(reference) == "Instance" and typeof(target) == "Instance" then
+                if reference:IsDescendantOf(target) then
+                    return true
+                end
+                local nestedEgg = target:FindFirstChild("Egg", true)
+                if nestedEgg and reference == nestedEgg then
+                    return true
+                end
+            end
+            return false
+        end
+        local function SetTrackerStatus(message)
+            print("[BASAE-Skrip][Egg Tracker] " .. message)
+        end
+        HitEvent.OnClientEvent:Connect(function(eggReference, hitCounter, health)
+            local target = CurrentTarget
+            if not target or not ArrivedAtTarget then
+                return
+            end
+            if not IsTargetReference(eggReference, target) then
+                return
+            end
+            SetTrackerStatus("MATCH | target=" .. target:GetFullName()
+                .. " | counter=" .. tostring(hitCounter)
+                .. " | health=" .. tostring(health))
+            if tonumber(health) and tonumber(health) <= 0 then
+                WaitingForPickup = true
+                SetTrackerStatus("Target health reached 0; watching AnimalPickups for a new pet.")
+            end
+        end)
+        AnimalPickups.ChildAdded:Connect(function(pickup)
+            if not WaitingForPickup or BaselinePickups[pickup] then
+                return
+            end
+            WaitingForPickup = false
+            SetTrackerStatus("NEW PICKUP after target egg break: " .. pickup.Name
+                .. " | class=" .. pickup.ClassName)
+        end)
+        StopAutoBreak = function(reason)
+            if MovementConnection then
+                MovementConnection:Disconnect()
+                MovementConnection = nil
+            end
+            local character = LocalPlayer.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid:Move(Vector3.zero, false)
+            end
+            ArrivedAtTarget = false
+            WaitingForPickup = false
+            CurrentTarget = nil
+            if reason then
+                SetTrackerStatus(reason)
+            end
+        end
+        StartAutoBreak = function()
+            StopAutoBreak()
+            local selectedZoneNames = {}
+            for zoneName, selected in pairs(SelectedZones) do
+                if selected then
+                    table.insert(selectedZoneNames, zoneName)
+                end
+            end
+            table.sort(selectedZoneNames)
+            local target
+            for _, zoneName in ipairs(selectedZoneNames) do
+                local zone = ZoneBuilds:FindFirstChild(zoneName)
+                local eggsFolder = zone and zone:FindFirstChild("Eggs")
+                if eggsFolder then
+                    local candidates = {}
+                    for _, egg in ipairs(eggsFolder:GetChildren()) do
+                        if (egg:IsA("Model") or egg:IsA("BasePart"))
+                        and egg.Name:lower():find("egg", 1, true) then
+                            local eggName = GetEggTypeName(egg.Name)
+                            if SelectedEggs[eggName] ~= false then
+                                local size = egg:IsA("Model") and egg:GetExtentsSize().Magnitude or egg.Size.Magnitude
+                                table.insert(candidates, {instance = egg, name = eggName, size = size})
+                            end
+                        end
+                    end
+                    table.sort(candidates, function(a, b)
+                        if a.size == b.size then return a.name < b.name end
+                        if SortOrder == "Largest" then return a.size > b.size end
+                        return a.size < b.size
+                    end)
+                    if candidates[1] then
+                        target = candidates[1].instance
+                        break
+                    end
+                end
+            end
+            if not target then
+                SetTrackerStatus("No target found. Select a zone and keep at least one egg type enabled.")
+                return
+            end
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
+            local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+            CurrentTarget = target
+            ArrivedAtTarget = false
+            WaitingForPickup = false
+            table.clear(BaselinePickups)
+            for _, pickup in ipairs(AnimalPickups:GetChildren()) do
+                BaselinePickups[pickup] = true
+            end
+            SetTrackerStatus("Moving to target: " .. target:GetFullName())
+            MovementConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                if CurrentTarget ~= target or not target.Parent or not character.Parent
+                or humanoid.Health <= 0 then
+                    StopAutoBreak("Movement stopped: target/character unavailable.")
+                    return
+                end
+                local targetPosition = target:GetPivot().Position
+                local offset = Vector3.new(
+                    targetPosition.X - root.Position.X,
+                    0,
+                    targetPosition.Z - root.Position.Z
+                )
+                if offset.Magnitude <= 4 then
+                    humanoid:Move(Vector3.zero, false)
+                    MovementConnection:Disconnect()
+                    MovementConnection = nil
+                    ArrivedAtTarget = true
+                    SetTrackerStatus("ARRIVED | " .. target:GetFullName()
+                        .. " | tracking matching EggHitConfirmed events now.")
+                    return
+                end
+                local localDirection = root.CFrame:VectorToObjectSpace(offset.Unit)
+                humanoid:Move(Vector3.new(localDirection.X, 0, localDirection.Z), true)
+            end)
+        end
     else
         local Card1 = CreateCard(Page, name, "This is a reusable UI page. Backend code is not connected.")
         CreateButton(Card1, "Example Button", function()
