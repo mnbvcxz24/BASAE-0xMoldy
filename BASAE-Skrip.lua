@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.53"
+local testver = "Test v1.54"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1028,10 +1028,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end
             table.sort(records, function(a, b)
-                if a.luck == b.luck then
-                    return a.name < b.name
+                if SortOrder == "Highest Luck" and a.luck ~= b.luck then
+                    return a.luck > b.luck
                 end
-                return a.luck > b.luck
+                return a.name < b.name
             end)
             return records
         end
@@ -1150,7 +1150,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         SortLargestButton.MouseButton1Click:Connect(function()
-            SortOrder = "Highest Luck"
+            SortOrder = SortOrder == "Highest Luck" and "Default" or "Highest Luck"
             UpdateSortButtons()
             RefreshEggList()
         end)
@@ -1199,24 +1199,35 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetTrackerStatus("Return failed: character or HumanoidRootPart unavailable.")
                     return
                 end
-                local started = os.clock()
-                while character.Parent and humanoid.Health > 0 and (root.Position - ReturnPosition).Magnitude > 4 do
-                    if os.clock() - started > 25 then
-                        humanoid:Move(Vector3.zero, false)
-                        ReturningAfterPickup = false
-                        SetTrackerStatus("Return timed out before reaching the pickup point.")
-                        return
+                SetTrackerStatus("Moving back to pickup point with Humanoid:MoveTo.")
+                humanoid:MoveTo(ReturnPosition)
+                local reached = false
+                local moveConnection
+                moveConnection = humanoid.MoveToFinished:Connect(function(success)
+                    reached = success
+                    if moveConnection then
+                        moveConnection:Disconnect()
+                        moveConnection = nil
                     end
-                    local offset = Vector3.new(ReturnPosition.X - root.Position.X, 0, ReturnPosition.Z - root.Position.Z)
-                    if offset.Magnitude > 0 then
-                        local direction = root.CFrame:VectorToObjectSpace(offset.Unit)
-                        humanoid:Move(Vector3.new(direction.X, 0, direction.Z), true)
-                    end
+                end)
+                local moveStarted = os.clock()
+                while character.Parent and humanoid.Health > 0
+                    and (root.Position - ReturnPosition).Magnitude > 4
+                    and not reached and os.clock() - moveStarted < 25 do
                     game:GetService("RunService").Heartbeat:Wait()
                 end
-                humanoid:Move(Vector3.zero, false)
-                ReturningAfterPickup = false
-                SetTrackerStatus("Returned to pickup point.")
+                if moveConnection then
+                    moveConnection:Disconnect()
+                    moveConnection = nil
+                end
+                if (root.Position - ReturnPosition).Magnitude <= 4 then
+                    ReturningAfterPickup = false
+                    SetTrackerStatus("Returned to pickup point.")
+                else
+                    ReturningAfterPickup = false
+                    SetTrackerStatus("MoveTo did not reach pickup point; distance=" .. math.floor((root.Position - ReturnPosition).Magnitude) .. ".")
+                    return
+                end
                 if AutoBreakToggleInitialized and StartAutoBreak then
                     task.wait(0.2)
                     StartAutoBreak()
@@ -1428,12 +1439,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetTrackerStatus("StealPrompt hold failed: " .. tostring(err))
                     return
                 end
-                SetTrackerStatus("StealPrompt hold sent; waiting for AnimalBankedRemote confirmation.")
-                task.wait(8)
-                if PickupRequested then
-                    PickupRequested = false
-                    SetTrackerStatus("No AnimalBankedRemote confirmation within 8 seconds; stopping this pickup attempt.")
-                end
+                SetTrackerStatus("StealPrompt hold sent; waiting for AnimalBankedRemote confirmation with no timeout.")
             end)
         end
         local function BindAnimalPickups(folder)
