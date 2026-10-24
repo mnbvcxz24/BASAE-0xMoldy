@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.94"
+local testver = "Test v1.95"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1690,7 +1690,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local livePosition = getPromptPosition(prompt)
                     if livePosition then promptPosition = livePosition end
                     local direction = Vector3.new(promptPosition.X - root.Position.X, 0, promptPosition.Z - root.Position.Z)
-                    if direction.Magnitude > math.max(4, prompt.MaxActivationDistance - 1) then
+                    local verticalOffset = math.abs(promptPosition.Y - root.Position.Y)
+                    local activationRange = math.max(0, prompt.MaxActivationDistance)
+                    local horizontalReach = verticalOffset < activationRange
+                        and math.sqrt(math.max(0, activationRange * activationRange - verticalOffset * verticalOffset)) - 0.5
+                        or 0
+                    local stopDistance = math.max(1, horizontalReach)
+                    if direction.Magnitude > stopDistance then
                         humanoid:Move(direction.Unit, false)
                     else
                         humanoid:Move(Vector3.zero, false)
@@ -1709,7 +1715,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     promptPosition = getPromptPosition(prompt) or promptPosition
                     local offset = Vector3.new(promptPosition.X - root.Position.X, 0, promptPosition.Z - root.Position.Z)
                     local promptDistance = offset.Magnitude
-                    if promptDistance <= math.max(4, prompt.MaxActivationDistance - 1) then break end
+                    local verticalOffset = math.abs(promptPosition.Y - root.Position.Y)
+                    local activationRange = math.max(0, prompt.MaxActivationDistance)
+                    local horizontalReach = verticalOffset < activationRange
+                        and math.sqrt(math.max(0, activationRange * activationRange - verticalOffset * verticalOffset)) - 0.5
+                        or 0
+                    local stopDistance = math.max(1, horizontalReach)
+                    if promptDistance <= stopDistance then break end
                     local now = os.clock()
                     if now - moveStarted >= 25 then
                         humanoid:Move(Vector3.zero, false)
