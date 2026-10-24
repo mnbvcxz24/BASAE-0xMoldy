@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.107"
+local testver = "Test v1.108"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -731,6 +731,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Card1.Size = UDim2.new(1, 0, 0, 114)
         local StartAutoBreak
         local StopAutoBreak
+        local StopPickupAutomation
         local CompletedEggs = {}
         local AutoBreakToggleInitialized = false
         local AutoBreakEnabled = false
@@ -745,17 +746,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if StartAutoBreak then StartAutoBreak() end
             elseif StopAutoBreak then
                 StopAutoBreak("Toggle disabled")
-                PickupGeneration += 1
-                PickupRequested = false
-                ReturningAfterPickup = false
-                ActivePickup = nil
-                ActivePickupCPS = -1
-                if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
-                if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
-                local character = LocalPlayer.Character
-                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                if humanoid then humanoid:Move(Vector3.zero, false) end
-                SetTrackerStatus("Auto Break disabled; all automation movement stopped.")
+                if StopPickupAutomation then StopPickupAutomation("Auto Break disabled") end
             end
         end)
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
@@ -766,20 +757,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Monitoring ON." or "Monitoring OFF."))
-            if not enabled then
-                PickupGeneration += 1
-                PickupRequested = false
-                ReturningAfterPickup = false
-                ActivePickup = nil
-                ActivePickupCPS = -1
-                if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
-                if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
-                local character = LocalPlayer.Character
-                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                if humanoid then humanoid:Move(Vector3.zero, false) end
-                SetTrackerStatus("Auto Pickup disabled; pickup, fling recovery, and return movement cancelled.")
-                if AutoBreakEnabled and StartAutoBreak then task.defer(StartAutoBreak) end
-            end
+            if not enabled and StopPickupAutomation then StopPickupAutomation("Auto Pickup disabled") end
         end)
         AutoPickupToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoPickupToggle.Size = UDim2.fromOffset(58, 26)
@@ -1220,6 +1198,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function SetPickupPhase(phase, message)
             PickupPhase = phase
             if message then SetTrackerStatus("PICKUP LOCK [" .. phase .. "]: " .. message) end
+        end
+        StopPickupAutomation = function(reason)
+            PickupGeneration += 1
+            PickupRequested = false
+            ReturningAfterPickup = false
+            ActivePickup = nil
+            ActivePickupCPS = -1
+            if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+            if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+            if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+            local character = LocalPlayer.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            if humanoid then humanoid:Move(Vector3.zero, false) end
+            if SetTrackerStatus then SetTrackerStatus(tostring(reason) .. "; all pickup/return movement stopped.") end
         end
         local function ClearPickupLock(token)
             if token and token ~= PickupGeneration then return false end
