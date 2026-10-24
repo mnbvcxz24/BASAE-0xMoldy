@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.48"
+local testver = "Test v1.49"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1179,7 +1179,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local PickupRequested = false
         local ReturningAfterPickup = false
         local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
-        local AnimalPickups = workspace:WaitForChild("AnimalPickups")
+        local AnimalPickups = workspace:FindFirstChild("AnimalPickups")
         local SetTrackerStatus
         local AnimalBankedRemote = game:GetService("ReplicatedStorage"):WaitForChild("AnimalBankedRemote")
         local ReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
@@ -1400,17 +1400,32 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end)
         end
-        AnimalPickups.ChildAdded:Connect(function(pickup)
-            if not WaitingForPickup or BaselinePickups[pickup] then
+        local function BindAnimalPickups(folder)
+            if not folder or not folder:IsA("Folder") and not folder:IsA("Model") then
                 return
             end
-            WaitingForPickup = false
-            SetTrackerStatus("NEW PET after target egg break: " .. pickup.Name .. " | class=" .. pickup.ClassName)
-            task.defer(function()
-                if pickup.Parent then
-                    EvaluatePickup(pickup)
+            AnimalPickups = folder
+            folder.ChildAdded:Connect(function(pickup)
+                if not WaitingForPickup or BaselinePickups[pickup] then
+                    return
                 end
+                WaitingForPickup = false
+                SetTrackerStatus("NEW PET after target egg break: " .. pickup.Name .. " | class=" .. pickup.ClassName)
+                task.defer(function()
+                    if pickup.Parent then
+                        EvaluatePickup(pickup)
+                    end
+                end)
             end)
+            SetTrackerStatus("AnimalPickups folder detected and connected.")
+        end
+        if AnimalPickups then
+            BindAnimalPickups(AnimalPickups)
+        end
+        workspace.ChildAdded:Connect(function(child)
+            if child.Name == "AnimalPickups" and not AnimalPickups then
+                BindAnimalPickups(child)
+            end
         end)
         StopAutoBreak = function(reason)
             if MovementConnection then
@@ -1474,8 +1489,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ArrivedAtTarget = false
             WaitingForPickup = false
             table.clear(BaselinePickups)
-            for _, pickup in ipairs(AnimalPickups:GetChildren()) do
-                BaselinePickups[pickup] = true
+            if AnimalPickups then
+                for _, pickup in ipairs(AnimalPickups:GetChildren()) do
+                    BaselinePickups[pickup] = true
+                end
+            else
+                SetTrackerStatus("AnimalPickups folder not created yet; waiting for it to appear.")
             end
             SetTrackerStatus("Moving to target: " .. target:GetFullName())
             MovementConnection = game:GetService("RunService").RenderStepped:Connect(function()
