@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.28"
+local testver = "Test v1.29"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -706,6 +706,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
     if index == 1 then
         local Card1 = CreateCard(Page, "Auto break", "")
         Card1.Size = UDim2.new(1, 0, 0, 114)
+        local StartAutoBreak
+        local StopAutoBreak
         local AutoBreakToggleInitialized = false
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
             if not AutoBreakToggleInitialized then
@@ -733,8 +735,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local EggFilterButton
         local SortLargestButton
         local SortSmallestButton
-        local StartAutoBreak
-        local StopAutoBreak
         local ZoneBuilds = workspace:WaitForChild("Build"):WaitForChild("ZoneBuilds")
         local function UpdateFilterPanel()
             ZoneList.Visible = ZoneFilterOpen
