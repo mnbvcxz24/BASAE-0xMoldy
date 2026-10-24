@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.59"
+local testver = "Test v1.60"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -774,9 +774,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
         RarityFilterButton.Size = UDim2.new(1, -22, 0, 26)
         local HighestCashEnabled = false
-        local HighestCashToggle = CreateToggle(AutoPickupCard, "Highest CPS", false, function(enabled)
+        local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest CPS", false, function(enabled)
             HighestCashEnabled = enabled
-            AddDebugLog("[Auto Pickup] " .. (enabled and "Highest CPS filter ON." or "Highest CPS filter OFF."))
+            AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
         HighestCashToggle.Position = UDim2.fromOffset(11, 73)
         HighestCashToggle.Size = UDim2.new(1, -22, 0, 26)
@@ -1320,7 +1320,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return false
         end
-        local function GetHighestPlacedCPS()
+        local function GetLowestPlacedCPS()
             local plots = workspace:FindFirstChild("Plots")
             if not plots then return -1 end
             for _, base in ipairs(plots:GetChildren()) do
@@ -1329,14 +1329,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local nameLabel = info and info:FindFirstChild("Name")
                 if nameLabel and nameLabel:IsA("TextLabel") and nameLabel.Text == "Your Base" then
                     local placed = base:FindFirstChild("PlacedAnimals")
-                    local highest = -1
+                    local lowest = math.huge
                     if placed then
                         for _, animal in ipairs(placed:GetChildren()) do
                             local value = GetPetCPS(animal)
-                            if value > highest then highest = value end
+                            if value >= 0 and value < lowest then lowest = value end
                         end
                     end
-                    return highest
+                    return lowest < math.huge and lowest or -1
                 end
             end
             return -1
@@ -1375,9 +1375,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             local cps, cpsText = GetPetCPS(pickup)
             if HighestCashEnabled then
-                local highestPlaced = GetHighestPlacedCPS()
-                if highestPlaced >= 0 and cps <= highestPlaced then
-                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. cpsText .. " is not above your highest placed CPS.")
+                local lowestPlaced = GetLowestPlacedCPS()
+                if lowestPlaced >= 0 and cps <= lowestPlaced then
+                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. cpsText
+                        .. " is not above your lowest placed CPS (" .. tostring(lowestPlaced) .. ").")
                     return
                 end
             end
