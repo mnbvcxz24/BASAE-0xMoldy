@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.11"
+local testver = "Test v1.12"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -665,18 +665,36 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
         local SelectedEggs = {}
-        local FilterOpen = false
+        local ZoneFilterOpen = false
+        local EggFilterOpen = false
         local EggList
-        local FilterButton
-        FilterButton = CreateButton(Card1, "Filter list                         ▼", function()
-            FilterOpen = not FilterOpen
-            EggList.Visible = FilterOpen
-            Card1.Size = UDim2.new(1, 0, 0, FilterOpen and 194 or 90)
-            FilterButton.Text = FilterOpen and "Filter list                         ▲" or "Filter list                         ▼"
+        local EggFilterList
+        local ZoneFilterButton
+        local EggFilterButton
+        local function UpdateFilterPanel()
+            local isOpen = ZoneFilterOpen or EggFilterOpen
+            EggList.Visible = ZoneFilterOpen
+            EggFilterList.Visible = EggFilterOpen
+            Card1.Size = UDim2.new(1, 0, 0, isOpen and 194 or 90)
+            ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
+            EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
+        end
+        ZoneFilterButton = CreateButton(Card1, "Zones ▼", function()
+            ZoneFilterOpen = not ZoneFilterOpen
+            EggFilterOpen = false
+            UpdateFilterPanel()
         end)
-        FilterButton.Position = UDim2.fromOffset(15, 44)
+        ZoneFilterButton.Position = UDim2.fromOffset(15, 44)
+        ZoneFilterButton.Size = UDim2.new(0.5, -20, 0, 30)
+        EggFilterButton = CreateButton(Card1, "Eggs ▼", function()
+            EggFilterOpen = not EggFilterOpen
+            ZoneFilterOpen = false
+            UpdateFilterPanel()
+        end)
+        EggFilterButton.Position = UDim2.new(0.5, 5, 0, 44)
+        EggFilterButton.Size = UDim2.new(0.5, -20, 0, 30)
         EggList = Create("ScrollingFrame", {
-            Name = "EggFilterList",
+            Name = "ZoneFilterList",
             Parent = Card1,
             Position = UDim2.fromOffset(15, 82),
             Size = UDim2.new(1, -30, 0, 102),
@@ -687,6 +705,40 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             CanvasSize = UDim2.new(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             Visible = false
+        })
+        EggFilterList = Create("Frame", {
+            Name = "EggFilterList",
+            Parent = Card1,
+            Position = UDim2.fromOffset(15, 82),
+            Size = UDim2.new(1, -30, 0, 102),
+            BackgroundColor3 = Theme.SurfaceInput,
+            BorderSizePixel = 0,
+            Visible = false
+        })
+        AddCorner(EggFilterList, 6)
+        Create("TextLabel", {
+            Name = "DefaultEggSelection",
+            Parent = EggFilterList,
+            Position = UDim2.fromOffset(8, 8),
+            Size = UDim2.new(1, -16, 0, 28),
+            BackgroundTransparency = 1,
+            Text = "All eggs selected (default)",
+            TextColor3 = Theme.Text,
+            Font = Enum.Font.Gotham,
+            TextSize = 10,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        Create("TextLabel", {
+            Name = "EggSortOrder",
+            Parent = EggFilterList,
+            Position = UDim2.fromOffset(8, 38),
+            Size = UDim2.new(1, -16, 0, 28),
+            BackgroundTransparency = 1,
+            Text = "Sort: Largest to Smallest",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham,
+            TextSize = 10,
+            TextXAlignment = Enum.TextXAlignment.Left
         })
         AddCorner(EggList, 6)
         local EggLayout = Create("UIListLayout", {
