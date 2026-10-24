@@ -1409,11 +1409,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local moveStarted = os.clock()
                 local connection
                 connection = game:GetService("RunService").RenderStepped:Connect(function()
-                    if PickupGeneration ~= returnToken or not ReturningAfterPickup or LocalPlayer.Character ~= character or not character.Parent or not root.Parent or humanoid.Health <= 0 then
+                    if PickupGeneration ~= returnToken then
+                        connection:Disconnect()
+                        connection = nil
+                        if ReturnMovementConnection == connection then ReturnMovementConnection = nil end
+                        return
+                    end
+                    if not ReturningAfterPickup or LocalPlayer.Character ~= character or not character.Parent or not root.Parent or humanoid.Health <= 0 then
                         humanoid:Move(Vector3.zero, false)
                         connection:Disconnect()
                         connection = nil
-                        ReturnMovementConnection = nil
+                        if ReturnMovementConnection == connection then ReturnMovementConnection = nil end
                         ReturningAfterPickup = false
                         SetTrackerStatus("Return movement stopped: character unavailable.")
                         if AutoBreakEnabled and StartAutoBreak then
