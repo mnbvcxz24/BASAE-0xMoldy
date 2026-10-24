@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.4"
+local testver = "Test v1.5"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -659,14 +659,136 @@ end
 for index, name in ipairs(UIConfig.SidebarNames) do
     local Page = CreatePage(index, name)
     if index == 1 then
-        local Card1 = CreateCard(Page, "Auto break egg", "")
+        local Card1 = CreateCard(Page, "Auto break egg", "Status: Inactive")
         Card1.Size = UDim2.new(1, 0, 0, 122)
-        CreateToggle(Card1, "Status", false, function(state)
-            -- Connect auto-break logic here.
-        end).Position = UDim2.fromOffset(15, 36)
+        local StatusText = Create("TextLabel", {
+            Name = "StatusValue",
+            Parent = Card1,
+            Position = UDim2.fromOffset(82, 37),
+            Size = UDim2.new(1, -160, 0, 20),
+            BackgroundTransparency = 1,
+            Text = "Inactive",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 10,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        local StatusToggle = CreateToggle(Card1, "Status", false, function(state)
+            StatusText.Text = state and "Active" or "Inactive"
+            StatusText.TextColor3 = state and Color3.fromRGB(110, 205, 145) or Theme.Gray
+        end)
+        StatusToggle.Position = UDim2.fromOffset(15, 34)
+        StatusToggle.Size = UDim2.new(1, -30, 0, 26)
+        local ToggleLabel = StatusToggle:FindFirstChildOfClass("TextLabel")
+        if ToggleLabel then
+            ToggleLabel.Size = UDim2.fromOffset(58, 26)
+        end
+        local SelectedEggs = {}
+        local FilterPopup = Create("Frame", {
+            Name = "EggFilterPopup",
+            Parent = Main,
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.fromOffset(250, 184),
+            BackgroundColor3 = Theme.Card,
+            BorderSizePixel = 0,
+            Visible = false,
+            ZIndex = 10
+        })
+        AddCorner(FilterPopup, 10)
+        AddStroke(FilterPopup, Theme.Border, 1)
+        Create("TextLabel", {
+            Parent = FilterPopup,
+            Position = UDim2.fromOffset(12, 8),
+            Size = UDim2.new(1, -50, 0, 24),
+            BackgroundTransparency = 1,
+            Text = "Filter egg list",
+            TextColor3 = Theme.Text,
+            Font = Enum.Font.GothamBold,
+            TextSize = 12,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            ZIndex = 11
+        })
+        local FilterClose = Create("TextButton", {
+            Parent = FilterPopup,
+            Position = UDim2.new(1, -32, 0, 7),
+            Size = UDim2.fromOffset(24, 24),
+            BackgroundColor3 = Theme.SurfaceInput,
+            Text = "×",
+            TextColor3 = Theme.Text,
+            Font = Enum.Font.GothamBold,
+            TextSize = 16,
+            BorderSizePixel = 0,
+            ZIndex = 11
+        })
+        AddCorner(FilterClose, 6)
+        local EggList = Create("Frame", {
+            Parent = FilterPopup,
+            Position = UDim2.fromOffset(10, 38),
+            Size = UDim2.new(1, -20, 1, -48),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ZIndex = 11
+        })
+        Create("UIListLayout", {
+            Parent = EggList,
+            Padding = UDim.new(0, 4),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        local TempEggs = {"Blackhole", "Solaris", "Cherub", "Volcanic"}
+        for eggIndex, eggName in ipairs(TempEggs) do
+            local EggButton = Create("TextButton", {
+                Name = eggName,
+                Parent = EggList,
+                Size = UDim2.new(1, 0, 0, 26),
+                BackgroundColor3 = Theme.SurfaceInput,
+                Text = "",
+                BorderSizePixel = 0,
+                LayoutOrder = eggIndex,
+                ZIndex = 11
+            })
+            AddCorner(EggButton, 6)
+            Create("TextLabel", {
+                Parent = EggButton,
+                Position = UDim2.fromOffset(9, 0),
+                Size = UDim2.new(1, -38, 1, 0),
+                BackgroundTransparency = 1,
+                Text = eggName,
+                TextColor3 = Theme.Text,
+                Font = Enum.Font.Gotham,
+                TextSize = 10,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 12
+            })
+            local Checkmark = Create("TextLabel", {
+                Parent = EggButton,
+                Position = UDim2.new(1, -28, 0, 0),
+                Size = UDim2.fromOffset(24, 26),
+                BackgroundTransparency = 1,
+                Text = "○",
+                TextColor3 = Theme.Gray,
+                Font = Enum.Font.GothamBold,
+                TextSize = 15,
+                ZIndex = 12
+            })
+            EggButton.MouseButton1Click:Connect(function()
+                if SelectedEggs[eggName] then
+                    SelectedEggs[eggName] = nil
+                else
+                    SelectedEggs[eggName] = true
+                end
+                local selected = SelectedEggs[eggName] == true
+                Checkmark.Text = selected and "✓" or "○"
+                Checkmark.TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray
+                EggButton.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
+            end)
+        end
         CreateButton(Card1, "Filter list", function()
-            -- Open the egg filter list here.
+            FilterPopup.Visible = not FilterPopup.Visible
         end).Position = UDim2.fromOffset(15, 76)
+        FilterClose.MouseButton1Click:Connect(function()
+            FilterPopup.Visible = false
+        end)
     else
         local Card1 = CreateCard(Page, name, "This is a reusable UI page. Backend code is not connected.")
         CreateButton(Card1, "Example Button", function()
