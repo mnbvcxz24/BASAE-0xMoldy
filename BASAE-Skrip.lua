@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.34"
+local testver = "Test v1.35"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1454,16 +1454,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
     elseif index == 3 then
         local AnimalsCard = CreateCard(Page, "Placed Animals", "Animals on your own base and their Cash Per Second.")
-        AnimalsCard.Size = UDim2.new(1, 0, 0, 190)
+        AnimalsCard.Size = UDim2.new(1, 0, 0, 230)
         local BaseStatus = Create("TextLabel", {
-            Parent = AnimalsCard, Position = UDim2.fromOffset(15, 38),
+            Parent = AnimalsCard, Position = UDim2.fromOffset(15, 80),
             Size = UDim2.new(1, -30, 0, 18), BackgroundTransparency = 1,
             Text = "Searching for Your Base...", TextColor3 = Theme.Gray,
             Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left
         })
         local AnimalsList = Create("ScrollingFrame", {
-            Parent = AnimalsCard, Position = UDim2.fromOffset(10, 62),
-            Size = UDim2.new(1, -20, 1, -72), BackgroundColor3 = Theme.SurfaceInput,
+            Parent = AnimalsCard, Position = UDim2.fromOffset(10, 104),
+            Size = UDim2.new(1, -20, 1, -114), BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Gray,
             CanvasSize = UDim2.new(0, 0, 0, 0)
         })
