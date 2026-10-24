@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.96"
+local testver = "Test v1.97"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1315,45 +1315,39 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local attribute = pickup:GetAttribute("ZoneId")
             return attribute and tostring(attribute) or nil
         end
+        local function ParseCPS(display)
+            if type(display) ~= "string" then return -1 end
+            local cleaned = display:gsub(",", ""):gsub("%s+", ""):gsub("%$", "")
+            cleaned = cleaned:gsub("/[sS]$", "")
+            local numberText, suffix = cleaned:match("^([%d%.]+)([%a]*)$")
+            local number = tonumber(numberText)
+            local scales = {k=1e3, m=1e6, b=1e9, t=1e12, qa=1e15, q=1e15, qi=1e18}
+            local scale = scales[(suffix or ""):lower()]
+            if number and number >= 0 and (not suffix or suffix == "" or scale) then
+                return number * (scale or 1)
+            end
+            return -1
+        end
         local function GetPetCPS(pickup)
             if not pickup or not pickup:IsA("Model") then
                 return -1, "CPS unavailable: animal model missing"
             end
-
-            local attachmentsFound = 0
-            local labelsFound = 0
-            local rawText
-            for _, descendant in ipairs(pickup:GetDescendants()) do
-                if descendant.Name == "AnimalOverheadAttachment" then
-                    attachmentsFound += 1
-                    local overhead = descendant:FindFirstChild("AnimalOverhead", true)
-                    local searchRoot = overhead or descendant
-                    for _, item in ipairs(searchRoot:GetDescendants()) do
-                        if item.Name == "CashPerSecond" and item:IsA("TextLabel") then
-                            labelsFound += 1
-                            local display = item.Text
-                            local cleaned = display:gsub(",", ""):gsub("%s+", ""):gsub("%$", "")
-                            cleaned = cleaned:gsub("/[sS]$", "")
-                            local numberText, suffix = cleaned:match("^([%d%.]+)([%a]*)$")
-                            local number = tonumber(numberText)
-                            local scales = {k=1e3, m=1e6, b=1e9, t=1e12, qa=1e15, q=1e15, qi=1e18}
-                            local scale = scales[(suffix or ""):lower()]
-                            if number and number >= 0 and (not suffix or suffix == "" or scale) then
-                                return number * (scale or 1), display
-                            end
-                            rawText = display .. (suffix and suffix ~= "" and not scale and " (unknown CPS suffix)" or " (invalid CPS text)")
+            for _, attachment in ipairs(pickup:GetDescendants()) do
+                if attachment.Name == "AnimalOverheadAttachment" then
+                    local overhead = attachment:FindFirstChild("AnimalOverhead", true) or attachment
+                    local label = overhead:FindFirstChild("CashPerSecond", true)
+                    if label and label:IsA("TextLabel") then
+                        local valueObject = label:FindFirstChild("Text")
+                        local display = valueObject and valueObject:IsA("TextLabel") and valueObject.Text or label.Text
+                        local value = ParseCPS(display)
+                        if value >= 0 then
+                            return value, display
                         end
+                        return -1, "CPS unavailable: invalid CashPerSecond.Text value (" .. tostring(display) .. ")"
                     end
                 end
             end
-
-            if attachmentsFound == 0 then
-                return -1, "CPS unavailable: AnimalOverheadAttachment not found inside " .. pickup.Name
-            end
-            if labelsFound == 0 then
-                return -1, "CPS unavailable: no CashPerSecond TextLabel under AnimalOverheadAttachment"
-            end
-            return -1, "CPS unavailable: " .. tostring(rawText or "CashPerSecond text could not be parsed")
+            return -1, "CPS unavailable: CashPerSecond TextLabel not found under AnimalOverheadAttachment"
         end
         local function IsRarityAllowed(pickup)
             local selectedCount = 0
