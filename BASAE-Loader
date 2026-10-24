@@ -19,10 +19,26 @@ if not ok then
     return
 end
 
-local compileOk, scriptFunction = pcall(loadstring, source)
+if type(source) ~= "string" then
+    warn("[BASAE-Skrip] Downloaded source is not a string: " .. typeof(source))
+    return
+end
 
-if not compileOk or type(scriptFunction) ~= "function" then
-    warn("[BASAE-Skrip] Compile failed: " .. tostring(scriptFunction))
+if #source == 0 then
+    warn("[BASAE-Skrip] Downloaded source is empty")
+    return
+end
+
+local compiler = loadstring
+if type(compiler) ~= "function" then
+    warn("[BASAE-Skrip] loadstring is unavailable")
+    return
+end
+
+local scriptFunction, compileError = compiler(source)
+
+if type(scriptFunction) ~= "function" then
+    warn("[BASAE-Skrip] Compile failed: " .. tostring(compileError))
     return
 end
 
