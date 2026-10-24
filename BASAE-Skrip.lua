@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.23"
+local testver = "Test v1.24"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1022,7 +1022,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return false
         end
         local function SetTrackerStatus(message)
-            print("[BASAE-Skrip][Egg Tracker] " .. message)
+            print("[BASAE-Skrip][Egg Tracker] " .. tostring(message))
         end
         HitEvent.OnClientEvent:Connect(function(eggReference, hitCounter, health)
             local target = CurrentTarget
