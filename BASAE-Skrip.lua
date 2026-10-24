@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.36"
+local testver = "Test v1.37"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1158,6 +1158,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ReturningAfterPickup = false
         local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
         local AnimalPickups = workspace:WaitForChild("AnimalPickups")
+        local SetTrackerStatus
         local AnimalBankedRemote = game:GetService("ReplicatedStorage"):WaitForChild("AnimalBankedRemote")
         local ReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
         AnimalBankedRemote.OnClientEvent:Connect(function()
@@ -1215,7 +1216,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return false
         end
-        local function SetTrackerStatus(message)
+        SetTrackerStatus = function(message)
             AddDebugLog("[Egg Tracker] " .. tostring(message))
         end
         HitEvent.OnClientEvent:Connect(function(eggReference, hitCounter, health)
