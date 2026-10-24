@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.118"
+local testver = "Test v1.119"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1750,17 +1750,29 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | zone=" .. petZone .. " (target zone " .. targetZoneName .. ")")
                 return
             end
+            SetPickupTracking(pickup, "CPS scan 1/2: warming up")
+            local firstScanCPS, firstScanText = GetPetCPS(pickup)
+            if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
+                return
+            end
+            task.wait(0.15)
+            if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
+                return
+            end
+            SetPickupTracking(pickup, "CPS scan 2/2: using this result")
             local cps, cpsText = GetPetCPS(pickup)
             if cps < 0 then
                 for attempt = 1, 8 do
                     if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then break end
-                    SetPickupTracking(pickup, string.format("Waiting for CPS data (%d/8)", attempt), cpsText)
+                    SetPickupTracking(pickup, string.format("Waiting for valid second CPS scan (%d/8)", attempt), cpsText)
                     task.wait(0.25)
                     cps, cpsText = GetPetCPS(pickup)
                     if cps >= 0 then break end
                 end
             end
-            SetPickupTracking(pickup, cps >= 0 and "CPS checked" or "CPS read failed", cpsText)
+            SetPickupTracking(pickup, cps >= 0 and "CPS checked (second scan)" or "CPS read failed", cpsText)
             if HighestCashEnabled and cps < 0 then
                 SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
                 RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
