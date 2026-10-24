@@ -759,8 +759,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ZoneBuilds.ChildRemoved:Connect(RefreshZoneList)
         EggLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             EggList.CanvasSize = UDim2.new(0, 0, 0, EggLayout.AbsoluteContentSize.Y + 8)
-        end)        EggLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            EggList.CanvasSize = UDim2.new(0, 0, 0, EggLayout.AbsoluteContentSize.Y + 8)
         end)
     else
         local Card1 = CreateCard(Page, name, "This is a reusable UI page. Backend code is not connected.")
