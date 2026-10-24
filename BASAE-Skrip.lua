@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.9"
+local testver = "Test v1.10"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -659,16 +659,11 @@ end
 for index, name in ipairs(UIConfig.SidebarNames) do
     local Page = CreatePage(index, name)
     if index == 1 then
-        local Card1 = CreateCard(Page, "Auto break egg", "")
-        Card1.Size = UDim2.new(1, 0, 0, 122)
-        local StatusToggle = CreateToggle(Card1, "Status", false, function(state)
-        end)
-        StatusToggle.Position = UDim2.fromOffset(15, 34)
-        StatusToggle.Size = UDim2.new(1, -30, 0, 26)
-        local ToggleLabel = StatusToggle:FindFirstChildOfClass("TextLabel")
-        if ToggleLabel then
-            ToggleLabel.Size = UDim2.fromOffset(58, 26)
-        end
+        local Card1 = CreateCard(Page, "Auto break", "")
+        Card1.Size = UDim2.new(1, 0, 0, 90)
+        local AutoBreakToggle = CreateToggle(Card1, "", false)
+        AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
+        AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
         local SelectedEggs = {}
         local FilterOpen = false
         local EggList
@@ -676,14 +671,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         FilterButton = CreateButton(Card1, "Filter list                         ▼", function()
             FilterOpen = not FilterOpen
             EggList.Visible = FilterOpen
-            Card1.Size = UDim2.new(1, 0, 0, FilterOpen and 226 or 122)
+            Card1.Size = UDim2.new(1, 0, 0, FilterOpen and 194 or 90)
             FilterButton.Text = FilterOpen and "Filter list                         ▲" or "Filter list                         ▼"
         end)
-        FilterButton.Position = UDim2.fromOffset(15, 76)
+        FilterButton.Position = UDim2.fromOffset(15, 44)
         EggList = Create("ScrollingFrame", {
             Name = "EggFilterList",
             Parent = Card1,
-            Position = UDim2.fromOffset(15, 114),
+            Position = UDim2.fromOffset(15, 82),
             Size = UDim2.new(1, -30, 0, 102),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
