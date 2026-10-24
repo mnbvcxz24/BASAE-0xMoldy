@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.98"
+local testver = "Test v1.99"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1333,31 +1333,40 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not pickup or not pickup:IsA("Model") then
                 return -1, "CPS unavailable: animal model missing"
             end
-            for _, attachment in ipairs(pickup:GetDescendants()) do
-                if attachment.Name == "AnimalOverheadAttachment" then
-                    local overhead = attachment:FindFirstChild("AnimalOverhead", true) or attachment
-                    local label = overhead:FindFirstChild("CashPerSecond", true)
-                    if label and label:IsA("TextLabel") then
-                        for _, childName in ipairs({"Text", "ContentText"}) do
-                            local valueObject = label:FindFirstChild(childName, true)
-                            if valueObject and (valueObject:IsA("TextLabel") or valueObject:IsA("TextButton") or valueObject:IsA("TextBox")) then
-                                local display = valueObject.Text
-                                local value = ParseCPS(display)
-                                if value >= 0 then
-                                    return value, display
-                                end
-                            end
-                        end
-                        local display = label.Text
-                        local value = ParseCPS(display)
-                        if value >= 0 then
-                            return value, display
-                        end
-                        return -1, "CPS unavailable: invalid CashPerSecond text/content (" .. tostring(display) .. ")"
+            local sawCPSNode = false
+            local function readTextObject(object)
+                if not object then return -1, nil end
+                if object:IsA("TextLabel") or object:IsA("TextButton") or object:IsA("TextBox") then
+                    local value = ParseCPS(object.Text)
+                    if value >= 0 then return value, object.Text end
+                end
+                for _, childName in ipairs({"Text", "ContentText"}) do
+                    local child = object:FindFirstChild(childName, true)
+                    if child and (child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox")) then
+                        local value = ParseCPS(child.Text)
+                        if value >= 0 then return value, child.Text end
                     end
                 end
+                return -1, nil
             end
-            return -1, "CPS unavailable: CashPerSecond TextLabel not found under AnimalOverheadAttachment"
+            local descendants = pickup:GetDescendants()
+            for _, node in ipairs(descendants) do
+                if node.Name == "CashPerSecond" then
+                    sawCPSNode = true
+                    local value, display = readTextObject(node)
+                    if value >= 0 then return value, display end
+                end
+            end
+            for _, node in ipairs(descendants) do
+                if node.Name == "AnimalOverheadAttachment" or node.Name == "AnimalOverhead" then
+                    local value, display = readTextObject(node:FindFirstChild("CashPerSecond", true))
+                    if value >= 0 then return value, display end
+                end
+            end
+            if sawCPSNode then
+                return -1, "CPS unavailable: CashPerSecond exists but contains no readable numeric Text/ContentText"
+            end
+            return -1, "CPS unavailable: no CashPerSecond node found in animal model"
         end
         local function IsRarityAllowed(pickup)
             local selectedCount = 0
@@ -1400,25 +1409,27 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local function RejectPickupAndRestart(message)
             if PickupRequested then
-                SetTrackerStatus(message .. " | candidate rejected; current pickup remains active.")
+                SetTrackerStatus(message .. " | candidate rejected; active pickup remains in control.")
                 return
             end
             if ReturningAfterPickup then
                 SetTrackerStatus(message .. " | candidate rejected while returning to base.")
                 return
             end
-            if WaitingForPickup and CurrentTarget then
+            local hadTarget = CurrentTarget ~= nil and CurrentTarget.Parent ~= nil
+            if hadTarget and WaitingForPickup then
                 CompletedEggs[CurrentTarget] = true
-                PickupRequested = false
-                SetTrackerStatus(message .. " | skipping this drop and resuming Auto Break.")
-                task.defer(function()
-                    if StopAutoBreak then StopAutoBreak() end
-                    task.wait(0.2)
-                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
-                end)
-            else
-                SetTrackerStatus(message .. " | drop ignored; Auto Break continues.")
             end
+            SetTrackerStatus(message .. (hadTarget and WaitingForPickup
+                and " | rejected animal; releasing egg wait and resuming Auto Break."
+                or " | rejected animal; checking whether Auto Break can resume."))
+            task.defer(function()
+                if StopAutoBreak then StopAutoBreak("Recovering after rejected animal.", false) end
+                task.wait(0.2)
+                if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup and StartAutoBreak then
+                    StartAutoBreak()
+                end
+            end)
         end
         local function SetPickupTracking(pickup, status, cpsText)
             if not pickup or not pickup.Parent then return end
@@ -1896,7 +1907,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 SetTrackerStatus("NEW ANIMAL detected: " .. pickup.Name .. " | pausing Auto Break and checking filters/priority.")
                 if AutoPickupEnabled and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
-                    if StopAutoBreak then StopAutoBreak("Auto Break paused: evaluating new animal pickup.") end
+                    if StopAutoBreak then StopAutoBreak("Auto Break paused: evaluating new animal pickup.", true) end
                 end
                 task.defer(function()
                     if not pickup.Parent or not AutoBreakEnabled or not AutoPickupEnabled or ReturningAfterPickup then
@@ -2160,19 +2171,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 BindAnimalPickups(child)
             end
         end)
-        StopAutoBreak = function(reason)
+        StopAutoBreak = function(reason, preserveTargetState)
             if MovementConnection then
                 MovementConnection:Disconnect()
                 MovementConnection = nil
             end
             local character = LocalPlayer.Character
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
+            if humanoid and not PickupRequested and not ReturningAfterPickup then
                 humanoid:Move(Vector3.zero, false)
             end
             ArrivedAtTarget = false
-            WaitingForPickup = false
-            CurrentTarget = nil
+            if not preserveTargetState then
+                WaitingForPickup = false
+                CurrentTarget = nil
+            end
             if reason then
                 SetTrackerStatus(reason)
             end
