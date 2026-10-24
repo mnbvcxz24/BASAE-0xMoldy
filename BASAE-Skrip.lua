@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.87"
+local testver = "Test v1.88"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1507,7 +1507,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             local animalMoveStarted = os.clock()
-            local lastAnimalMoveTo = 0
             local lastAnimalProgressAt = os.clock()
             local bestAnimalDistance = math.huge
             while PickupRequested and PickupGeneration == pickupToken and pickup.Parent and moveHumanoid.Health > 0 do
@@ -1530,7 +1529,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if animalDistance <= 4 then break end
                 local now = os.clock()
                 if now - animalMoveStarted >= 25 then
-                    moveHumanoid:MoveTo(moveRoot.Position)
+                    moveHumanoid:Move(Vector3.zero, false)
                     if PickupGeneration ~= pickupToken then return end
                     PickupRequested = false
                     ActivePickup = nil
@@ -1545,16 +1544,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 elseif now - lastAnimalProgressAt >= 2.5 then
                     lastAnimalProgressAt = now
                     bestAnimalDistance = animalDistance
-                    SetTrackerStatus(string.format("PICKUP MOVEMENT: no progress toward %s; retrying MoveTo (%.1f studs).", pickup.Name, animalDistance))
-                    lastAnimalMoveTo = 0
+                    SetTrackerStatus(string.format("PICKUP MOVEMENT: no progress toward %s; retrying Move (%.1f studs).", pickup.Name, animalDistance))
                 end
-                if now - lastAnimalMoveTo >= 1 then
-                    moveHumanoid:MoveTo(Vector3.new(pickupPosition.X, moveRoot.Position.Y, pickupPosition.Z))
-                    lastAnimalMoveTo = now
-                end
-                task.wait(0.1)
+                moveHumanoid:Move(animalOffset.Unit, false)
+                task.wait(0.05)
             end
-            moveHumanoid:MoveTo(moveRoot.Position)
+            moveHumanoid:Move(Vector3.zero, false)
             if PickupGeneration ~= pickupToken then return end
             if not PickupRequested or not pickup.Parent or not pickupPosition then
                 PickupRequested = false
@@ -1650,7 +1645,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 local moveStarted = os.clock()
-                local lastPromptMoveTo = 0
                 local lastPromptProgressAt = os.clock()
                 local bestPromptDistance = math.huge
                 while PickupRequested and PickupGeneration == pickupToken and pickup.Parent and prompt.Parent and humanoid.Health > 0 do
@@ -1669,7 +1663,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if promptDistance <= math.max(4, prompt.MaxActivationDistance - 1) then break end
                     local now = os.clock()
                     if now - moveStarted >= 25 then
-                        humanoid:MoveTo(root.Position)
+                        humanoid:Move(Vector3.zero, false)
                         if PickupGeneration ~= pickupToken then return end
                         PickupRequested = false
                         ActivePickup = nil
@@ -1684,16 +1678,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     elseif now - lastPromptProgressAt >= 2.5 then
                         lastPromptProgressAt = now
                         bestPromptDistance = promptDistance
-                        SetTrackerStatus(string.format("PICKUP MOVEMENT: no progress toward StealPrompt; retrying MoveTo (%.1f studs).", promptDistance))
-                        lastPromptMoveTo = 0
+                        SetTrackerStatus(string.format("PICKUP MOVEMENT: no progress toward StealPrompt; continuing Move (%.1f studs).", promptDistance))
                     end
-                    if now - lastPromptMoveTo >= 1 then
-                        humanoid:MoveTo(Vector3.new(promptPosition.X, root.Position.Y, promptPosition.Z))
-                        lastPromptMoveTo = now
-                    end
-                    task.wait(0.1)
+                    humanoid:Move(offset.Unit, false)
+                    task.wait(0.05)
                 end
-                humanoid:MoveTo(root.Position)
+                humanoid:Move(Vector3.zero, false)
                 if PickupGeneration ~= pickupToken then return end
                 if not PickupRequested or not pickup.Parent then
                     PickupRequested = false
