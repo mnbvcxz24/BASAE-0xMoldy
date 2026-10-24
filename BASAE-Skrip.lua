@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.45"
+local testver = "Test v1.46"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -336,6 +336,23 @@ local function CreatePage(pageNumber, pageName)
         Visible = false
     })
     AddCorner(PageClip, 10)
+    local function AddCornerMask(name, position, anchorPoint)
+        local mask = Create("Frame", {
+            Name = name,
+            Parent = PageClip,
+            AnchorPoint = anchorPoint,
+            Position = position,
+            Size = UDim2.fromOffset(10, 10),
+            BackgroundColor3 = Theme.Background,
+            BorderSizePixel = 0,
+            ZIndex = 50
+        })
+        AddCorner(mask, 10)
+    end
+    AddCornerMask("TopLeftCornerMask", UDim2.fromOffset(0, 0), Vector2.new(0, 0))
+    AddCornerMask("TopRightCornerMask", UDim2.new(1, 0, 0, 0), Vector2.new(1, 0))
+    AddCornerMask("BottomLeftCornerMask", UDim2.new(0, 0, 1, 0), Vector2.new(0, 1))
+    AddCornerMask("BottomRightCornerMask", UDim2.new(1, 0, 1, 0), Vector2.new(1, 1))
     local Page = Create("ScrollingFrame", {
         Name = "Page_" .. pageNumber,
         Parent = PageClip,
