@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.33"
+local testver = "Test v1.34"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -449,7 +449,7 @@ local function CreateToggle(parent, text, default, callback)
         Text = text,
         TextColor3 = Theme.Text,
         Font = Enum.Font.Gotham,
-        TextSize = 11,
+        TextSize = 10,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     local Switch = Create("Frame", {
@@ -724,7 +724,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
         local AutoPickupCard = CreateCard(Page, "Auto pickup", "Filters new pets after an egg breaks; pickup action is not connected yet.")
-        AutoPickupCard.Size = UDim2.new(1, 0, 0, 128)
+        AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 320 or 160)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
@@ -739,23 +739,23 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local RarityFilterButton
         RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
-            AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 282 or 128)
+            AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 320 or 160)
             RarityFilterButton.Text = RarityFilterOpen and "Filter for Rarity  ▲" or "Filter for Rarity  ▼"
             RarityList.Visible = RarityFilterOpen
         end)
-        RarityFilterButton.Position = UDim2.fromOffset(15, 43)
+        RarityFilterButton.Position = UDim2.fromOffset(15, 80)
         RarityFilterButton.Size = UDim2.new(1, -30, 0, 28)
         local HighestCashEnabled = false
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Pick up highest Cash Per Second", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Highest CPS filter ON." or "Highest CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(15, 76)
+        HighestCashToggle.Position = UDim2.fromOffset(15, 113)
         HighestCashToggle.Size = UDim2.new(1, -30, 0, 30)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(15, 112),
+            Position = UDim2.fromOffset(15, 150),
             Size = UDim2.new(1, -30, 0, 160),
             CanvasSize = UDim2.new(0, 0, 0, 0),
             ScrollBarThickness = 3,
