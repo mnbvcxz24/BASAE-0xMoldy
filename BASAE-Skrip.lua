@@ -2615,13 +2615,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local function GetESPValue(object, names)
             if not object then return nil end
+            local nodes = {object}
+            for _, descendant in ipairs(object:GetDescendants()) do
+                table.insert(nodes, descendant)
+            end
             for _, name in ipairs(names) do
-                local value = object:GetAttribute(name)
-                if value ~= nil then return tostring(value) end
-                local child = object:FindFirstChild(name, true)
-                if child and child:IsA("ValueBase") then return tostring(child.Value) end
-                if child and (child:IsA("TextLabel") or child:IsA("TextButton") or child:IsA("TextBox")) and child.Text ~= "" then
-                    return child.Text
+                for _, node in ipairs(nodes) do
+                    local value = node:GetAttribute(name)
+                    if value ~= nil then return tostring(value) end
+                    if node.Name == name then
+                        if node:IsA("ValueBase") then return tostring(node.Value) end
+                        if (node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox")) and node.Text ~= "" then
+                            return node.Text
+                        end
+                    end
                 end
             end
             return nil
