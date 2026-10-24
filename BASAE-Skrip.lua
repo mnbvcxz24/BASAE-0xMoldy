@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.5"
+local testver = "Test v1.6"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -199,7 +199,7 @@ local RestoreButton = Create("TextButton", {
     Name = "Restore",
     Parent = Main,
     Position = UDim2.fromOffset(0, 0),
-    Size = UDim2.fromOffset(44, 44),
+    Size = UDim2.fromOffset(36, 36),
     BackgroundColor3 = Theme.Sidebar,
     Text = "B",
     TextColor3 = Theme.Text,
@@ -209,7 +209,7 @@ local RestoreButton = Create("TextButton", {
     Visible = false,
     ZIndex = 5
 })
-AddCorner(RestoreButton, 22)
+AddCorner(RestoreButton, 18)
 AddStroke(RestoreButton, Theme.Border, 1)
 -- SIDEBAR
 local Sidebar = Create("Frame", {
@@ -684,92 +684,73 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ToggleLabel.Size = UDim2.fromOffset(58, 26)
         end
         local SelectedEggs = {}
-        local FilterPopup = Create("Frame", {
-            Name = "EggFilterPopup",
-            Parent = Main,
-            AnchorPoint = Vector2.new(0.5, 0.5),
-            Position = UDim2.new(0.5, 0, 0.5, 0),
-            Size = UDim2.fromOffset(250, 184),
-            BackgroundColor3 = Theme.Card,
-            BorderSizePixel = 0,
-            Visible = false,
-            ZIndex = 10
-        })
-        AddCorner(FilterPopup, 10)
-        AddStroke(FilterPopup, Theme.Border, 1)
-        Create("TextLabel", {
-            Parent = FilterPopup,
-            Position = UDim2.fromOffset(12, 8),
-            Size = UDim2.new(1, -50, 0, 24),
-            BackgroundTransparency = 1,
-            Text = "Filter egg list",
-            TextColor3 = Theme.Text,
-            Font = Enum.Font.GothamBold,
-            TextSize = 12,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = 11
-        })
-        local FilterClose = Create("TextButton", {
-            Parent = FilterPopup,
-            Position = UDim2.new(1, -32, 0, 7),
-            Size = UDim2.fromOffset(24, 24),
+        local FilterOpen = false
+        local FilterButton = CreateButton(Card1, "Filter list                         ▼", function()
+            FilterOpen = not FilterOpen
+            EggList.Visible = FilterOpen
+            Card1.Size = UDim2.new(1, 0, 0, FilterOpen and 226 or 122)
+            FilterButton.Text = FilterOpen and "Filter list                         ▲" or "Filter list                         ▼"
+        end)
+        FilterButton.Position = UDim2.fromOffset(15, 76)
+        local EggList = Create("ScrollingFrame", {
+            Name = "EggFilterList",
+            Parent = Card1,
+            Position = UDim2.fromOffset(15, 114),
+            Size = UDim2.new(1, -30, 0, 102),
             BackgroundColor3 = Theme.SurfaceInput,
-            Text = "×",
-            TextColor3 = Theme.Text,
-            Font = Enum.Font.GothamBold,
-            TextSize = 16,
             BorderSizePixel = 0,
-            ZIndex = 11
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Theme.Gray,
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
+            Visible = false
         })
-        AddCorner(FilterClose, 6)
-        local EggList = Create("Frame", {
-            Parent = FilterPopup,
-            Position = UDim2.fromOffset(10, 38),
-            Size = UDim2.new(1, -20, 1, -48),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            ZIndex = 11
-        })
-        Create("UIListLayout", {
+        AddCorner(EggList, 6)
+        local EggLayout = Create("UIListLayout", {
             Parent = EggList,
             Padding = UDim.new(0, 4),
             SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        local EggPadding = Create("UIPadding", {
+            Parent = EggList,
+            PaddingTop = UDim.new(0, 4),
+            PaddingBottom = UDim.new(0, 4),
+            PaddingLeft = UDim.new(0, 4),
+            PaddingRight = UDim.new(0, 4)
         })
         local TempEggs = {"Blackhole", "Solaris", "Cherub", "Volcanic"}
         for eggIndex, eggName in ipairs(TempEggs) do
             local EggButton = Create("TextButton", {
                 Name = eggName,
                 Parent = EggList,
-                Size = UDim2.new(1, 0, 0, 26),
-                BackgroundColor3 = Theme.SurfaceInput,
+                Size = UDim2.new(1, -8, 0, 24),
+                BackgroundColor3 = Theme.Card,
                 Text = "",
                 BorderSizePixel = 0,
                 LayoutOrder = eggIndex,
-                ZIndex = 11
+                AutoButtonColor = false
             })
-            AddCorner(EggButton, 6)
+            AddCorner(EggButton, 5)
             Create("TextLabel", {
                 Parent = EggButton,
-                Position = UDim2.fromOffset(9, 0),
-                Size = UDim2.new(1, -38, 1, 0),
+                Position = UDim2.fromOffset(8, 0),
+                Size = UDim2.new(1, -34, 1, 0),
                 BackgroundTransparency = 1,
                 Text = eggName,
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.Gotham,
                 TextSize = 10,
-                TextXAlignment = Enum.TextXAlignment.Left,
-                ZIndex = 12
+                TextXAlignment = Enum.TextXAlignment.Left
             })
             local Checkmark = Create("TextLabel", {
                 Parent = EggButton,
-                Position = UDim2.new(1, -28, 0, 0),
-                Size = UDim2.fromOffset(24, 26),
+                Position = UDim2.new(1, -26, 0, 0),
+                Size = UDim2.fromOffset(22, 24),
                 BackgroundTransparency = 1,
                 Text = "○",
                 TextColor3 = Theme.Gray,
                 Font = Enum.Font.GothamBold,
-                TextSize = 15,
-                ZIndex = 12
+                TextSize = 14
             })
             EggButton.MouseButton1Click:Connect(function()
                 if SelectedEggs[eggName] then
@@ -780,14 +761,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local selected = SelectedEggs[eggName] == true
                 Checkmark.Text = selected and "✓" or "○"
                 Checkmark.TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray
-                EggButton.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
+                EggButton.BackgroundColor3 = selected and Theme.Selected or Theme.Card
             end)
         end
-        CreateButton(Card1, "Filter list", function()
-            FilterPopup.Visible = not FilterPopup.Visible
-        end).Position = UDim2.fromOffset(15, 76)
-        FilterClose.MouseButton1Click:Connect(function()
-            FilterPopup.Visible = false
+        EggLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            EggList.CanvasSize = UDim2.new(0, 0, 0, EggLayout.AbsoluteContentSize.Y + 8)
         end)
     else
         local Card1 = CreateCard(Page, name, "This is a reusable UI page. Backend code is not connected.")
@@ -820,8 +798,8 @@ local function SetMinimized(state)
         Sidebar.Visible = false
         TopBar.Visible = false
         RestoreButton.Visible = true
-        MainCorner.CornerRadius = UDim.new(0, 22)
-        Tween(Main, {Size = UDim2.fromOffset(44, 44)})
+        MainCorner.CornerRadius = UDim.new(0, 18)
+        Tween(Main, {Size = UDim2.fromOffset(36, 36)})
     else
         RestoreButton.Visible = false
         MainCorner.CornerRadius = UDim.new(0, 12)
@@ -848,6 +826,14 @@ local StartPosition
 TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
     or input.UserInputType == Enum.UserInputType.Touch then
+        Dragging = true
+        DragStart = input.Position
+        StartPosition = Main.Position
+    end
+end)
+RestoreButton.InputBegan:Connect(function(input)
+    if Minimized and (input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch) then
         Dragging = true
         DragStart = input.Position
         StartPosition = Main.Position
