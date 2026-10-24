@@ -974,7 +974,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local luckLabel = info and info:FindFirstChild("LuckMultiList", true)
             luckLabel = luckLabel and luckLabel:FindFirstChild("LuckMulti", true)
             if not luckLabel then return 0 end
-            local rawLuck = luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton") and luckLabel.Text or luckLabel:GetAttribute("LuckMulti")
+            local rawLuck = (luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton")) and luckLabel.Text or luckLabel:GetAttribute("LuckMulti")
             if type(rawLuck) ~= "string" and type(rawLuck) ~= "number" then
                 rawLuck = luckLabel:GetAttribute("LuckMulti")
             end
