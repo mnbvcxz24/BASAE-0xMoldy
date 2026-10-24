@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.18"
+local testver = "Test v1.19"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -660,7 +660,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
     local Page = CreatePage(index, name)
     if index == 1 then
         local Card1 = CreateCard(Page, "Auto break", "")
-        Card1.Size = UDim2.new(1, 0, 0, 90)
+        Card1.Size = UDim2.new(1, 0, 0, 114)
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
             if enabled then
                 if StartAutoBreak then StartAutoBreak() end
@@ -690,6 +690,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             EggFilterList.Visible = EggFilterOpen
             SortFrame.Visible = true
             Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 224 or 114)
+            SortFrame.Position = UDim2.fromOffset(15, 78)
+            SortFrame.Size = UDim2.new(1, -30, 0, 30)
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
         end
