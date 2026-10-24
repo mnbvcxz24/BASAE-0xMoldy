@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.50"
+local testver = "Test v1.51"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1368,10 +1368,26 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
             end
-            local promptAnchor = workspace:FindFirstChild("PromptAnchor")
-            local prompt = promptAnchor and promptAnchor:FindFirstChild("StealPrompt")
+            local prompt
+            local promptState = "PromptAnchor missing"
+            local promptDeadline = os.clock() + 5
+            repeat
+                local promptAnchor = workspace:FindFirstChild("PromptAnchor")
+                prompt = promptAnchor and promptAnchor:FindFirstChild("StealPrompt")
+                if prompt and not prompt:IsA("ProximityPrompt") then
+                    promptState = "StealPrompt exists but is " .. prompt.ClassName
+                    prompt = nil
+                    break
+                elseif prompt and prompt.Enabled then
+                    promptState = "ready"
+                    break
+                elseif prompt then
+                    promptState = "StealPrompt exists but Enabled=false"
+                end
+                task.wait(0.25)
+            until os.clock() >= promptDeadline
             if not prompt or not prompt:IsA("ProximityPrompt") or not prompt.Enabled then
-                SetTrackerStatus("Eligible pet " .. pickup.Name .. " but StealPrompt is missing or disabled.")
+                SetTrackerStatus("Eligible pet " .. pickup.Name .. " but pickup prompt unavailable after 5s: " .. promptState .. ".")
                 return
             end
             if PickupRequested or ReturningAfterPickup then
