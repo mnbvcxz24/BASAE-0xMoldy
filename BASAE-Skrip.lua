@@ -1418,7 +1418,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         SetTrackerStatus("Return movement stopped: character unavailable.")
                         if AutoBreakEnabled and StartAutoBreak then
                             task.delay(0.2, function()
-                                if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
+                                if PickupGeneration == returnToken and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
                             end)
                         end
                         return
@@ -1458,7 +1458,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             .. math.floor(offset.Magnitude) .. ".")
                         if AutoBreakEnabled and StartAutoBreak then
                             task.delay(0.2, function()
-                                if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
+                                if PickupGeneration == returnToken and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
                             end)
                         end
                         return
@@ -2165,6 +2165,23 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             FlingRecoveryActive = true
+            local trackedFlingAnimal
+            if AnimalPickups then
+                local nearestAnimalDistance = 12
+                for _, animal in ipairs(AnimalPickups:GetChildren()) do
+                    local okPosition, animalPosition = pcall(function()
+                        if animal:IsA("Model") then return animal:GetPivot().Position end
+                        if animal:IsA("BasePart") then return animal.Position end
+                    end)
+                    if okPosition and animalPosition then
+                        local distance = (animalPosition - flingPosition).Magnitude
+                        if distance <= nearestAnimalDistance then
+                            nearestAnimalDistance = distance
+                            trackedFlingAnimal = animal
+                        end
+                    end
+                end
+            end
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
@@ -2195,7 +2212,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
                 local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
                 if PickupGeneration ~= flingToken or not PickupRequested or not AutoBreakEnabled or not AutoPickupEnabled then
-                    finishFlingRecovery()
                     finishFlingRecovery()
                     return
                 end
@@ -2385,7 +2401,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 while not Runtime.Stopped and os.clock() < confirmDeadline and PickupGeneration == flingToken and PickupRequested do
                     local foundNearby = false
                     local folder = workspace:FindFirstChild("AnimalPickups")
-                    if folder then
+                    if trackedFlingAnimal then
+                        if not trackedFlingAnimal.Parent or not folder or not trackedFlingAnimal:IsDescendantOf(folder) then
+                            confirmed = true
+                            break
+                        end
+                    elseif folder then
                         for _, animal in ipairs(folder:GetChildren()) do
                             local okPosition, animalPosition = pcall(function()
                                 if animal:IsA("Model") then return animal:GetPivot().Position end
