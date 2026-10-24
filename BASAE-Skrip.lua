@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.105"
+local testver = "Test v1.106"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1179,6 +1179,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local WaitingForPickup = false
         local MovementConnection
         local PickupMovementConnection
+        local ReturnMovementConnection
         local BaselinePickups = {}
         local PickupRequested = false
         local ReturningAfterPickup = false
@@ -1186,6 +1187,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ActivePickupCPS = -1
         local PickupPhase = "IDLE"
         local PickupGeneration = 0
+        local ScriptShuttingDown = false
+        local AnimalFolderConnection
+        local FlingRemoteConnection
+        local HitEventConnection
         local SetTrackerStatus
         local function SetPickupPhase(phase, message)
             PickupPhase = phase
@@ -1267,7 +1272,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         connection:Disconnect()
                         connection = nil
                         ReturningAfterPickup = false
-                        EquipHotbarOne()
+                        SetTrackerStatus("Reached base; waiting 2 seconds before equipping hotbar 1.")
+                        task.delay(2, function()
+                            if not ScriptShuttingDown and AutoPickupEnabled and LocalPlayer.Character == character then
+                                EquipHotbarOne()
+                            end
+                        end)
                         SetTrackerStatus("Returned to pickup point.")
                         if AutoBreakEnabled and StartAutoBreak then
                             task.delay(0.2, function()
@@ -1980,16 +1990,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BindAnimalPickups(AnimalPickups)
         end
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
-        CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
+        FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
             if tostring(action):lower() ~= "fling" or typeof(flingPosition) ~= "Vector3" then return end
             if not AutoPickupEnabled then
                 SetTrackerStatus("Fling recovery ignored: Auto Pickup is off.")
                 return
             end
-            if PickupRequested then
-                SetTrackerStatus("Fling recovery ignored: an active animal pickup already owns movement.")
-                return
-            end
+            if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+            if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+            if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+            local interruptedCharacter = LocalPlayer.Character
+            local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
+            if interruptedHumanoid then interruptedHumanoid:Move(Vector3.zero, false) end
+            ReturningAfterPickup = false
             PickupGeneration += 1
             local flingToken = PickupGeneration
             ActivePickup = nil
@@ -2205,7 +2218,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 ReturnToPickup("Fling recovery pickup confirmed. Returning to base.")
             end)
         end)
-        workspace.ChildAdded:Connect(function(child)
+        AnimalFolderConnection = workspace.ChildAdded:Connect(function(child)
             if child.Name == "AnimalPickups" and not AnimalPickups then
                 BindAnimalPickups(child)
             end
@@ -2584,6 +2597,23 @@ RestoreButton.MouseButton1Click:Connect(function()
 end)
 -- CLOSE
 CloseButton.MouseButton1Click:Connect(function()
+    ScriptShuttingDown = true
+    PickupGeneration += 1
+    PickupRequested = false
+    ReturningAfterPickup = false
+    ActivePickup = nil
+    ActivePickupCPS = -1
+    AutoBreakEnabled = false
+    AutoPickupEnabled = false
+    if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+    if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+    if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+    if HitEventConnection then HitEventConnection:Disconnect(); HitEventConnection = nil end
+    if FlingRemoteConnection then FlingRemoteConnection:Disconnect(); FlingRemoteConnection = nil end
+    if AnimalFolderConnection then AnimalFolderConnection:Disconnect(); AnimalFolderConnection = nil end
+    local character = LocalPlayer.Character
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+    if humanoid then humanoid:Move(Vector3.zero, false) end
     ScreenGui:Destroy()
 end)
 -- DRAGGING
