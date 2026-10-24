@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.54"
+local testver = "Test v1.55"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1183,13 +1183,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local SetTrackerStatus
         local AnimalBankedRemote = game:GetService("ReplicatedStorage"):WaitForChild("AnimalBankedRemote")
         local ReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
-        AnimalBankedRemote.OnClientEvent:Connect(function()
-            if not PickupRequested or ReturningAfterPickup then
-                return
-            end
+        local function ReturnToPickup(reason)
+            if ReturningAfterPickup then return end
             PickupRequested = false
             ReturningAfterPickup = true
-            SetTrackerStatus("AnimalBankedRemote confirmed the pet reached the base. Returning to the pickup point.")
+            SetTrackerStatus(reason or "Pickup hold completed. Returning to the pickup point.")
             task.spawn(function()
                 local character = LocalPlayer.Character
                 local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -1199,27 +1197,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetTrackerStatus("Return failed: character or HumanoidRootPart unavailable.")
                     return
                 end
-                SetTrackerStatus("Moving back to pickup point with Humanoid:MoveTo.")
-                humanoid:MoveTo(ReturnPosition)
                 local reached = false
-                local moveConnection
-                moveConnection = humanoid.MoveToFinished:Connect(function(success)
+                local moveConnection = humanoid.MoveToFinished:Connect(function(success)
                     reached = success
-                    if moveConnection then
-                        moveConnection:Disconnect()
-                        moveConnection = nil
-                    end
                 end)
+                SetTrackerStatus("Moving to return position with Humanoid:MoveTo.")
+                humanoid:MoveTo(ReturnPosition)
                 local moveStarted = os.clock()
                 while character.Parent and humanoid.Health > 0
                     and (root.Position - ReturnPosition).Magnitude > 4
                     and not reached and os.clock() - moveStarted < 25 do
                     game:GetService("RunService").Heartbeat:Wait()
                 end
-                if moveConnection then
-                    moveConnection:Disconnect()
-                    moveConnection = nil
-                end
+                if moveConnection then moveConnection:Disconnect() end
                 if (root.Position - ReturnPosition).Magnitude <= 4 then
                     ReturningAfterPickup = false
                     SetTrackerStatus("Returned to pickup point.")
@@ -1233,6 +1223,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     StartAutoBreak()
                 end
             end)
+        end
+        AnimalBankedRemote.OnClientEvent:Connect(function()
+            if not PickupRequested or ReturningAfterPickup then return end
+            ReturnToPickup("AnimalBankedRemote confirmed the pet reached the base. Returning to the pickup point.")
         end)
         local function IsTargetReference(reference, target)
             if reference == target then
@@ -1439,7 +1433,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetTrackerStatus("StealPrompt hold failed: " .. tostring(err))
                     return
                 end
-                SetTrackerStatus("StealPrompt hold sent; waiting for AnimalBankedRemote confirmation with no timeout.")
+                SetTrackerStatus("StealPrompt hold completed; starting return movement without waiting for AnimalBankedRemote.")
+                ReturnToPickup("StealPrompt hold completed. Returning to the pickup point.")
             end)
         end
         local function BindAnimalPickups(folder)
