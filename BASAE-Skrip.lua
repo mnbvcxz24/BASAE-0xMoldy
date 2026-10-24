@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.51"
+local testver = "Test v1.52"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1369,25 +1369,40 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end
             local prompt
-            local promptState = "PromptAnchor missing"
+            local promptState = "Could not map target egg to a workspace child"
+            local eggRoot = CurrentTarget
+            while eggRoot and eggRoot.Parent and eggRoot.Parent ~= workspace do
+                eggRoot = eggRoot.Parent
+            end
+            local eggIndex
+            if eggRoot and eggRoot.Parent == workspace then
+                for index, child in ipairs(workspace:GetChildren()) do
+                    if child == eggRoot then
+                        eggIndex = index
+                        break
+                    end
+                end
+            end
             local promptDeadline = os.clock() + 5
             repeat
-                local promptAnchor = workspace:FindFirstChild("PromptAnchor")
-                prompt = promptAnchor and promptAnchor:FindFirstChild("StealPrompt")
+                local workspaceChild = eggIndex and workspace:GetChildren()[eggIndex]
+                prompt = workspaceChild and workspaceChild:FindFirstChild("StealPrompt")
                 if prompt and not prompt:IsA("ProximityPrompt") then
-                    promptState = "StealPrompt exists but is " .. prompt.ClassName
+                    promptState = "StealPrompt exists at workspace child " .. tostring(eggIndex) .. " but is " .. prompt.ClassName
                     prompt = nil
                     break
                 elseif prompt and prompt.Enabled then
-                    promptState = "ready"
+                    promptState = "ready at workspace child " .. tostring(eggIndex)
                     break
                 elseif prompt then
-                    promptState = "StealPrompt exists but Enabled=false"
+                    promptState = "StealPrompt exists at workspace child " .. tostring(eggIndex) .. " but Enabled=false"
+                else
+                    promptState = eggIndex and ("StealPrompt not found at workspace child " .. tostring(eggIndex)) or "target egg has no direct workspace child index"
                 end
                 task.wait(0.25)
             until os.clock() >= promptDeadline
             if not prompt or not prompt:IsA("ProximityPrompt") or not prompt.Enabled then
-                SetTrackerStatus("Eligible pet " .. pickup.Name .. " but pickup prompt unavailable after 5s: " .. promptState .. ".")
+                SetTrackerStatus("Eligible pet " .. pickup.Name .. " but indexed pickup prompt unavailable after 5s: " .. promptState .. ".")
                 return
             end
             if PickupRequested or ReturningAfterPickup then
