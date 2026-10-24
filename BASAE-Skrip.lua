@@ -1,22 +1,13 @@
---========================================================--
---                  REUSABLE UI TEMPLATE                  --
---========================================================--
---========================================================--
--- SERVICES
---========================================================--
-
-local Players = game:GetService("Players")
+--========================================================--                  REUSABLE UI TEMPLATE                  --========================================================--========================================================-- SERVICES
+--========================================================local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local LocalPlayer = Players.LocalPlayer
-local testver = Test v1.0
---========================================================--
--- UI CONFIGURATION
--- Change these values when creating another script.
---========================================================--
+local testver = "Test v1.0"
+--========================================================-- UI CONFIGURATION
 
-local UIConfig = {
+--========================================================local UIConfig = {
     Title = "BASAE-Skrip",
     Subtitle = testver,
 
@@ -34,12 +25,9 @@ local UIConfig = {
     }
 }
 
---========================================================--
--- THEME
--- Muted charcoal theme with soft slate accents.
---========================================================--
+--========================================================-- THEME
 
-local Theme = {
+--========================================================local Theme = {
     Background = Color3.fromRGB(28, 30, 34),
     Sidebar = Color3.fromRGB(31, 34, 39),
     Card = Color3.fromRGB(36, 39, 45),
@@ -55,11 +43,8 @@ local Theme = {
     AccentText = Color3.fromRGB(27, 32, 35)
 }
 
---========================================================--
--- HELPER FUNCTIONS
---========================================================--
-
-local function Create(className, properties)
+--========================================================-- HELPER FUNCTIONS
+--========================================================local function Create(className, properties)
     local object = Instance.new(className)
 
     for property, value in pairs(properties or {}) do
@@ -100,11 +85,8 @@ local function Tween(object, properties, duration)
     ):Play()
 end
 
---========================================================--
--- REMOVE OLD UI
---========================================================--
-
-pcall(function()
+--========================================================-- REMOVE OLD UI
+--========================================================pcall(function()
     local oldUI = game.CoreGui:FindFirstChild("BASAESkripUI")
 
     if oldUI then
@@ -112,22 +94,16 @@ pcall(function()
     end
 end)
 
---========================================================--
--- SCREEN GUI
---========================================================--
-
-local ScreenGui = Create("ScreenGui", {
+--========================================================-- SCREEN GUI
+--========================================================local ScreenGui = Create("ScreenGui", {
     Name = "BASAESkripUI",
     Parent = game.CoreGui,
     ResetOnSpawn = false,
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 })
 
---========================================================--
--- MAIN WINDOW
---========================================================--
-
-local Main = Create("Frame", {
+--========================================================-- MAIN WINDOW
+--========================================================local Main = Create("Frame", {
     Name = "Main",
     Parent = ScreenGui,
 
@@ -151,11 +127,8 @@ local Main = Create("Frame", {
 AddCorner(Main, 12
 AddStroke(Main, Theme.Border, 1)
 
---========================================================--
--- TOP BAR
---========================================================--
-
-local TopBar = Create("Frame", {
+--========================================================-- TOP BAR
+--========================================================local TopBar = Create("Frame", {
     Name = "TopBar",
     Parent = Main,
 
@@ -280,11 +253,8 @@ local CloseButton = Create("TextButton", {
 AddCorner(CloseButton, 8)
 AddStroke(CloseButton, Theme.Border, 1)
 
---========================================================--
--- SIDEBAR
---========================================================--
-
-local Sidebar = Create("Frame", {
+--========================================================-- SIDEBAR
+--========================================================local Sidebar = Create("Frame", {
     Name = "Sidebar",
     Parent = Main,
 
@@ -348,11 +318,8 @@ local SidebarLayout = Create("UIListLayout", {
     SortOrder = Enum.SortOrder.LayoutOrder
 })
 
---========================================================--
--- CONTENT AREA
---========================================================--
-
-local Content = Create("Frame", {
+--========================================================-- CONTENT AREA
+--========================================================local Content = Create("Frame", {
     Name = "Content",
     Parent = Main,
 
@@ -372,20 +339,14 @@ local Content = Create("Frame", {
     BorderSizePixel = 0
 })
 
---========================================================--
--- PAGE SYSTEM
---========================================================--
-
-local Pages = {}
+--========================================================-- PAGE SYSTEM
+--========================================================local Pages = {}
 local SidebarButtons = {}
 
 local CurrentPage = 1
 
---========================================================--
--- CREATE PAGE
---========================================================--
-
-local function CreatePage(pageNumber, pageName)
+--========================================================-- CREATE PAGE
+--========================================================local function CreatePage(pageNumber, pageName)
 
     local Page = Create("ScrollingFrame", {
         Name = "Page_" .. pageNumber,
@@ -438,11 +399,8 @@ local function CreatePage(pageNumber, pageName)
     return Page
 end
 
---========================================================--
--- CARD
---========================================================--
-
-local function CreateCard(parent, title, description)
+--========================================================-- CARD
+--========================================================local function CreateCard(parent, title, description)
 
     local Card = Create("Frame", {
         Name = title:gsub("%s+", ""),
@@ -500,11 +458,8 @@ local function CreateCard(parent, title, description)
     return Card
 end
 
---========================================================--
--- BUTTON
---========================================================--
-
-local function CreateButton(parent, text, callback)
+--========================================================-- BUTTON
+--========================================================local function CreateButton(parent, text, callback)
 
     local Button = Create("TextButton", {
         Parent = parent,
@@ -552,11 +507,8 @@ local function CreateButton(parent, text, callback)
     return Button
 end
 
---========================================================--
--- TOGGLE
---========================================================--
-
-local function CreateToggle(parent, text, default, callback)
+--========================================================-- TOGGLE
+--========================================================local function CreateToggle(parent, text, default, callback)
 
     local Toggle = Create("TextButton", {
         Parent = parent,
@@ -662,11 +614,8 @@ local function CreateToggle(parent, text, default, callback)
     return Toggle
 end
 
---========================================================--
--- DROPDOWN
---========================================================--
-
-local function CreateDropdown(parent, text, options, callback)
+--========================================================-- DROPDOWN
+--========================================================local function CreateDropdown(parent, text, options, callback)
 
     local Dropdown = Create("TextButton", {
         Parent = parent,
@@ -797,11 +746,8 @@ local function CreateDropdown(parent, text, options, callback)
     return Dropdown
 end
 
---========================================================--
--- SLIDER
---========================================================--
-
-local function CreateSlider(parent, text, minimum, maximum, default, callback)
+--========================================================-- SLIDER
+--========================================================local function CreateSlider(parent, text, minimum, maximum, default, callback)
 
     local Holder = Create("Frame", {
         Parent = parent,
@@ -945,11 +891,8 @@ local function CreateSlider(parent, text, minimum, maximum, default, callback)
     return Holder
 end
 
---========================================================--
--- CREATE SIDEBAR BUTTONS
---========================================================--
-
-for index, name in ipairs(UIConfig.SidebarNames) do
+--========================================================-- CREATE SIDEBAR BUTTONS
+--========================================================for index, name in ipairs(UIConfig.SidebarNames) do
 
     local Button = Create("TextButton", {
         Name = "SidebarButton_" .. index,
@@ -1016,21 +959,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
 end
 
---========================================================--
--- CREATE ALL PAGES
---========================================================--
-
-for index, name in ipairs(UIConfig.SidebarNames) do
+--========================================================-- CREATE ALL PAGES
+--========================================================for index, name in ipairs(UIConfig.SidebarNames) do
 
     local Page = CreatePage(index, name)
 
-    --====================================================--
-    -- PAGE CONTENT
-    --
-    -- Replace these example cards with your own UI.
-    --====================================================--
-
-    local Card1 = CreateCard(
+    --====================================================    -- PAGE CONTENT
+        
+    --====================================================    local Card1 = CreateCard(
         Page,
         name,
         "This is a reusable UI page. Backend code is not connected."
@@ -1041,12 +977,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         "Example Button",
         function()
 
-            --================================================--
-            -- BACKEND PLACEHOLDER
-            -- Put your actual function here.
-            --================================================--
-
-        end
+            --================================================            -- BACKEND PLACEHOLDER
+            -- Connect your function here.
+            --================================================        end
     )
 
     local Card2 = CreateCard(
@@ -1061,12 +994,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         false,
         function(state)
 
-            --================================================--
-            -- BACKEND PLACEHOLDER
-            -- state = true / false
-            --================================================--
-
-        end
+            --================================================            -- BACKEND PLACEHOLDER
+            -- state is true or false.
+            --================================================        end
     )
 
     local Card3 = CreateCard(
@@ -1085,12 +1015,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         },
         function(selection)
 
-            --================================================--
-            -- BACKEND PLACEHOLDER
-            -- selection contains the selected option.
-            --================================================--
-
-        end
+            --================================================            -- BACKEND PLACEHOLDER
+            -- selection is the selected option.
+            --================================================        end
     )
 
     CreateSlider(
@@ -1101,30 +1028,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         50,
         function(value)
 
-            --================================================--
-            -- BACKEND PLACEHOLDER
-            -- value contains the current slider value.
-            --================================================--
-
-        end
+            --================================================            -- BACKEND PLACEHOLDER
+            -- value is the current slider value.
+            --================================================        end
     )
 
 end
 
---========================================================--
--- SHOW FIRST PAGE
---========================================================--
-
-Pages[1].Visible = true
+--========================================================-- SHOW FIRST PAGE
+--========================================================Pages[1].Visible = true
 
 SidebarButtons[1].BackgroundColor3 = Theme.Selected
 SidebarButtons[1].TextColor3 = Theme.SelectedText
 
---========================================================--
--- MINIMIZE
---========================================================--
-
-local Minimized = false
+--========================================================-- MINIMIZE
+--========================================================local Minimized = false
 
 MinimizeButton.MouseButton1Click:Connect(function()
 
@@ -1158,21 +1076,15 @@ MinimizeButton.MouseButton1Click:Connect(function()
 
 end)
 
---========================================================--
--- CLOSE
---========================================================--
-
-CloseButton.MouseButton1Click:Connect(function()
+--========================================================-- CLOSE
+--========================================================CloseButton.MouseButton1Click:Connect(function()
 
     ScreenGui:Destroy()
 
 end)
 
---========================================================--
--- DRAGGING
---========================================================--
-
-local Dragging = false
+--========================================================-- DRAGGING
+--========================================================local Dragging = false
 local DragStart
 local StartPosition
 
@@ -1223,55 +1135,18 @@ UserInputService.InputEnded:Connect(function(input)
 
 end)
 
---========================================================--
--- SEARCH
---
--- UI-only search.
--- It can later be connected to your actual page controls.
---========================================================--
-
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
+--========================================================-- SEARCH
+-- UI-only search; connect it to page controls when needed.
+--========================================================SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 
     local Query = SearchBox.Text:lower()
 
-    --====================================================--
-    -- BACKEND/UI SEARCH PLACEHOLDER
-    --
-    -- Later we can make this search buttons, cards,
-    -- features, or pages.
-    --====================================================--
+    --====================================================    -- BACKEND/UI SEARCH PLACEHOLDER
+        -- Can be connected to buttons, cards, features, or pages.
+    --====================================================end)
 
-end)
+--========================================================-- BACKEND PLACEHOLDER
+--========================================================-- Add script-specific functions here and connect them to the UI callbacks above.
 
---========================================================--
--- BACKEND STARTS BELOW THIS LINE
---========================================================--
-
---[[
-    DO NOT put game functionality above this section.
-
-    Your future script backend can go here.
-
-    Example:
-
-        local function AutoFarm()
-            ...
-        end
-
-        local function ESP()
-            ...
-        end
-
-        local function Teleport()
-            ...
-        end
-
-    Then connect those functions to the UI callbacks
-    above.
-
-    This keeps the UI reusable between different scripts.
-]]
-
---========================================================--
--- END OF UI TEMPLATE
---========================================================--
+--========================================================
+--========================================================
