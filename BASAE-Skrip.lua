@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.62"
+local testver = "Test v1.63"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1429,8 +1429,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             PickupRequested = true
+            if MovementConnection then
+                MovementConnection:Disconnect()
+                MovementConnection = nil
+            end
+            local activeCharacter = LocalPlayer.Character
+            local activeHumanoid = activeCharacter and activeCharacter:FindFirstChildOfClass("Humanoid")
+            if activeHumanoid then
+                activeHumanoid:Move(Vector3.zero, false)
+            end
             SetTrackerStatus("ELIGIBLE PET: " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown")
-                .. " | zone=" .. tostring(petZone or "unknown") .. " | CPS=" .. cpsText .. " | holding StealPrompt.")
+                .. " | zone=" .. tostring(petZone or "unknown") .. " | CPS=" .. cpsText .. " | movement locked for pickup.")
             task.spawn(function()
                 SetTrackerStatus("Pet data displayed in AnimalPickups. Waiting 3 seconds before pickup.")
                 task.wait(3)
@@ -1522,6 +1531,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         StartAutoBreak = function()
+            if PickupRequested or ReturningAfterPickup then
+                SetTrackerStatus("Auto Break start ignored: pickup/return is in progress.")
+                return
+            end
             StopAutoBreak()
             local selectedZoneNames = {}
             for zoneName, selected in pairs(SelectedZones) do
