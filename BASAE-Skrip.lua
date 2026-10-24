@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.32"
+local testver = "Test v1.33"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1196,9 +1196,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             if rarity and rarity:IsA("TextLabel") then
                 return rarity.Text
-            end
-            if rarity and rarity:IsA("Attribute") then
-                return tostring(rarity.Value)
             end
             local attribute = pickup:GetAttribute("Rarity")
             return attribute and tostring(attribute) or nil
