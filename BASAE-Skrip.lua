@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.69"
+local testver = "Test v1.70"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1301,11 +1301,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not pickup or not pickup:IsA("Model") then
                 return -1, "CPS unavailable: animal model missing"
             end
-            local primary = pickup.PrimaryPart
+            local pivot = pickup:FindFirstChild("Pivot")
+            local primary = pivot and pivot:FindFirstChild("PrimaryPart")
             if not primary then
-                return -1, "CPS unavailable: PrimaryPart missing"
+                primary = pickup.PrimaryPart
+            end
+            if not primary or not primary:IsA("BasePart") then
+                return -1, "CPS unavailable: Pivot.PrimaryPart missing"
             end
             local dataFolder = pickup:FindFirstChild(primary.Name)
+            if not dataFolder and pivot then
+                dataFolder = pivot:FindFirstChild(primary.Name)
+            end
             if not dataFolder then
                 return -1, "CPS unavailable: " .. primary.Name .. " data missing"
             end
@@ -1313,23 +1320,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local overhead = overheadAttachment and overheadAttachment:FindFirstChild("AnimalOverhead")
             local cpsContainer = overhead and overhead:FindFirstChild("CashPerSecond")
             local cpsItem = cpsContainer and cpsContainer:FindFirstChild("CashPerSecond")
-            if not cpsItem then
-                return -1, "CPS unavailable: expected path missing"
+            local textLabel = cpsItem and cpsItem:FindFirstChildWhichIsA("TextLabel", true)
+            if not textLabel then
+                return -1, "CPS unavailable: CashPerSecond TextLabel missing"
             end
-            local raw
-            if cpsItem:IsA("TextLabel") or cpsItem:IsA("TextButton") or cpsItem:IsA("TextBox") then
-                raw = cpsItem.Text
-            elseif cpsItem:IsA("ValueBase") then
-                raw = tostring(cpsItem.Value)
-            else
-                local textObject = cpsItem:FindFirstChildWhichIsA("TextLabel", true)
-                    or cpsItem:FindFirstChildWhichIsA("TextButton", true)
-                if textObject then
-                    raw = textObject.Text
-                else
-                    return -1, "CPS unavailable: value text missing"
-                end
-            end
+            local raw = textLabel.Text
             local cleaned = raw:gsub(",", ""):gsub("%s+", "")
             local number = tonumber(cleaned:match("[%d%.]+"))
             local suffix = cleaned:match("[KkMmBbTt]$")
