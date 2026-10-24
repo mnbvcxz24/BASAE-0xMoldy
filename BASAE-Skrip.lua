@@ -5,7 +5,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.99"
+local testver = "Test v1.100"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -2252,6 +2252,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             SetTrackerStatus("Moving to target: " .. target:GetFullName())
             MovementConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                -- Animal pickup/return movement always owns the character over egg movement.
+                if PickupRequested or ReturningAfterPickup then
+                    if MovementConnection then
+                        MovementConnection:Disconnect()
+                        MovementConnection = nil
+                    end
+                    return
+                end
                 if CurrentTarget ~= target or not target.Parent or not character.Parent
                 or humanoid.Health <= 0 then
                     if CurrentTarget == target and (not target.Parent or humanoid.Health <= 0) then
