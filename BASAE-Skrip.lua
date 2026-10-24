@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.82"
+local testver = "Test v1.83"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1305,20 +1305,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not pickup or not pickup:IsA("Model") then
                 return -1, "CPS unavailable: animal model missing"
             end
-            local pivot = pickup:FindFirstChild("Pivot")
-            local primary = pivot and (pivot:FindFirstChild("PrimaryPart") or pivot:FindFirstChild("Primary Pivot"))
-            if not primary then primary = pickup.PrimaryPart end
-            if not primary or not primary:IsA("BasePart") then
-                return -1, "CPS unavailable: Pivot primary part missing"
-            end
-            local dataFolder = pickup:FindFirstChild(primary.Name) or (pivot and pivot:FindFirstChild(primary.Name))
+            local dataFolder = pickup:FindFirstChild(pickup.Name)
             if not dataFolder then
-                return -1, "CPS unavailable: " .. primary.Name .. " data missing"
+                return -1, "CPS unavailable: " .. pickup.Name .. " animal-name path missing"
             end
             local overheadAttachment = dataFolder:FindFirstChild("AnimalOverheadAttachment", true)
-            local overhead = overheadAttachment and overheadAttachment:FindFirstChild("AnimalOverhead")
-            local cpsContainer = overhead and overhead:FindFirstChild("CashPerSecond")
-            local cpsLabel = cpsContainer and cpsContainer:FindFirstChild("CashPerSecond")
+            if not overheadAttachment then
+                return -1, "CPS unavailable: AnimalOverheadAttachment missing under " .. pickup.Name
+            end
+            local overhead = overheadAttachment:FindFirstChild("AnimalOverhead", true)
+            if not overhead then
+                return -1, "CPS unavailable: AnimalOverhead missing"
+            end
+            local cpsContainer = overhead:FindFirstChild("CashPerSecond", true)
+            local cpsLabel = cpsContainer and cpsContainer:FindFirstChild("CashPerSecond", true)
             if not cpsLabel or not cpsLabel:IsA("TextLabel") then
                 return -1, "CPS unavailable: CashPerSecond TextLabel missing"
             end
@@ -1336,6 +1336,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return number * (scale or 1), raw
         end
+
         local function IsRarityAllowed(pickup)
             local selectedCount = 0
             for _, selected in pairs(SelectedRarities) do
