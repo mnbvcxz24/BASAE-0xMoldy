@@ -4,7 +4,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local testver = "Test v1.65"
+local testver = "Test v1.66"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1502,9 +1502,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 local holdOk, holdErr = pcall(function()
-                    prompt:InputHoldBegin()
-                    task.wait(prompt.HoldDuration + 0.1)
-                    prompt:InputHoldEnd()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(prompt)
+                    else
+                        prompt:InputHoldBegin()
+                        task.wait(prompt.HoldDuration + 0.1)
+                        prompt:InputHoldEnd()
+                    end
                 end)
                 if not holdOk then
                     pcall(function() prompt:InputHoldEnd() end)
