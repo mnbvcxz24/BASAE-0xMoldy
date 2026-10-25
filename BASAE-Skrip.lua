@@ -2420,7 +2420,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             SetTrackerStatus(string.format("FLING RECOVERY: received location (%.1f, %.1f, %.1f); moving there before searching for StealPrompt.", flingPosition.X, flingPosition.Y, flingPosition.Z))
             task.spawn(function()
+                local recoveryMoveBindName
                 local function finishFlingRecovery()
+                    if recoveryMoveBindName then
+                        pcall(function()
+                            game:GetService("RunService"):UnbindFromRenderStep(recoveryMoveBindName)
+                        end)
+                        recoveryMoveBindName = nil
+                    end
                     FlingRecoveryActive = false
                     if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup and StartAutoBreak then
                         task.delay(0.25, function()
@@ -2437,6 +2444,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
+                local RunService = game:GetService("RunService")
+                recoveryMoveBindName = "BASAEFlingRecovery_" .. tostring(flingToken)
+                RunService:BindToRenderStep(recoveryMoveBindName, Enum.RenderPriority.Character.Value + 1, function()
+                    if Runtime.Stopped or not PickupRequested or PickupGeneration ~= flingToken
+                        or LocalPlayer.Character ~= character or not root.Parent or humanoid.Health <= 0 then
+                        humanoid:Move(Vector3.zero, false)
+                        return
+                    end
+                    local moveOffset = Vector3.new(flingPosition.X - root.Position.X, 0, flingPosition.Z - root.Position.Z)
+                    if moveOffset.Magnitude > 4 then
+                        humanoid:Move(moveOffset.Unit, false)
+                    else
+                        humanoid:Move(Vector3.zero, false)
+                    end
+                end)
                 local moveStarted = os.clock()
                 local lastProgressAt = os.clock()
                 local bestDistance = math.huge
@@ -2473,14 +2495,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         end
                         lastProgressAt = now
                         bestDistance = distance
-                        SetTrackerStatus(string.format("FLING RECOVERY: no progress; retrying MoveTo (%.1f studs away, state=%s).", distance, tostring(state)))
-                    end
-                    if offset.Magnitude > 0 then
-                        humanoid:Move(offset.Unit, false)
-                    else
-                        humanoid:Move(Vector3.zero, false)
+                        if humanoid.PlatformStand then humanoid.PlatformStand = false end
+                        if root.Anchored then
+                            SetTrackerStatus(string.format("FLING RECOVERY blocked: HumanoidRootPart is anchored (%.1f studs away).", distance))
+                        else
+                            SetTrackerStatus(string.format("FLING RECOVERY: movement input refreshed every frame; no progress yet (%.1f studs away, state=%s).", distance, tostring(state)))
+                        end
                     end
                     task.wait(0.1)
+                end
+                if recoveryMoveBindName then
+                    pcall(function() RunService:UnbindFromRenderStep(recoveryMoveBindName) end)
+                    recoveryMoveBindName = nil
                 end
                 humanoid:Move(Vector3.zero, false)
                 local arrivalDistance = (Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z) - root.Position).Magnitude
