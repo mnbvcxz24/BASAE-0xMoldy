@@ -1054,16 +1054,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
 
         local function GetEggLuck(egg)
-            local eggModel = egg:FindFirstChild("Egg") or egg
+            local eggModel = egg and (egg:FindFirstChild("Egg") or egg)
+            if not eggModel then return 0 end
             local info = eggModel:FindFirstChild("EggInfoUi", true)
             local luckLabel = info and info:FindFirstChild("LuckMultiList", true)
             luckLabel = luckLabel and luckLabel:FindFirstChild("LuckMulti", true)
-            if not luckLabel then return 0 end
-            local rawLuck = (luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton")) and luckLabel.Text or luckLabel:GetAttribute("LuckMulti")
-            if type(rawLuck) ~= "string" and type(rawLuck) ~= "number" then
-                rawLuck = luckLabel:GetAttribute("LuckMulti")
+            local rawLuck
+            if luckLabel then
+                rawLuck = (luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton")) and luckLabel.Text or nil
+                rawLuck = rawLuck or luckLabel:GetAttribute("LuckMulti")
             end
-            local luck = tonumber(tostring(rawLuck or ""):match("[%d%.]+"))
+            rawLuck = rawLuck or GetEggDataValue(egg, "LuckMulti")
+                or GetEggDataValue(egg, "LuckMultiplier")
+                or GetEggDataValue(egg, "Luck")
+            local luck = tonumber(tostring(rawLuck or ""):gsub(",", ""):match("[%d%.]+"))
             return luck or 0
         end
         local function GetEggRecords()
@@ -2642,24 +2646,71 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             table.sort(selectedZoneNames)
             local target
+            local function IsTitanicEgg(egg)
+                local bracket = GetEggWeightBracket(egg)
+                if bracket and tostring(bracket):lower():find("titanic", 1, true) then
+                    return true, tostring(bracket)
+                end
+                return false, bracket and tostring(bracket) or "unavailable"
+            end
             if TitanicPriorityEnabled then
-                for _, zone in ipairs(ZoneBuilds:GetChildren()) do
-                    local eggsFolder = zone:FindFirstChild("Eggs")
+                local titanicCandidates = {}
+                for _, zoneName in ipairs(selectedZoneNames) do
+                    local zone = ZoneBuilds:FindFirstChild(zoneName)
+                    local eggsFolder = zone and zone:FindFirstChild("Eggs")
                     if eggsFolder then
                         for _, egg in ipairs(eggsFolder:GetChildren()) do
                             if (egg:IsA("Model") or egg:IsA("BasePart"))
                                 and egg.Name:lower():find("egg", 1, true)
                                 and IsEggAvailable(egg) then
-                                local bracket = GetEggWeightBracket(egg)
-                                if bracket and bracket:match("^%s*(.-)%s*$"):lower() == "titanic" then
-                                    target = egg
-                                    SetTrackerStatus("TITANIC PRIORITY: selected " .. egg.Name .. " | WeightBracket=" .. bracket .. " before the normal egg route.")
-                                    break
+                                local isTitanic, bracket = IsTitanicEgg(egg)
+                                if isTitanic then
+                                    table.insert(titanicCandidates, {egg = egg, bracket = bracket})
                                 end
                             end
                         end
                     end
-                    if target then break end
+                end
+                table.sort(titanicCandidates, function(a, b)
+                    local luckA, luckB = GetEggLuck(a.egg), GetEggLuck(b.egg)
+                    if luckA ~= luckB then return luckA > luckB end
+                    return a.egg.Name < b.egg.Name
+                end)
+                if #titanicCandidates > 0 then
+                    target = titanicCandidates[1].egg
+                    SetTrackerStatus("TITANIC PRIORITY: selected " .. target.Name
+                        .. " | WeightBracket=" .. titanicCandidates[1].bracket
+                        .. " | Luck=" .. tostring(GetEggLuck(target)) .. " before the normal egg route.")
+                else
+                    SetTrackerStatus("TITANIC PRIORITY is ON, but no eligible TITANIC egg was detected in the selected zones.")
+                end
+            end
+            if not target and SortOrder == "Highest Luck" then
+                local luckCandidates = {}
+                for _, zoneName in ipairs(selectedZoneNames) do
+                    local zone = ZoneBuilds:FindFirstChild(zoneName)
+                    local eggsFolder = zone and zone:FindFirstChild("Eggs")
+                    if eggsFolder then
+                        for _, egg in ipairs(eggsFolder:GetChildren()) do
+                            if (egg:IsA("Model") or egg:IsA("BasePart"))
+                                and egg.Name:lower():find("egg", 1, true)
+                                and IsEggAvailable(egg) then
+                                local eggName = GetEggTypeName(egg.Name)
+                                if SelectedEggs[eggName] ~= false then
+                                    table.insert(luckCandidates, {egg = egg, luck = GetEggLuck(egg)})
+                                end
+                            end
+                        end
+                    end
+                end
+                table.sort(luckCandidates, function(a, b)
+                    if a.luck ~= b.luck then return a.luck > b.luck end
+                    return a.egg.Name < b.egg.Name
+                end)
+                if #luckCandidates > 0 then
+                    target = luckCandidates[1].egg
+                    SetTrackerStatus("HIGHEST LUCK PRIORITY: selected " .. target.Name
+                        .. " | Luck=" .. tostring(luckCandidates[1].luck) .. " before the normal egg route.")
                 end
             end
             for _, zoneName in ipairs(selectedZoneNames) do
