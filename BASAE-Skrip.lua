@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.144"
+local testver = "Test v1.145"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -2472,7 +2472,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local match
                 for _, candidate in ipairs(folder:GetChildren()) do
                     if candidate.Name == targetAnimalName
-                        and candidate:GetAttribute("WeightKg") == targetWeightKg then
+                        and GetAnimalWeightKg(candidate) == targetWeightKg then
                         if match then return nil end
                         match = candidate
                     end
@@ -2527,7 +2527,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if identityFolder then
                         for _, candidate in ipairs(identityFolder:GetChildren()) do
                             if candidate == flingAnimal and candidate.Name == targetAnimalName then
-                                local identity = candidate:GetAttribute("WeightKg")
+                                local identity = GetAnimalWeightKg(candidate)
                                 if identity ~= nil then
                                     targetWeightKg = identity
                                     FlingTargetWeightKg = identity
@@ -2818,7 +2818,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local targetStillExists = false
                     if folder then
                         for _, animal in ipairs(folder:GetChildren()) do
-                            if animal.Name == targetAnimalName and animal:GetAttribute("WeightKg") == targetWeightKg then
+                            if animal.Name == targetAnimalName and GetAnimalWeightKg(animal) == targetWeightKg then
                                 targetStillExists = true
                                 break
                             end
