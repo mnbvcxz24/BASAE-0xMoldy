@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.139"
+local testver = "Test v1.140"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -2435,7 +2435,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SetTrackerStatus(string.format("Base return paused. FLING RECOVERY target=(%.6f, %.6f, %.6f).", flingPosition.X, flingPosition.Y, flingPosition.Z))
             task.spawn(function()
                 local recoveryMoveBindName
+                local recoveryHumanoid
+                local originalAutoRotate
                 local function finishFlingRecovery()
+                    if recoveryHumanoid and recoveryHumanoid.Parent and originalAutoRotate ~= nil then
+                        recoveryHumanoid.AutoRotate = originalAutoRotate
+                        originalAutoRotate = nil
+                    end
                     if recoveryMoveBindName then
                         pcall(function()
                             game:GetService("RunService"):UnbindFromRenderStep(recoveryMoveBindName)
@@ -2454,6 +2460,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
                 local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                recoveryHumanoid = humanoid
+                originalAutoRotate = humanoid.AutoRotate
+                humanoid.AutoRotate = false
                 if PickupGeneration ~= flingToken or not PickupRequested or not AutoPickupEnabled then
                     finishFlingRecovery()
                     return
