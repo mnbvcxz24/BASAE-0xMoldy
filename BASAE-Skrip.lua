@@ -741,7 +741,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Parent = SidebarContainer,
         Size = UDim2.new(1, -2, 0, 34),
         BackgroundColor3 = Theme.Sidebar,
-        Text = ({"🤖", "👁️", "🐾", "📥", "🛠️"})[index] .. "  " .. name,
+        Text = ({"[A]", "[E]", "[P]", "[I]", "[D]"})[index] .. "  " .. name,
         TextColor3 = Theme.DarkGray,
         Font = Enum.Font.GothamMedium,
         TextSize = 9,
