@@ -466,8 +466,8 @@ end
 local function CreateButton(parent, text, callback)
     local Button = Create("TextButton", {
         Parent = parent,
-        Size = UDim2.new(1, -30, 0, 28),
-        Position = UDim2.fromOffset(15, 68),
+        Size = UDim2.new(1, -22, 0, 28),
+        Position = UDim2.fromOffset(11, 68),
         BackgroundColor3 = Theme.Selected,
         Text = text,
         TextColor3 = Theme.SelectedText,
@@ -649,8 +649,8 @@ end
 local function CreateSlider(parent, text, minimum, maximum, default, callback)
     local Holder = Create("Frame", {
         Parent = parent,
-        Size = UDim2.new(1, -30, 0, 55),
-        Position = UDim2.fromOffset(15, 68),
+        Size = UDim2.new(1, -22, 0, 55),
+        Position = UDim2.fromOffset(11, 68),
         BackgroundTransparency = 1
     })
     local Label = Create("TextLabel", {
@@ -741,7 +741,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Parent = SidebarContainer,
         Size = UDim2.new(1, -2, 0, 34),
         BackgroundColor3 = Theme.Sidebar,
-        Text = ({"⌂", "◎", "◇", "♧", "≡"})[index] .. "   " .. name,
+        Text = ({"🤖", "👁️", "🐾", "📥", "🛠️"})[index] .. "  " .. name,
         TextColor3 = Theme.DarkGray,
         Font = Enum.Font.GothamMedium,
         TextSize = 9,
@@ -822,7 +822,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoBreakToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoBreakToggle.Size = UDim2.fromOffset(48, 24)
-        local AutoPickupCard = CreateCard(AutoRow, "✦  Auto Pickup", "")
+        local AutoPickupCard = CreateCard(AutoRow, "↓  Auto Pickup", "")
         AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
         AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
         local AutoPickupEnabled = false
