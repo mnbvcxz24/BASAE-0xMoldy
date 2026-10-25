@@ -49,13 +49,13 @@ local UIConfig = {
     Subtitle = "BASAE v1.151",
     Width = 480,
     Height = 400,
-    SidebarWidth = 96,
+    SidebarWidth = 108,
     SidebarNames = {
         "Auto",
         "ESP",
-        "Placed Animals",
-        "Animal Pickups",
-        "Debug Console"
+        "Placed",
+        "Pickups",
+        "Debug"
     }
 }
 -- THEME
@@ -744,13 +744,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Text = ({"⌂", "◎", "◇", "♧", "≡"})[index] .. "   " .. name,
         TextColor3 = Theme.DarkGray,
         Font = Enum.Font.GothamMedium,
-        TextSize = 10,
+        TextSize = 9,
+        TextTruncate = Enum.TextTruncate.AtEnd,
         TextXAlignment = Enum.TextXAlignment.Left,
         BorderSizePixel = 0,
         AutoButtonColor = false,
         LayoutOrder = index
     })
     AddCorner(Button, 7)
+    Button.BackgroundTransparency = 1
+    local ActiveLine = Create("Frame", {Name = "ActiveLine", Parent = Button, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -2, 0.5, 0), Size = UDim2.fromOffset(2, 18), BackgroundColor3 = Theme.Accent, BorderSizePixel = 0, Visible = index == 1})
+    AddCorner(ActiveLine, 1)
     local Padding = Create("UIPadding", {
         Parent = Button,
         PaddingLeft = UDim.new(0, 10)
@@ -761,13 +765,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             page.Visible = pageIndex == index
         end
         for buttonIndex, sidebarButton in pairs(SidebarButtons) do
-            if buttonIndex == index then
-                sidebarButton.BackgroundColor3 = Theme.Selected
-                sidebarButton.TextColor3 = Theme.SelectedText
-            else
-                sidebarButton.BackgroundColor3 = Theme.Sidebar
-                sidebarButton.TextColor3 = Theme.DarkGray
-            end
+            local active = buttonIndex == index
+            sidebarButton.BackgroundTransparency = 1
+            sidebarButton.TextColor3 = active and Theme.Text or Theme.DarkGray
+            local line = sidebarButton:FindFirstChild("ActiveLine")
+            if line then line.Visible = active end
         end
         CurrentPage = index
     end)
