@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.120"
+local testver = "Test v1.121"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -2266,10 +2266,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
             if interruptedHumanoid then
                 interruptedHumanoid:Move(Vector3.zero, false)
-                pcall(function()
-                    local oldRoot = interruptedCharacter and interruptedCharacter:FindFirstChild("HumanoidRootPart")
-                    if oldRoot then interruptedHumanoid:MoveTo(oldRoot.Position) end
-                end)
             end
             ReturningAfterPickup = false
             PickupGeneration += 1
@@ -2293,7 +2289,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 local moveStarted = os.clock()
-                local lastMoveTo = 0
                 local lastProgressAt = os.clock()
                 local bestDistance = math.huge
                 while not Runtime.Stopped and PickupRequested and PickupGeneration == flingToken and humanoid.Health > 0 do
@@ -2329,21 +2324,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         end
                         lastProgressAt = now
                         bestDistance = distance
-                        humanoid:MoveTo(Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z))
-                        lastMoveTo = now
-                        SetTrackerStatus(string.format("FLING RECOVERY: no walking progress; retrying MoveTo (%.1f studs away, state=%s).", distance, tostring(state)))
-                    elseif now - lastMoveTo >= 5 then
-                        humanoid:MoveTo(Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z))
-                        lastMoveTo = now
+                        if offset.Magnitude > 0 then
+                            humanoid:Move(offset.Unit, false)
+                        else
+                            humanoid:Move(Vector3.zero, false)
+                        end
+                        SetTrackerStatus(string.format("FLING RECOVERY: restoring directional Move input (%.1f studs away, state=%s).", distance, tostring(state)))
                     end
-                    if now - lastMoveTo >= 1 then
-                        humanoid:MoveTo(Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z))
-                        lastMoveTo = now
+                    if offset.Magnitude > 0 then
+                        humanoid:Move(offset.Unit, false)
+                    else
+                        humanoid:Move(Vector3.zero, false)
                     end
                     task.wait(0.1)
                 end
                 humanoid:Move(Vector3.zero, false)
-                humanoid:MoveTo(root.Position)
                 local arrivalDistance = (Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z) - root.Position).Magnitude
                 if PickupGeneration ~= flingToken then return end
                 if not PickupRequested or humanoid.Health <= 0 or arrivalDistance > 5 then
