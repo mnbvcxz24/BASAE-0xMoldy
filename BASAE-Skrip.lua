@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.131"
+local testver = "Test v1.132"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -2651,7 +2651,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus(reason)
             end
         end
-        StartAutoBreak = function()
+        StartAutoBreak = function(forceRefresh)
             if FlingRecoveryActive then
                 SetTrackerStatus("Auto Break paused: fling recovery owns movement until the animal pickup attempt finishes.")
                 return
@@ -2666,6 +2666,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             if WaitingForPickup then
                 SetTrackerStatus("Auto Break start ignored: broken target is waiting for its AnimalPickups entry.")
+                return
+            end
+            if not forceRefresh and CurrentTarget and IsEggAvailable(CurrentTarget)
+                and (MovementConnection ~= nil or ArrivedAtTarget) then
                 return
             end
             StopAutoBreak()
@@ -2900,7 +2904,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             task.defer(function()
                 if AutoBreakEnabled and not FlingRecoveryActive and not PickupRequested
                     and not ReturningAfterPickup and not WaitingForPickup then
-                    StartAutoBreak()
+                    StartAutoBreak(true)
                 end
             end)
         end
