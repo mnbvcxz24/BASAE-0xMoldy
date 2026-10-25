@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.121"
+local testver = "Test v1.122"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1402,6 +1402,26 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SetTrackerStatus("Hotbar 1 equip failed: tool stayed in Backpack after 5 attempts.")
             return false
         end
+        local AnimalBankEquipConnections = {}
+        local function BindAnimalBankEquip(remote)
+            if not remote:IsA("RemoteEvent") or AnimalBankEquipConnections[remote] then return end
+            local remoteName = remote.Name:lower():gsub("[^%a]", "")
+            if not remoteName:find("animalbank", 1, true) and not remoteName:find("bankanimal", 1, true) then return end
+            AnimalBankEquipConnections[remote] = remote.OnClientEvent:Connect(function()
+                task.delay(2, function()
+                    if Runtime.Stopped then return end
+                    SetTrackerStatus("Animal bank event received; equipping hotbar 1 after 2 seconds.")
+                    EquipHotbarOne()
+                end)
+            end)
+        end
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        for _, remote in ipairs(ReplicatedStorage:GetDescendants()) do
+            BindAnimalBankEquip(remote)
+        end
+        ReplicatedStorage.DescendantAdded:Connect(function(instance)
+            BindAnimalBankEquip(instance)
+        end)
         local function ReturnToPickup(reason)
             if ReturningAfterPickup then return end
             ClearPickupLock()
