@@ -47,9 +47,9 @@ local testver = "BASAE v1.151"
 local UIConfig = {
     Title = "SKRIP NI BAI",
     Subtitle = "BASAE v1.151",
-    Width = 720,
-    Height = 460,
-    SidebarWidth = 126,
+    Width = 620,
+    Height = 400,
+    SidebarWidth = 112,
     SidebarNames = {
         "Auto",
         "ESP",
