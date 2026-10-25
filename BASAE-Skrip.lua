@@ -3563,7 +3563,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end)
         end
     elseif index == 5 then
-        local ConsoleCard = CreateCard(Page, "Debug Console", "")
+        local ConsoleCard = CreateCard(Page, "≡  Debug Console", "")
         ConsoleCard.Size = UDim2.new(1, 0, 0, 190)
         local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
         if consoleTitle then consoleTitle.Position = UDim2.fromOffset(11, 7); consoleTitle.TextSize = 10 end
@@ -3627,7 +3627,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddDebugLog("Debug console ready.")
 
     elseif index == 2 then
-        local ESPCard = CreateCard(Page, "Egg ESP", "")
+        local ESPCard = CreateCard(Page, "◎  Egg ESP", "")
         ESPCard.Size = UDim2.new(1, 0, 0, 125)
         local ESPStatus = Create("TextLabel", {
             Parent = ESPCard,
@@ -3768,7 +3768,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ESPCard.Size = UDim2.new(1, 0, 0, 125)
 
     elseif index == 3 then
-        local AnimalsCard = CreateCard(Page, "Placed Animals", "")
+        local AnimalsCard = CreateCard(Page, "♧  Placed Animals", "")
         AnimalsCard.Size = UDim2.new(1, 0, 0, 230)
         local animalsTitle = AnimalsCard:FindFirstChildWhichIsA("TextLabel")
         if animalsTitle then animalsTitle.Position = UDim2.fromOffset(15, 10) end
@@ -3850,7 +3850,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
 
     elseif index == 4 then
-        local PickupCard = CreateCard(Page, "Animal Pick ups", "")
+        local PickupCard = CreateCard(Page, "◇  Animal Pick ups", "")
         PickupCard.Size = UDim2.new(1, 0, 0, 230)
         local pickupTitle = PickupCard:FindFirstChildWhichIsA("TextLabel")
         if pickupTitle then pickupTitle.Position = UDim2.fromOffset(15, 10) end
