@@ -14,6 +14,25 @@ local Runtime = {Stopped = false}
 RuntimeEnv.__BASAESkripCleanup = function()
     Runtime.Stopped = true
     pcall(function()
+        if type(Runtime.Shutdown) == "function" then
+            Runtime.Shutdown()
+        end
+    end)
+    pcall(function()
+        for _, bindName in ipairs(Runtime.BoundRenderSteps or {}) do
+            RunService:UnbindFromRenderStep(bindName)
+        end
+        table.clear(Runtime.BoundRenderSteps or {})
+    end)
+    pcall(function()
+        for _, connection in ipairs(Runtime.PersistentConnections or {}) do
+            if connection and connection.Connected then
+                connection:Disconnect()
+            end
+        end
+        table.clear(Runtime.PersistentConnections or {})
+    end)
+    pcall(function()
         local oldUI = game.CoreGui:FindFirstChild("BASAESkripUI")
         if oldUI then oldUI:Destroy() end
     end)
@@ -23,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Deploy text v1.0 -- 0xMoldy"
+local testver = "Deploy v1.146 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -36,7 +55,7 @@ local UIConfig = {
         "ESP",
         "Placed Animals",
         "Animal Pickups",
-        -- "Debug Console" -- hidden in deploy copy
+        "Debug Console"
     }
 }
 -- THEME
@@ -276,7 +295,7 @@ local SidebarContainer = Create("ScrollingFrame", {
     CanvasSize = UDim2.new(0, 0, 0, 0),
     ClipsDescendants = true
 })
-local SidebarLayout = Create("UIListLayout", {
+Create("UIListLayout", {
     Parent = SidebarContainer,
     Padding = UDim.new(0, 6),
     SortOrder = Enum.SortOrder.LayoutOrder
@@ -314,7 +333,7 @@ local function AddDebugLog(message)
         return
     end
     DebugLogCount += 1
-    local LogLine = Create("TextLabel", {
+    Create("TextLabel", {
         Name = "Log_" .. DebugLogCount,
         Parent = DebugConsoleList,
         Size = UDim2.new(1, -8, 0, 0),
@@ -416,7 +435,7 @@ local function CreateCard(parent, title, description)
     })
     AddCorner(Card, 8)
     AddStroke(Card, Theme.Border, 1)
-    local CardTitle = Create("TextLabel", {
+    Create("TextLabel", {
         Parent = Card,
         Position = UDim2.fromOffset(11, 8),
         Size = UDim2.new(1, -22, 0, 18),
@@ -427,7 +446,7 @@ local function CreateCard(parent, title, description)
         TextSize = 10,
         TextXAlignment = Enum.TextXAlignment.Left
     })
-    local CardDescription = Create("TextLabel", {
+    Create("TextLabel", {
         Parent = Card,
         Position = UDim2.fromOffset(11, 29),
         Size = UDim2.new(1, -22, 0, 30),
@@ -573,7 +592,7 @@ local function CreateDropdown(parent, text, options, callback)
         TextSize = 9,
         TextXAlignment = Enum.TextXAlignment.Left
     })
-    local Arrow = Create("TextLabel", {
+    Create("TextLabel", {
         Parent = Dropdown,
         Position = UDim2.new(1, -25, 0, 0),
         Size = UDim2.fromOffset(20, 28),
@@ -767,6 +786,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local CompletedEggs = {}
         local AutoBreakToggleInitialized = false
         local AutoBreakEnabled = false
+        local RefreshTitanicPriority
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
             AutoBreakEnabled = enabled
             if not AutoBreakToggleInitialized then
@@ -779,7 +799,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             else
                 if DisableAutoBreakOptions then DisableAutoBreakOptions() end
                 if StopAutoBreak then StopAutoBreak("Toggle disabled") end
-                if StopPickupAutomation then StopPickupAutomation("Auto Break disabled") end
             end
         end)
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
@@ -795,7 +814,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoPickupToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoPickupToggle.Size = UDim2.fromOffset(58, 26)
         local RarityFilterOpen = false
-        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno"}
+        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
         for _, rarityName in ipairs(RarityOptions) do
             SelectedRarities[rarityName] = true
@@ -864,7 +883,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AutoButtonColor = false
             })
             AddCorner(RarityButton, 4)
-            local RarityLabel = Create("TextLabel", {
+            Create("TextLabel", {
                 Parent = RarityButton,
                 Position = UDim2.fromOffset(7, 0),
                 Size = UDim2.new(1, -28, 1, 0),
@@ -898,6 +917,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local SelectedZones = {}
         local SelectedEggs = {}
+        local PreferredZoneName = nil
         local ZoneFilterOpen = false
         local EggFilterOpen = false
         local SortOrder = "Largest"
@@ -1035,6 +1055,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function GetEggWeightBracket(egg)
             return GetEggDataValue(egg, "WeightBracket")
         end
+        local function GetEggWeightKg(egg)
+            local raw = GetEggDataValue(egg, "weightKg")
+                or GetEggDataValue(egg, "WeightKg")
+                or GetEggDataValue(egg, "WeightKG")
+                or GetEggDataValue(egg, "weightKG")
+            if not raw then return nil end
+            local value = tonumber(tostring(raw):lower():gsub(",", ""):match("[%d%.]+"))
+            return value
+        end
         local function IsEggAvailable(egg)
             if not egg or not egg.Parent or CompletedEggs[egg] then return false end
             local eggsFolder = egg.Parent
@@ -1054,17 +1083,34 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
 
         local function GetEggLuck(egg)
-            local eggModel = egg:FindFirstChild("Egg") or egg
+            local eggModel = egg and (egg:FindFirstChild("Egg") or egg)
+            if not eggModel then return 0 end
             local info = eggModel:FindFirstChild("EggInfoUi", true)
             local luckLabel = info and info:FindFirstChild("LuckMultiList", true)
             luckLabel = luckLabel and luckLabel:FindFirstChild("LuckMulti", true)
-            if not luckLabel then return 0 end
-            local rawLuck = (luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton")) and luckLabel.Text or luckLabel:GetAttribute("LuckMulti")
-            if type(rawLuck) ~= "string" and type(rawLuck) ~= "number" then
-                rawLuck = luckLabel:GetAttribute("LuckMulti")
+            local rawLuck
+            if luckLabel then
+                rawLuck = (luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton")) and luckLabel.Text or nil
+                rawLuck = rawLuck or luckLabel:GetAttribute("LuckMulti")
             end
-            local luck = tonumber(tostring(rawLuck or ""):match("[%d%.]+"))
-            return luck or 0
+            rawLuck = rawLuck or GetEggDataValue(egg, "LuckMulti")
+                or GetEggDataValue(egg, "LuckMultiplier")
+                or GetEggDataValue(egg, "Luck")
+            if rawLuck == nil or tostring(rawLuck):match("%S") == nil then return 0 end
+            local text = tostring(rawLuck):lower():gsub(",", ""):gsub("%s+", "")
+            local explicitMultiplier = text:match("[x×]([%d%.]+)") or text:match("([%d%.]+)[x×]")
+            if explicitMultiplier then
+                return tonumber(explicitMultiplier) or 0
+            end
+            local ratioDenominator = text:match("^%d+/(%d+%.?%d*)$")
+            if ratioDenominator then
+                return tonumber(ratioDenominator) or 0
+            end
+            local lastNumber
+            for numberText in text:gmatch("%d+%.?%d*") do
+                lastNumber = numberText
+            end
+            return tonumber(lastNumber) or 0
         end
         local function GetEggRecords()
             local records = {}
@@ -1217,6 +1263,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local TitanicPriorityToggle = CreateToggle(Card1, "TITANIC priority", false, function(enabled)
             TitanicPriorityEnabled = enabled
             AddDebugLog("[Auto Break] TITANIC priority " .. (enabled and "ON" or "OFF"))
+            if RefreshTitanicPriority then
+                RefreshTitanicPriority()
+            end
         end)
         TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
         TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
@@ -1272,13 +1321,44 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local PickupRequested = false
         local ReturningAfterPickup = false
         local ActivePickup
+        local LastAnimalPickupPosition
         local ActivePickupCPS = -1
         local PickupPhase = "IDLE"
         local PickupGeneration = 0
+        local PendingAnimalPickups = {}
+        local PendingAnimalPickupSet = {}
+        local PendingAnimalPickupWorker = false
+        local LastEggHPProgressAt = 0
+        local LastEggHPValue = nil
+        local LastEggHPTarget = nil
         local ScriptShuttingDown = false
         local AnimalFolderConnection
         local FlingRemoteConnection
         local FlingRecoveryActive = false
+        local FlingAnimalTarget
+        local function GetAnimalWeightKg(animal)
+            if not animal then return nil end
+            local names = {"WeightKg", "WeightKG", "weightKg", "weightKG", "Weight", "weight"}
+            for _, name in ipairs(names) do
+                local value = animal:GetAttribute(name)
+                if value ~= nil then return tostring(value) end
+            end
+            for _, node in ipairs(animal:GetDescendants()) do
+                for _, name in ipairs(names) do
+                    local value = node:GetAttribute(name)
+                    if value ~= nil then return tostring(value) end
+                    if node.Name == name then
+                        if node:IsA("ValueBase") then return tostring(node.Value) end
+                        if (node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox")) and node.Text ~= "" then
+                            return tostring(node.Text)
+                        end
+                    end
+                end
+            end
+            return nil
+        end
+        local FlingTargetAnimalName
+        local FlingTargetWeightKg
         local HitEventConnection
         local SetTrackerStatus
         local function SetPickupPhase(phase, message)
@@ -1318,6 +1398,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if humanoid then humanoid:Move(Vector3.zero, false) end
         end
+        Runtime.Shutdown = function()
+            if ShutdownAutomation then
+                ShutdownAutomation()
+            end
+        end
         local function ClearPickupLock(token)
             if token and token ~= PickupGeneration then return false end
             PickupRequested = false
@@ -1328,7 +1413,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
         local AnimalPickups = workspace:FindFirstChild("AnimalPickups")
-        local ReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
+        local BaseReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
         local function EquipHotbarOne()
             local Players = game:GetService("Players")
             local currentPlayer = LocalPlayer or Players.LocalPlayer
@@ -1441,7 +1526,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BindAnimalBankEquip(instance)
         end)
         local function ReturnToPickup(reason)
-            if ReturningAfterPickup then return end
+            if FlingRecoveryActive or ReturningAfterPickup then return end
             ClearPickupLock()
             ReturningAfterPickup = true
             local returnToken = PickupGeneration
@@ -1475,9 +1560,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         return
                     end
                     local offset = Vector3.new(
-                        ReturnPosition.X - root.Position.X,
+                        BaseReturnPosition.X - root.Position.X,
                         0,
-                        ReturnPosition.Z - root.Position.Z
+                        BaseReturnPosition.Z - root.Position.Z
                     )
                     if offset.Magnitude <= 4 then
                         humanoid:Move(Vector3.zero, false)
@@ -1533,10 +1618,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not target or not IsTargetReference(eggReference, target) then
                 return
             end
+            local numericHealth = tonumber(health)
+            if LastEggHPTarget ~= target or numericHealth ~= LastEggHPValue then
+                LastEggHPTarget = target
+                LastEggHPValue = numericHealth
+                LastEggHPProgressAt = os.clock()
+            end
             SetTrackerStatus("MATCH | target=" .. target:GetFullName()
                 .. " | counter=" .. tostring(hitCounter)
                 .. " | health=" .. tostring(health))
-            if tonumber(health) and tonumber(health) <= 0 then
+            if numericHealth and numericHealth <= 0 then
                 CompletedEggs[target] = true
                 WaitingForPickup = true
                 ArrivedAtTarget = false
@@ -1724,7 +1815,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local label = GetIndexNameLabel(pickup.Name)
             for attempt = 1, 8 do
                 if label and label.Parent then break end
-                if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                if not pickup.Parent or not AutoPickupEnabled then
                     return nil, "verification cancelled"
                 end
                 SetPickupTracking(pickup, string.format("Waiting for Index entry (%d/8)", attempt))
@@ -1794,13 +1885,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local cps, cpsText = -1, "CPS skipped for unindexed animal"
             if not forceUnindexedPickup then
                 SetPickupTracking(pickup, "CPS scan 1/2: warming up")
-                local firstScanCPS, firstScanText = GetPetCPS(pickup)
-                if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                local _, firstScanText = GetPetCPS(pickup)
+                if not pickup.Parent or not AutoPickupEnabled then
                     SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
                     return
                 end
                 task.wait(0.15)
-                if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                if not pickup.Parent or not AutoPickupEnabled then
                     SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
                     return
                 end
@@ -1808,7 +1899,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 cps, cpsText = GetPetCPS(pickup)
                 if cps < 0 then
                     for attempt = 1, 8 do
-                        if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then break end
+                        if not pickup.Parent or not AutoPickupEnabled then break end
                         SetPickupTracking(pickup, string.format("Waiting for valid second CPS scan (%d/8)", attempt), cpsText)
                         task.wait(0.25)
                         cps, cpsText = GetPetCPS(pickup)
@@ -1855,10 +1946,73 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             PickupGeneration += 1
             local pickupToken = PickupGeneration
             ActivePickup = pickup
+            FlingAnimalTarget = pickup
+            FlingTargetAnimalName = pickup.Name
+            FlingTargetWeightKg = nil
+            task.spawn(function()
+                local identityDeadline = os.clock() + 12
+                local identityAttempts = 0
+                local lastIdentityLog = 0
+                while not Runtime.Stopped and PickupGeneration == pickupToken
+                    and ActivePickup == pickup and FlingTargetWeightKg == nil
+                    and os.clock() < identityDeadline do
+                    identityAttempts += 1
+                    local identityFolder = workspace:FindFirstChild("AnimalPickups")
+                    if identityFolder then
+                        for _, candidate in ipairs(identityFolder:GetChildren()) do
+                            if candidate == pickup and candidate.Name == FlingTargetAnimalName then
+                                local identity = GetAnimalWeightKg(candidate)
+                                if identity ~= nil then
+                                    FlingTargetWeightKg = identity
+                                    SetTrackerStatus("Captured pickup identity: " .. tostring(FlingTargetAnimalName) .. " | WeightKg=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    local now = os.clock()
+                    if FlingTargetWeightKg == nil and now - lastIdentityLog >= 1 then
+                        lastIdentityLog = now
+                        SetTrackerStatus("Searching AnimalPickups | animal=" .. tostring(FlingTargetAnimalName) .. " | WeightKg=waiting | attempts=" .. tostring(identityAttempts))
+                    end
+                    if FlingTargetWeightKg == nil then task.wait(0.25) end
+                end
+                if FlingTargetWeightKg == nil and PickupGeneration == pickupToken then
+                    SetTrackerStatus("Initial identity search timed out for " .. tostring(FlingTargetAnimalName) .. "; fling recovery will retry.")
+                end
+            end)
             ActivePickupCPS = cps
             PickupPhase = "ANIMAL_APPROACH"
             SetPickupTracking(pickup, "Selected for pickup", cpsText)
             PickupRequested = true
+            task.delay(45, function()
+                if Runtime.Stopped or PickupGeneration ~= pickupToken or not PickupRequested
+                    or ReturningAfterPickup or ActivePickup ~= pickup then
+                    return
+                end
+                SetTrackerStatus("PICKUP WATCHDOG: " .. pickup.Name .. " stayed locked for 45s; releasing stale lock and resuming Auto Break.")
+                PickupGeneration += 1
+                PickupRequested = false
+                ActivePickup = nil
+                ActivePickupCPS = -1
+                PickupPhase = "IDLE"
+                if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+                if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+                if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+                local watchdogCharacter = LocalPlayer.Character
+                local watchdogHumanoid = watchdogCharacter and watchdogCharacter:FindFirstChildOfClass("Humanoid")
+                if watchdogHumanoid then watchdogHumanoid:Move(Vector3.zero, false) end
+                WaitingForPickup = false
+                ArrivedAtTarget = false
+                CurrentTarget = nil
+                task.spawn(function()
+                    EquipHotbarOne()
+                    task.wait(0.2)
+                    if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
+                        StartAutoBreak(true)
+                    end
+                end)
+            end)
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
@@ -1871,7 +2025,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if pickup:IsA("Model") then return pickup:GetPivot().Position end
                 if pickup:IsA("BasePart") then return pickup.Position end
             end)
-            if positionOk then pickupPosition = position end
+            if positionOk then
+                pickupPosition = position
+                LastAnimalPickupPosition = position
+            end
             local moveCharacter = LocalPlayer.Character
             local moveHumanoid = moveCharacter and moveCharacter:FindFirstChildOfClass("Humanoid")
             local moveRoot = moveCharacter and moveCharacter:FindFirstChild("HumanoidRootPart")
@@ -1932,7 +2089,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if pickup:IsA("Model") then return pickup:GetPivot().Position end
                     if pickup:IsA("BasePart") then return pickup.Position end
                 end)
-                if ok and currentPosition then pickupPosition = currentPosition end
+                if ok and currentPosition then
+                    pickupPosition = currentPosition
+                    LastAnimalPickupPosition = currentPosition
+                end
                 local animalOffset = Vector3.new(pickupPosition.X - moveRoot.Position.X, 0, pickupPosition.Z - moveRoot.Position.Z)
                 local animalDistance = animalOffset.Magnitude
                 if animalDistance <= 4 then break end
@@ -2282,6 +2442,36 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 ReturnToPickup("Pickup confirmed. Returning straight to base.")
             end)
         end
+        local function QueuePendingAnimalPickup(pickup)
+            if not pickup or not pickup.Parent or PendingAnimalPickupSet[pickup] then return end
+            PendingAnimalPickupSet[pickup] = true
+            table.insert(PendingAnimalPickups, pickup)
+            SetTrackerStatus("NEW ANIMAL queued: " .. pickup.Name .. " | current pickup/return lock is active; will evaluate when movement is released.")
+            if PendingAnimalPickupWorker then return end
+            PendingAnimalPickupWorker = true
+            task.spawn(function()
+                while not Runtime.Stopped and AutoPickupEnabled and #PendingAnimalPickups > 0 do
+                    if not PickupRequested and not ReturningAfterPickup and not FlingRecoveryActive then
+                        local nextPickup = table.remove(PendingAnimalPickups, 1)
+                        PendingAnimalPickupSet[nextPickup] = nil
+                        if nextPickup and nextPickup.Parent then
+                            local ok, err = xpcall(function()
+                                EvaluatePickup(nextPickup)
+                            end, debug.traceback)
+                            if not ok then
+                                SetTrackerStatus("Queued pickup evaluation failed for " .. tostring(nextPickup.Name) .. ": " .. tostring(err):gsub("[%r\n]+", " "):sub(1, 180))
+                            end
+                            task.wait(0.25)
+                        else
+                            task.wait()
+                        end
+                    else
+                        task.wait(0.5)
+                    end
+                end
+                PendingAnimalPickupWorker = false
+            end)
+        end
         local function BindAnimalPickups(folder)
             if not folder or not folder:IsA("Folder") and not folder:IsA("Model") then
                 return
@@ -2292,20 +2482,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             folder.ChildAdded:Connect(function(pickup)
                 if BaselinePickups[pickup] then return end
-                if not AutoBreakEnabled or not AutoPickupEnabled then
-                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | Auto Pickup/Auto Break not both enabled; ignored.")
+                if not AutoPickupEnabled then
+                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | Auto Pickup is OFF; ignored.")
                     return
                 end
-                if ReturningAfterPickup then
-                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | return-to-base owns movement; ignored.")
+                if ReturningAfterPickup or PickupRequested or FlingRecoveryActive then
+                    QueuePendingAnimalPickup(pickup)
                     return
                 end
                 SetTrackerStatus("NEW ANIMAL detected: " .. pickup.Name .. " | pausing Auto Break and checking filters/priority.")
-                if AutoPickupEnabled and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
+                if AutoPickupEnabled and not PickupRequested and not ReturningAfterPickup then
                     if StopAutoBreak then StopAutoBreak("Auto Break paused: evaluating new animal pickup.", true) end
                 end
                 task.defer(function()
-                    if not pickup.Parent or not AutoBreakEnabled or not AutoPickupEnabled or ReturningAfterPickup then
+                    if not pickup.Parent or not AutoPickupEnabled or ReturningAfterPickup or PickupRequested or FlingRecoveryActive then
+                        if pickup.Parent and AutoPickupEnabled then QueuePendingAnimalPickup(pickup) end
                         return
                     end
                     local ok, err = xpcall(function()
@@ -2337,24 +2528,104 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
         FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
-            if tostring(action):lower() ~= "fling" or typeof(flingPosition) ~= "Vector3" then return end
-            if not AutoBreakEnabled or not AutoPickupEnabled then
-                SetTrackerStatus("Fling recovery ignored: Auto Break and Auto Pickup must both be ON.")
+            if tostring(action):lower() ~= "fling" then return end
+            local flingAnimal = ActivePickup or FlingAnimalTarget
+            local targetAnimalName = (flingAnimal and flingAnimal.Name) or FlingTargetAnimalName
+            local targetWeightKg = FlingTargetWeightKg
+            local function findTrackedAnimal()
+                local folder = workspace:FindFirstChild("AnimalPickups")
+                if not folder or targetAnimalName == nil or targetWeightKg == nil then return nil end
+                if flingAnimal and flingAnimal.Parent == folder
+                    and flingAnimal.Name == targetAnimalName
+                    and GetAnimalWeightKg(flingAnimal) == targetWeightKg then
+                    return flingAnimal
+                end
+                local match
+                for _, candidate in ipairs(folder:GetChildren()) do
+                    if candidate.Name == targetAnimalName
+                        and GetAnimalWeightKg(candidate) == targetWeightKg then
+                        if match then return nil end
+                        match = candidate
+                    end
+                end
+                if match then flingAnimal = match end
+                return match
+            end
+            local function getTrackedAnimalPosition()
+                local animal = findTrackedAnimal()
+                if not animal then return nil end
+                local ok, position = pcall(function()
+                    if animal:IsA("Model") then return animal:GetPivot().Position end
+                    if animal:IsA("BasePart") then return animal.Position end
+                end)
+                return ok and position or nil
+            end
+
+            if ReturnMovementConnection then
+                ReturnMovementConnection:Disconnect()
+                ReturnMovementConnection = nil
+            end
+            if PickupMovementConnection then
+                PickupMovementConnection:Disconnect()
+                PickupMovementConnection = nil
+            end
+            if MovementConnection then
+                MovementConnection:Disconnect()
+                MovementConnection = nil
+            end
+            ReturningAfterPickup = false
+            local interruptedCharacter = LocalPlayer.Character
+            local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
+            if interruptedHumanoid then interruptedHumanoid:Move(Vector3.zero, false) end
+
+            if not AutoPickupEnabled then
+                SetTrackerStatus("Fling detected: base return cancelled, but recovery requires Auto Pickup ON.")
                 return
             end
             if FlingRecoveryActive then
-                SetTrackerStatus("Fling recovery event ignored: recovery is already active.")
+                SetTrackerStatus("Fling recovery event received while recovery is active; base-return movement cancelled.")
+                return
+            end
+
+            if targetWeightKg == nil then
+                SetTrackerStatus("FLING RECOVERY waiting for WeightKg on " .. tostring(targetAnimalName) .. "...")
+                local identityDeadline = os.clock() + 10
+                local identityAttempts = 0
+                local lastIdentityLog = 0
+                while not Runtime.Stopped and os.clock() < identityDeadline and targetWeightKg == nil do
+                    identityAttempts += 1
+                    local identityFolder = workspace:FindFirstChild("AnimalPickups")
+                    if identityFolder then
+                        for _, candidate in ipairs(identityFolder:GetChildren()) do
+                            if candidate == flingAnimal and candidate.Name == targetAnimalName then
+                                local identity = GetAnimalWeightKg(candidate)
+                                if identity ~= nil then
+                                    targetWeightKg = identity
+                                    FlingTargetWeightKg = identity
+                                    SetTrackerStatus("Fling recovery captured identity: " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    local now = os.clock()
+                    if targetWeightKg == nil and now - lastIdentityLog >= 1 then
+                        lastIdentityLog = now
+                        SetTrackerStatus("FLING RECOVERY searching AnimalPickups | animal=" .. tostring(targetAnimalName) .. " | WeightKg=waiting | attempts=" .. tostring(identityAttempts))
+                    end
+                    if targetWeightKg == nil then task.wait(0.25) end
+                end
+            end
+            if targetWeightKg == nil then
+                PickupRequested = false
+                ActivePickup = nil
+                SetTrackerStatus("FLING RECOVERY stopped: WeightKg still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
                 return
             end
             FlingRecoveryActive = true
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
-            local interruptedCharacter = LocalPlayer.Character
-            local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
-            if interruptedHumanoid then
-                interruptedHumanoid:Move(Vector3.zero, false)
-            end
             ReturningAfterPickup = false
             PickupGeneration += 1
             local flingToken = PickupGeneration
@@ -2364,18 +2635,70 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
-            SetTrackerStatus(string.format("FLING RECOVERY: received location (%.1f, %.1f, %.1f); moving there before searching for StealPrompt.", flingPosition.X, flingPosition.Y, flingPosition.Z))
+            SetTrackerStatus("Base return paused. FLING RECOVERY searching AnimalPickups for " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(targetWeightKg) .. ".")
             task.spawn(function()
+                local recoveryMoveBindName
+                local recoveryHumanoid
+                local originalAutoRotate
                 local function finishFlingRecovery()
+                    if recoveryHumanoid and recoveryHumanoid.Parent and originalAutoRotate ~= nil then
+                        recoveryHumanoid.AutoRotate = originalAutoRotate
+                        originalAutoRotate = nil
+                    end
+                    if recoveryMoveBindName then
+                        pcall(function()
+                            game:GetService("RunService"):UnbindFromRenderStep(recoveryMoveBindName)
+                        end)
+                        recoveryMoveBindName = nil
+                    end
                     FlingRecoveryActive = false
+                    if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup and StartAutoBreak then
+                        task.delay(0.25, function()
+                            if not FlingRecoveryActive and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
+                                StartAutoBreak()
+                            end
+                        end)
+                    end
                 end
                 local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
                 local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
-                if PickupGeneration ~= flingToken or not PickupRequested or not AutoBreakEnabled or not AutoPickupEnabled then
+                recoveryHumanoid = humanoid
+                originalAutoRotate = humanoid.AutoRotate
+                humanoid.AutoRotate = false
+                if PickupGeneration ~= flingToken or not PickupRequested or not AutoPickupEnabled then
                     finishFlingRecovery()
                     return
                 end
+                local recoveryPosition = getTrackedAnimalPosition()
+                if not recoveryPosition then
+                    PickupRequested = false
+                    SetTrackerStatus("FLING RECOVERY cancelled: no unique AnimalPickups match for " .. tostring(targetAnimalName) .. " + WeightKg=" .. tostring(targetWeightKg) .. ".")
+                    finishFlingRecovery()
+                    return
+                end
+                SetTrackerStatus(string.format(
+                    "FLING RECOVERY matched %s by name + WeightKg=%s at (%.3f, %.3f, %.3f).",
+                    tostring(flingAnimal and flingAnimal.Name or targetAnimalName or "animal"), tostring(targetWeightKg),
+                    recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z
+                ))
+                local RunService = game:GetService("RunService")
+                recoveryMoveBindName = "BASAEFlingRecovery_" .. tostring(flingToken)
+                RunService:BindToRenderStep(recoveryMoveBindName, Enum.RenderPriority.Character.Value + 1, function()
+                    if Runtime.Stopped or not PickupRequested or PickupGeneration ~= flingToken
+                        or LocalPlayer.Character ~= character or not root.Parent or humanoid.Health <= 0 then
+                        humanoid:Move(Vector3.zero, false)
+                        return
+                    end
+                    local livePosition = getTrackedAnimalPosition()
+                    if livePosition then recoveryPosition = livePosition end
+                    local moveOffset = Vector3.new(recoveryPosition.X - root.Position.X, 0, recoveryPosition.Z - root.Position.Z)
+                    if moveOffset.Magnitude > 4 then
+                        humanoid:Move(moveOffset.Unit, false)
+                    else
+                        humanoid:Move(Vector3.zero, false)
+                    end
+                end)
                 local moveStarted = os.clock()
                 local lastProgressAt = os.clock()
                 local bestDistance = math.huge
@@ -2387,7 +2710,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         finishFlingRecovery()
                         return
                     end
-                    local offset = Vector3.new(flingPosition.X - root.Position.X, 0, flingPosition.Z - root.Position.Z)
+                    local livePosition = getTrackedAnimalPosition()
+                    if livePosition then recoveryPosition = livePosition end
+                    local offset = Vector3.new(recoveryPosition.X - root.Position.X, 0, recoveryPosition.Z - root.Position.Z)
                     local distance = offset.Magnitude
                     if distance <= 4 then break end
                     local now = os.clock()
@@ -2412,22 +2737,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         end
                         lastProgressAt = now
                         bestDistance = distance
-                        if offset.Magnitude > 0 then
-                            humanoid:Move(offset.Unit, false)
+                        if humanoid.PlatformStand then humanoid.PlatformStand = false end
+                        if root.Anchored then
+                            SetTrackerStatus(string.format("FLING RECOVERY blocked: HumanoidRootPart is anchored (%.1f studs away).", distance))
                         else
-                            humanoid:Move(Vector3.zero, false)
+                            SetTrackerStatus(string.format("FLING RECOVERY: movement input refreshed every frame; no progress yet (%.1f studs away, state=%s).", distance, tostring(state)))
                         end
-                        SetTrackerStatus(string.format("FLING RECOVERY: restoring directional Move input (%.1f studs away, state=%s).", distance, tostring(state)))
-                    end
-                    if offset.Magnitude > 0 then
-                        humanoid:Move(offset.Unit, false)
-                    else
-                        humanoid:Move(Vector3.zero, false)
                     end
                     task.wait(0.1)
                 end
+                if recoveryMoveBindName then
+                    pcall(function() RunService:UnbindFromRenderStep(recoveryMoveBindName) end)
+                    recoveryMoveBindName = nil
+                end
                 humanoid:Move(Vector3.zero, false)
-                local arrivalDistance = (Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z) - root.Position).Magnitude
+                local arrivalDistance = (Vector3.new(recoveryPosition.X, root.Position.Y, recoveryPosition.Z) - root.Position).Magnitude
                 if PickupGeneration ~= flingToken then return end
                 if not PickupRequested or humanoid.Health <= 0 or arrivalDistance > 5 then
                     PickupRequested = false
@@ -2451,6 +2775,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return nil
                 end
                 repeat
+                    local livePosition = getTrackedAnimalPosition()
+                    if livePosition then recoveryPosition = livePosition end
                     anchor = workspace:FindFirstChild("PromptAnchor")
                     local nearest = math.huge
                     prompt, promptPosition = nil, nil
@@ -2459,7 +2785,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
                                 local pos = positionOf(candidate)
                                 if pos then
-                                    local distance = (pos - flingPosition).Magnitude
+                                    local distance = (pos - recoveryPosition).Magnitude
                                     if distance < nearest and distance <= 12 then
                                         nearest, prompt, promptPosition = distance, candidate, pos
                                     end
@@ -2478,11 +2804,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - flingPosition).Magnitude))
+                SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - recoveryPosition).Magnitude))
                 local moveStarted = os.clock()
                 while not Runtime.Stopped and PickupRequested and PickupGeneration == flingToken and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
                     promptPosition = positionOf(prompt) or promptPosition
-                    local locationError = (promptPosition - flingPosition).Magnitude
+                    local locationError = (promptPosition - recoveryPosition).Magnitude
                     if locationError > 14 then
                         humanoid:Move(Vector3.zero, false)
                         PickupRequested = false
@@ -2516,7 +2842,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 promptPosition = positionOf(prompt) or promptPosition
                 local finalPlayerDistance = (promptPosition - root.Position).Magnitude
-                local finalLocationError = (promptPosition - flingPosition).Magnitude
+                local finalLocationError = (promptPosition - recoveryPosition).Magnitude
                 if finalPlayerDistance > math.min(prompt.MaxActivationDistance, 5) or finalLocationError > 14 then
                     PickupRequested = false
                     SetTrackerStatus(string.format("FLING RECOVERY blocked by location verification: player=%.1f studs, fling mismatch=%.1f studs.", finalPlayerDistance, finalLocationError))
@@ -2530,7 +2856,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if LocalPlayer.Character ~= character or not character.Parent or humanoid.Health <= 0
                     or not prompt.Parent or not prompt.Enabled
                     or (promptPosition - root.Position).Magnitude > math.min(prompt.MaxActivationDistance, 5)
-                    or (promptPosition - flingPosition).Magnitude > 14 then
+                    or (promptPosition - recoveryPosition).Magnitude > 14 then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY blocked: prompt moved outside the verified pickup range.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
@@ -2559,20 +2885,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local confirmed = false
                 local confirmDeadline = os.clock() + 4
                 while not Runtime.Stopped and os.clock() < confirmDeadline and PickupGeneration == flingToken and PickupRequested do
-                    local foundAtEventLocation = false
                     local folder = workspace:FindFirstChild("AnimalPickups")
+                    local targetStillExists = false
                     if folder then
                         for _, animal in ipairs(folder:GetChildren()) do
-                            local okPosition, animalPosition = pcall(function()
-                                if animal:IsA("Model") then return animal:GetPivot().Position end
-                                if animal:IsA("BasePart") then return animal.Position end
-                            end)
-                            if okPosition and animalPosition and (animalPosition - flingPosition).Magnitude <= 12 then
-                                foundAtEventLocation = true
+                            if animal.Name == targetAnimalName and GetAnimalWeightKg(animal) == targetWeightKg then
+                                targetStillExists = true
                                 break
                             end
                         end
-                        if not foundAtEventLocation then confirmed = true; break end
+                        if not targetStillExists then confirmed = true; break end
                     end
                     task.wait(0.1)
                 end
@@ -2584,9 +2906,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                SetTrackerStatus("FLING RECOVERY collection confirmed; returning to base.")
+                SetTrackerStatus("FLING RECOVERY collection confirmed; resuming base return to the saved base position.")
                 finishFlingRecovery()
-                ReturnToPickup("Fling recovery pickup confirmed. Returning to base.")
+                ReturnToPickup("Fling recovery pickup confirmed. Returning to saved base position.")
             end)
         end)
         AnimalFolderConnection = workspace.ChildAdded:Connect(function(child)
@@ -2613,7 +2935,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus(reason)
             end
         end
-        StartAutoBreak = function()
+        StartAutoBreak = function(forceRefresh)
+            if FlingRecoveryActive then
+                SetTrackerStatus("Auto Break paused: fling recovery owns movement until the animal pickup attempt finishes.")
+                return
+            end
             if not AutoBreakEnabled then
                 SetTrackerStatus("Auto Break start ignored: toggle is OFF.")
                 return
@@ -2624,6 +2950,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             if WaitingForPickup then
                 SetTrackerStatus("Auto Break start ignored: broken target is waiting for its AnimalPickups entry.")
+                return
+            end
+            if not forceRefresh and CurrentTarget and IsEggAvailable(CurrentTarget)
+                and (MovementConnection ~= nil or ArrivedAtTarget) then
                 return
             end
             StopAutoBreak()
@@ -2643,41 +2973,141 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             table.sort(selectedZoneNames)
             local target
             if TitanicPriorityEnabled then
-                for _, zone in ipairs(ZoneBuilds:GetChildren()) do
-                    local eggsFolder = zone:FindFirstChild("Eggs")
+                local weightCandidates = {}
+                for _, zoneName in ipairs(selectedZoneNames) do
+                    local zone = ZoneBuilds:FindFirstChild(zoneName)
+                    local eggsFolder = zone and zone:FindFirstChild("Eggs")
                     if eggsFolder then
                         for _, egg in ipairs(eggsFolder:GetChildren()) do
                             if (egg:IsA("Model") or egg:IsA("BasePart"))
                                 and egg.Name:lower():find("egg", 1, true)
                                 and IsEggAvailable(egg) then
-                                local bracket = GetEggWeightBracket(egg)
-                                if bracket and bracket:match("^%s*(.-)%s*$"):lower() == "titanic" then
-                                    target = egg
-                                    SetTrackerStatus("TITANIC PRIORITY: selected " .. egg.Name .. " | WeightBracket=" .. bracket .. " before the normal egg route.")
-                                    break
+                                local eggName = GetEggTypeName(egg.Name)
+                                if SelectedEggs[eggName] ~= false then
+                                    local weightBracket = GetEggWeightBracket(egg)
+                                    local hasWeightBracket = weightBracket ~= nil
+                                        and tostring(weightBracket):match("%S") ~= nil
+                                    local weightKg = nil
+                                    if not hasWeightBracket then
+                                        weightKg = GetEggWeightKg(egg)
+                                    end
+                                    if hasWeightBracket or weightKg then
+                                        table.insert(weightCandidates, {
+                                            egg = egg,
+                                            weightBracket = hasWeightBracket and tostring(weightBracket) or nil,
+                                            weightKg = weightKg,
+                                            hasWeightBracket = hasWeightBracket
+                                        })
+                                    end
                                 end
                             end
                         end
                     end
-                    if target then break end
+                end
+                table.sort(weightCandidates, function(a, b)
+                    if a.hasWeightBracket ~= b.hasWeightBracket then
+                        return a.hasWeightBracket
+                    end
+                    if a.hasWeightBracket and b.hasWeightBracket then
+                        local aTitanic = a.weightBracket:lower():find("titanic", 1, true) ~= nil
+                        local bTitanic = b.weightBracket:lower():find("titanic", 1, true) ~= nil
+                        if aTitanic ~= bTitanic then return aTitanic end
+                        if a.weightBracket ~= b.weightBracket then
+                            return a.weightBracket < b.weightBracket
+                        end
+                    elseif a.weightKg ~= b.weightKg then
+                        return a.weightKg > b.weightKg
+                    end
+                    return a.egg.Name < b.egg.Name
+                end)
+                if #weightCandidates > 0 then
+                    local selected = weightCandidates[1]
+                    target = selected.egg
+                    local detail = selected.hasWeightBracket
+                        and ("WeightBracket=" .. selected.weightBracket)
+                        or ("WeightBracket blank; WeightKg=" .. tostring(selected.weightKg))
+                    SetTrackerStatus("TITANIC PRIORITY: selected " .. target.Name
+                        .. " | " .. detail .. " before the normal egg route.")
+                else
+                    SetTrackerStatus("TITANIC PRIORITY is ON, but no eligible egg with WeightBracket or fallback weightKg was found in the selected zones.")
                 end
             end
-            for _, zoneName in ipairs(selectedZoneNames) do
-                if target then break end
-                local zone = ZoneBuilds:FindFirstChild(zoneName)
-                local eggsFolder = zone and zone:FindFirstChild("Eggs")
-                if eggsFolder then
-                    for _, egg in ipairs(eggsFolder:GetChildren()) do
-                        if (egg:IsA("Model") or egg:IsA("BasePart"))
-                        and egg.Name:lower():find("egg", 1, true) then
-                            local eggName = GetEggTypeName(egg.Name)
-                            if SelectedEggs[eggName] ~= false and IsEggAvailable(egg) then
-                                target = egg
-                                break
+            if not target and SortOrder == "Highest Luck" then
+                local luckCandidates = {}
+                local unreadableLuckCount = 0
+                for _, zoneName in ipairs(selectedZoneNames) do
+                    local zone = ZoneBuilds:FindFirstChild(zoneName)
+                    local eggsFolder = zone and zone:FindFirstChild("Eggs")
+                    if eggsFolder then
+                        for _, egg in ipairs(eggsFolder:GetChildren()) do
+                            if (egg:IsA("Model") or egg:IsA("BasePart"))
+                                and egg.Name:lower():find("egg", 1, true)
+                                and IsEggAvailable(egg) then
+                                local eggName = GetEggTypeName(egg.Name)
+                                if SelectedEggs[eggName] ~= false then
+                                    local luck = GetEggLuck(egg)
+                                    if luck > 0 then
+                                        table.insert(luckCandidates, {egg = egg, luck = luck})
+                                    else
+                                        unreadableLuckCount += 1
+                                    end
+                                end
                             end
                         end
                     end
+                end
+                table.sort(luckCandidates, function(a, b)
+                    if a.luck ~= b.luck then return a.luck > b.luck end
+                    return a.egg.Name < b.egg.Name
+                end)
+                if #luckCandidates > 0 then
+                    target = luckCandidates[1].egg
+                    SetTrackerStatus("HIGHEST LUCK PRIORITY: selected " .. target.Name
+                        .. " | Luck=" .. tostring(luckCandidates[1].luck)
+                        .. " | readable candidates=" .. tostring(#luckCandidates)
+                        .. " | ignored unreadable=" .. tostring(unreadableLuckCount))
+                else
+                    SetTrackerStatus("HIGHEST LUCK PRIORITY is ON, but no readable positive luck values were found. Auto Break paused instead of choosing a random egg.")
+                    AddDebugLog("[Auto Break] HighLuck found no readable positive luck values; normal egg fallback blocked.")
+                    return
+                end
+            end
+            if not target then
+                local normalZoneNames = {}
+                local preferredIsSelected = false
+                if PreferredZoneName then
+                    for _, zoneName in ipairs(selectedZoneNames) do
+                        if zoneName == PreferredZoneName then
+                            preferredIsSelected = true
+                            break
+                        end
+                    end
+                end
+                if preferredIsSelected then
+                    table.insert(normalZoneNames, PreferredZoneName)
+                end
+                for _, zoneName in ipairs(selectedZoneNames) do
+                    if zoneName ~= PreferredZoneName then
+                        table.insert(normalZoneNames, zoneName)
+                    end
+                end
+                for _, zoneName in ipairs(normalZoneNames) do
                     if target then break end
+                    local zone = ZoneBuilds:FindFirstChild(zoneName)
+                    local eggsFolder = zone and zone:FindFirstChild("Eggs")
+                    if eggsFolder then
+                        for _, egg in ipairs(eggsFolder:GetChildren()) do
+                            if (egg:IsA("Model") or egg:IsA("BasePart"))
+                            and egg.Name:lower():find("egg", 1, true) then
+                                local eggName = GetEggTypeName(egg.Name)
+                                if SelectedEggs[eggName] ~= false and IsEggAvailable(egg) then
+                                    target = egg
+                                    break
+                                end
+                            end
+                        end
+                        if target then break end
+                    end
                 end
             end
             if not target then
@@ -2688,6 +3118,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
             local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
             CurrentTarget = target
+            local targetEggsFolder = target.Parent
+            local targetZone = targetEggsFolder and targetEggsFolder.Parent
+            if targetZone and targetZone.Parent == ZoneBuilds then
+                PreferredZoneName = targetZone.Name
+            end
             ArrivedAtTarget = false
             WaitingForPickup = false
             table.clear(BaselinePickups)
@@ -2736,11 +3171,55 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     MovementConnection:Disconnect()
                     MovementConnection = nil
                     ArrivedAtTarget = true
+                    LastEggHPTarget = target
+                    LastEggHPValue = nil
+                    LastEggHPProgressAt = os.clock()
                     SetTrackerStatus("ARRIVED | " .. target:GetFullName()
                         .. " | tracking matching EggHitConfirmed events now.")
+                    local hpWatchdogTarget = target
+                    local hpWatchdogStarted = os.clock()
+                    task.spawn(function()
+                        while not Runtime.Stopped and AutoBreakEnabled and CurrentTarget == hpWatchdogTarget
+                            and ArrivedAtTarget and not PickupRequested and not ReturningAfterPickup
+                            and os.clock() - math.max(hpWatchdogStarted, LastEggHPProgressAt) < 8 do
+                            task.wait(0.25)
+                        end
+                        if Runtime.Stopped or not AutoBreakEnabled or CurrentTarget ~= hpWatchdogTarget
+                            or not ArrivedAtTarget or PickupRequested or ReturningAfterPickup then
+                            return
+                        end
+                        if os.clock() - math.max(hpWatchdogStarted, LastEggHPProgressAt) >= 8 then
+                            SetTrackerStatus("EGG HP WATCHDOG: no HP progress for 8s at " .. hpWatchdogTarget:GetFullName()
+                                .. "; equipping pickaxe and restarting Auto Break.")
+                            ArrivedAtTarget = false
+                            if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+                            task.spawn(function()
+                                EquipHotbarOne()
+                                task.wait(0.2)
+                                if AutoBreakEnabled and CurrentTarget == hpWatchdogTarget
+                                    and not PickupRequested and not ReturningAfterPickup and not WaitingForPickup then
+                                    StartAutoBreak(true)
+                                end
+                            end)
+                        end
+                    end)
                     return
                 end
                 humanoid:Move(offset.Unit, false)
+            end)
+        end
+        RefreshTitanicPriority = function()
+            if not AutoBreakEnabled or not CurrentTarget then return end
+            if FlingRecoveryActive or PickupRequested or ReturningAfterPickup or WaitingForPickup then
+                AddDebugLog("[Auto Break] Priority changed; will apply after the current pickup/recovery finishes.")
+                return
+            end
+            AddDebugLog("[Auto Break] Refreshing target immediately for updated TITANIC priority.")
+            task.defer(function()
+                if AutoBreakEnabled and not FlingRecoveryActive and not PickupRequested
+                    and not ReturningAfterPickup and not WaitingForPickup then
+                    StartAutoBreak(true)
+                end
             end)
         end
     elseif index == 5 then
@@ -3186,14 +3665,4 @@ UserInputService.InputEnded:Connect(function(input)
         Dragging = false
     end
 end)
--- SEARCH
--- UI-only search; connect it to page controls when needed.
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local Query = SearchBox.Text:lower()
-    -- BACKEND/UI SEARCH PLACEHOLDER
-    --
-    -- Later we can make this search buttons, cards,
-    -- features, or pages.
-end)
--- BACKEND PLACEHOLDER
--- Add script-specific functions here and connect them to the UI callbacks above.
+
