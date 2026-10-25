@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.145"
+local testver = "Test v1.146"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1325,6 +1325,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ActivePickupCPS = -1
         local PickupPhase = "IDLE"
         local PickupGeneration = 0
+        local PendingAnimalPickups = {}
+        local PendingAnimalPickupSet = {}
+        local PendingAnimalPickupWorker = false
+        local LastEggHPProgressAt = 0
+        local LastEggHPValue = nil
+        local LastEggHPTarget = nil
         local ScriptShuttingDown = false
         local AnimalFolderConnection
         local FlingRemoteConnection
@@ -1612,10 +1618,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not target or not IsTargetReference(eggReference, target) then
                 return
             end
+            local numericHealth = tonumber(health)
+            if LastEggHPTarget ~= target or numericHealth ~= LastEggHPValue then
+                LastEggHPTarget = target
+                LastEggHPValue = numericHealth
+                LastEggHPProgressAt = os.clock()
+            end
             SetTrackerStatus("MATCH | target=" .. target:GetFullName()
                 .. " | counter=" .. tostring(hitCounter)
                 .. " | health=" .. tostring(health))
-            if tonumber(health) and tonumber(health) <= 0 then
+            if numericHealth and numericHealth <= 0 then
                 CompletedEggs[target] = true
                 WaitingForPickup = true
                 ArrivedAtTarget = false
@@ -1973,6 +1985,34 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             PickupPhase = "ANIMAL_APPROACH"
             SetPickupTracking(pickup, "Selected for pickup", cpsText)
             PickupRequested = true
+            task.delay(45, function()
+                if Runtime.Stopped or PickupGeneration ~= pickupToken or not PickupRequested
+                    or ReturningAfterPickup or ActivePickup ~= pickup then
+                    return
+                end
+                SetTrackerStatus("PICKUP WATCHDOG: " .. pickup.Name .. " stayed locked for 45s; releasing stale lock and resuming Auto Break.")
+                PickupGeneration += 1
+                PickupRequested = false
+                ActivePickup = nil
+                ActivePickupCPS = -1
+                PickupPhase = "IDLE"
+                if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+                if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+                if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+                local watchdogCharacter = LocalPlayer.Character
+                local watchdogHumanoid = watchdogCharacter and watchdogCharacter:FindFirstChildOfClass("Humanoid")
+                if watchdogHumanoid then watchdogHumanoid:Move(Vector3.zero, false) end
+                WaitingForPickup = false
+                ArrivedAtTarget = false
+                CurrentTarget = nil
+                task.spawn(function()
+                    EquipHotbarOne()
+                    task.wait(0.2)
+                    if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
+                        StartAutoBreak(true)
+                    end
+                end)
+            end)
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
@@ -2402,6 +2442,36 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 ReturnToPickup("Pickup confirmed. Returning straight to base.")
             end)
         end
+        local function QueuePendingAnimalPickup(pickup)
+            if not pickup or not pickup.Parent or PendingAnimalPickupSet[pickup] then return end
+            PendingAnimalPickupSet[pickup] = true
+            table.insert(PendingAnimalPickups, pickup)
+            SetTrackerStatus("NEW ANIMAL queued: " .. pickup.Name .. " | current pickup/return lock is active; will evaluate when movement is released.")
+            if PendingAnimalPickupWorker then return end
+            PendingAnimalPickupWorker = true
+            task.spawn(function()
+                while not Runtime.Stopped and AutoPickupEnabled and #PendingAnimalPickups > 0 do
+                    if not PickupRequested and not ReturningAfterPickup and not FlingRecoveryActive then
+                        local nextPickup = table.remove(PendingAnimalPickups, 1)
+                        PendingAnimalPickupSet[nextPickup] = nil
+                        if nextPickup and nextPickup.Parent then
+                            local ok, err = xpcall(function()
+                                EvaluatePickup(nextPickup)
+                            end, debug.traceback)
+                            if not ok then
+                                SetTrackerStatus("Queued pickup evaluation failed for " .. tostring(nextPickup.Name) .. ": " .. tostring(err):gsub("[%r\n]+", " "):sub(1, 180))
+                            end
+                            task.wait(0.25)
+                        else
+                            task.wait()
+                        end
+                    else
+                        task.wait(0.5)
+                    end
+                end
+                PendingAnimalPickupWorker = false
+            end)
+        end
         local function BindAnimalPickups(folder)
             if not folder or not folder:IsA("Folder") and not folder:IsA("Model") then
                 return
@@ -2416,8 +2486,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | Auto Pickup is OFF; ignored.")
                     return
                 end
-                if ReturningAfterPickup then
-                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | return-to-base owns movement; ignored.")
+                if ReturningAfterPickup or PickupRequested or FlingRecoveryActive then
+                    QueuePendingAnimalPickup(pickup)
                     return
                 end
                 SetTrackerStatus("NEW ANIMAL detected: " .. pickup.Name .. " | pausing Auto Break and checking filters/priority.")
@@ -2425,7 +2495,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if StopAutoBreak then StopAutoBreak("Auto Break paused: evaluating new animal pickup.", true) end
                 end
                 task.defer(function()
-                    if not pickup.Parent or not AutoPickupEnabled or ReturningAfterPickup then
+                    if not pickup.Parent or not AutoPickupEnabled or ReturningAfterPickup or PickupRequested or FlingRecoveryActive then
+                        if pickup.Parent and AutoPickupEnabled then QueuePendingAnimalPickup(pickup) end
                         return
                     end
                     local ok, err = xpcall(function()
@@ -3100,8 +3171,38 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     MovementConnection:Disconnect()
                     MovementConnection = nil
                     ArrivedAtTarget = true
+                    LastEggHPTarget = target
+                    LastEggHPValue = nil
+                    LastEggHPProgressAt = os.clock()
                     SetTrackerStatus("ARRIVED | " .. target:GetFullName()
                         .. " | tracking matching EggHitConfirmed events now.")
+                    local hpWatchdogTarget = target
+                    local hpWatchdogStarted = os.clock()
+                    task.spawn(function()
+                        while not Runtime.Stopped and AutoBreakEnabled and CurrentTarget == hpWatchdogTarget
+                            and ArrivedAtTarget and not PickupRequested and not ReturningAfterPickup
+                            and os.clock() - math.max(hpWatchdogStarted, LastEggHPProgressAt) < 8 do
+                            task.wait(0.25)
+                        end
+                        if Runtime.Stopped or not AutoBreakEnabled or CurrentTarget ~= hpWatchdogTarget
+                            or not ArrivedAtTarget or PickupRequested or ReturningAfterPickup then
+                            return
+                        end
+                        if os.clock() - math.max(hpWatchdogStarted, LastEggHPProgressAt) >= 8 then
+                            SetTrackerStatus("EGG HP WATCHDOG: no HP progress for 8s at " .. hpWatchdogTarget:GetFullName()
+                                .. "; equipping pickaxe and restarting Auto Break.")
+                            ArrivedAtTarget = false
+                            if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+                            task.spawn(function()
+                                EquipHotbarOne()
+                                task.wait(0.2)
+                                if AutoBreakEnabled and CurrentTarget == hpWatchdogTarget
+                                    and not PickupRequested and not ReturningAfterPickup and not WaitingForPickup then
+                                    StartAutoBreak(true)
+                                end
+                            end)
+                        end
+                    end)
                     return
                 end
                 humanoid:Move(offset.Unit, false)
