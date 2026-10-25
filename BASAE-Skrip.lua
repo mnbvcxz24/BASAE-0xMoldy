@@ -843,14 +843,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local EggFilterOpen = false
         local ZoneList
         local EggFilterList
-        RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
+        RarityFilterButton = CreateButton(AutoPickupCard, "Rarity Filter  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
-            local cardHeight = RarityFilterOpen and 300 or ((EggFilterOpen or ZoneFilterOpen) and 270 or 190)
-            AutoPickupCard.Size = UDim2.new(0.5, -6, 0, cardHeight)
-            Card1.Size = UDim2.new(0.5, -6, 0, cardHeight)
-            AutoRow.Size = UDim2.new(1, 0, 0, cardHeight)
-            RarityFilterButton.Text = RarityFilterOpen and "Filter for Rarity  ▲" or "Filter for Rarity  ▼"
+            ZoneFilterOpen = false
+            EggFilterOpen = false
+            if RarityFilterOpen then
+                RarityList.Position = UDim2.fromOffset(RarityFilterButton.AbsolutePosition.X, RarityFilterButton.AbsolutePosition.Y + RarityFilterButton.AbsoluteSize.Y + 4)
+                RarityList.Size = UDim2.fromOffset(math.max(150, RarityFilterButton.AbsoluteSize.X), 155)
+            end
+            RarityFilterButton.Text = RarityFilterOpen and "Rarity Filter  ▲" or "Rarity Filter  ▼"
             RarityList.Visible = RarityFilterOpen
+            if ZoneList then ZoneList.Visible = false end
+            if EggFilterList then EggFilterList.Visible = false end
         end)
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
         RarityFilterButton.Size = UDim2.new(1, -22, 0, 26)
@@ -870,15 +874,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 26)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
-            Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 132),
-            Size = UDim2.new(1, -22, 0, 155),
+            Parent = ScreenGui,
+            Position = UDim2.fromOffset(0, 0),
+            Size = UDim2.fromOffset(160, 155),
             CanvasSize = UDim2.new(0, 0, 0, 0),
             ScrollBarThickness = 3,
             ScrollBarImageColor3 = Theme.Gray,
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
-            Visible = false
+            Visible = false,
+            ZIndex = 100
         })
         AddCorner(RarityList, 6)
         local RarityLayout = Create("UIListLayout", {
@@ -956,15 +961,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function UpdateFilterPanel()
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
+            RarityList.Visible = RarityFilterOpen
             SortFrame.Visible = true
-            local cardHeight = (EggFilterOpen or ZoneFilterOpen) and 270 or 190
-            Card1.Size = UDim2.new(0.5, -6, 0, cardHeight)
-            AutoPickupCard.Size = UDim2.new(0.5, -6, 0, math.max(cardHeight, RarityFilterOpen and 300 or 190))
-            AutoRow.Size = UDim2.new(1, 0, 0, math.max(cardHeight, RarityFilterOpen and 300 or 190))
-            SortFrame.Position = UDim2.fromOffset(15, 78)
-            SortFrame.Size = UDim2.new(1, -30, 0, 28)
+            if ZoneFilterOpen then
+                ZoneList.Position = UDim2.fromOffset(ZoneFilterButton.AbsolutePosition.X, ZoneFilterButton.AbsolutePosition.Y + ZoneFilterButton.AbsoluteSize.Y + 4)
+                ZoneList.Size = UDim2.fromOffset(math.max(130, ZoneFilterButton.AbsoluteSize.X), 150)
+            end
+            if EggFilterOpen then
+                EggFilterList.Position = UDim2.fromOffset(EggFilterButton.AbsolutePosition.X, EggFilterButton.AbsolutePosition.Y + EggFilterButton.AbsoluteSize.Y + 4)
+                EggFilterList.Size = UDim2.fromOffset(math.max(130, EggFilterButton.AbsoluteSize.X), 150)
+            end
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
+            RarityFilterButton.Text = RarityFilterOpen and "Rarity Filter ▲" or "Rarity Filter ▼"
         end
         ZoneFilterButton = CreateButton(Card1, "Zones ▼", function()
             ZoneFilterOpen = not ZoneFilterOpen
@@ -984,16 +993,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         EggFilterButton.Size = UDim2.new(0.5, -20, 0, 26)
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
-            Parent = Card1,
-            Position = UDim2.fromOffset(15, 112),
-            Size = UDim2.new(1, -30, 0, 102),
+            Parent = ScreenGui,
+            Position = UDim2.fromOffset(0, 0),
+            Size = UDim2.fromOffset(140, 150),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             ScrollBarThickness = 3,
             ScrollBarImageColor3 = Theme.Gray,
             CanvasSize = UDim2.new(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
-            Visible = false
+            Visible = false,
+            ZIndex = 100
         })
         AddCorner(ZoneList, 6)
         local ZoneLayout = Create("UIListLayout", {
@@ -1010,16 +1020,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         EggFilterList = Create("ScrollingFrame", {
             Name = "EggFilterList",
-            Parent = Card1,
-            Position = UDim2.fromOffset(15, 112),
-            Size = UDim2.new(1, -30, 0, 102),
+            Parent = ScreenGui,
+            Position = UDim2.fromOffset(0, 0),
+            Size = UDim2.fromOffset(140, 150),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             ScrollBarThickness = 3,
             ScrollBarImageColor3 = Theme.Gray,
             CanvasSize = UDim2.new(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
-            Visible = false
+            Visible = false,
+            ZIndex = 100
         })
         AddCorner(EggFilterList, 6)
         local EggLayout = Create("UIListLayout", {
@@ -1182,7 +1193,44 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, zone in ipairs(ZoneBuilds:GetChildren()) do
                 if zone:IsA("Model") then table.insert(zones, zone) end
             end
-            table.sort(zones, function(a, b) return a.Name < b.Name end)
+            table.sort(zones, function(a, b)
+                local aNumber = tonumber(a.Name:match("%d+"))
+                local bNumber = tonumber(b.Name:match("%d+"))
+                if aNumber and bNumber and aNumber ~= bNumber then return aNumber > bNumber end
+                if aNumber and not bNumber then return true end
+                if bNumber and not aNumber then return false end
+                return a.Name > b.Name
+            end)
+            local allSelected = #zones > 0
+            for _, zone in ipairs(zones) do
+                if SelectedZones[zone.Name] ~= true then allSelected = false break end
+            end
+            local SelectAllButton = Create("TextButton", {
+                Name = "SelectAllZones", Parent = ZoneList, Size = UDim2.new(1, -8, 0, 24),
+                BackgroundColor3 = allSelected and Theme.Selected or Theme.Card, Text = "",
+                BorderSizePixel = 0, LayoutOrder = 0, AutoButtonColor = false, ZIndex = 101
+            })
+            AddCorner(SelectAllButton, 5)
+            Create("TextLabel", {
+                Parent = SelectAllButton, Position = UDim2.fromOffset(8, 0),
+                Size = UDim2.new(1, -34, 1, 0), BackgroundTransparency = 1,
+                Text = allSelected and "All Zones Selected" or "Select All",
+                TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
+                TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 102
+            })
+            Create("TextLabel", {
+                Parent = SelectAllButton, Position = UDim2.new(1, -26, 0, 0),
+                Size = UDim2.fromOffset(22, 24), BackgroundTransparency = 1,
+                Text = allSelected and "✓" or "○",
+                TextColor3 = allSelected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                Font = Enum.Font.GothamBold, TextSize = 12, ZIndex = 102
+            })
+            SelectAllButton.MouseButton1Click:Connect(function()
+                local selectEverything = not allSelected
+                for _, zone in ipairs(zones) do SelectedZones[zone.Name] = selectEverything and true or nil end
+                RefreshZoneList()
+                RefreshEggList()
+            end)
             for zoneIndex, zone in ipairs(zones) do
                 local zoneName = zone.Name
                 local selected = SelectedZones[zoneName] == true
@@ -1308,23 +1356,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
         AutoRow.Size = UDim2.new(1, 0, 0, 190)
         local function UpdateFilterPanelWithTitanic()
-            ZoneList.Visible = ZoneFilterOpen
-            EggFilterList.Visible = EggFilterOpen
-            SortFrame.Visible = true
-            local cardHeight = (EggFilterOpen or ZoneFilterOpen) and 270 or 190
-            Card1.Size = UDim2.new(0.5, -6, 0, cardHeight)
-            AutoPickupCard.Size = UDim2.new(0.5, -6, 0, math.max(cardHeight, RarityFilterOpen and 300 or 190))
-            AutoRow.Size = UDim2.new(1, 0, 0, math.max(cardHeight, RarityFilterOpen and 300 or 190))
-            SortFrame.Position = UDim2.fromOffset(15, 78)
-            SortFrame.Size = UDim2.new(1, -30, 0, 28)
+            UpdateFilterPanel()
             HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
             HighestLuckToggle.Size = UDim2.new(1, 0, 0, 28)
             TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
             TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
-            ZoneFilterButton.Text = ZoneFilterOpen and "Filter zone ▲" or "Filter zone"
-            EggFilterButton.Text = EggFilterOpen and "Filter egg ▲" or "Filter egg"
-            ZoneList.Position = UDim2.fromOffset(15, 150)
-            EggFilterList.Position = UDim2.fromOffset(15, 150)
         end
         DisableAutoBreakOptions = function()
             SortOrder = "Default"
