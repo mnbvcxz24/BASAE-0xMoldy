@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.142"
+local testver = "Test v1.143"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1918,9 +1918,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             FlingTargetDespawnAt = nil
             task.spawn(function()
                 local identityDeadline = os.clock() + 12
+                local identityAttempts = 0
+                local lastIdentityLog = 0
                 while not Runtime.Stopped and PickupGeneration == pickupToken
                     and ActivePickup == pickup and FlingTargetDespawnAt == nil
                     and os.clock() < identityDeadline do
+                    identityAttempts += 1
                     local identityFolder = workspace:FindFirstChild("AnimalPickups")
                     if identityFolder then
                         for _, candidate in ipairs(identityFolder:GetChildren()) do
@@ -1928,16 +1931,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                 local identity = candidate:GetAttribute("DespawnAtServerTime")
                                 if identity ~= nil then
                                     FlingTargetDespawnAt = identity
-                                    SetTrackerStatus("Captured pickup identity: " .. tostring(FlingTargetAnimalName) .. " | DespawnAtServerTime=" .. tostring(identity))
+                                    SetTrackerStatus("Captured pickup identity: " .. tostring(FlingTargetAnimalName) .. " | DespawnAtServerTime=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
                                     break
                                 end
                             end
                         end
                     end
+                    local now = os.clock()
+                    if FlingTargetDespawnAt == nil and now - lastIdentityLog >= 1 then
+                        lastIdentityLog = now
+                        SetTrackerStatus("Searching AnimalPickups | animal=" .. tostring(FlingTargetAnimalName) .. " | DespawnAtServerTime=waiting | attempts=" .. tostring(identityAttempts))
+                    end
                     if FlingTargetDespawnAt == nil then task.wait(0.25) end
                 end
                 if FlingTargetDespawnAt == nil and PickupGeneration == pickupToken then
-                    SetTrackerStatus("Still waiting for DespawnAtServerTime on selected animal " .. tostring(FlingTargetAnimalName) .. "; will retry during fling recovery.")
+                    SetTrackerStatus("Initial identity search timed out for " .. tostring(FlingTargetAnimalName) .. "; fling recovery will retry.")
                 end
             end)
             ActivePickupCPS = cps
@@ -2490,7 +2498,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if targetDespawnAt == nil then
                 SetTrackerStatus("FLING RECOVERY waiting for DespawnAtServerTime on " .. tostring(targetAnimalName) .. "...")
                 local identityDeadline = os.clock() + 10
+                local identityAttempts = 0
+                local lastIdentityLog = 0
                 while not Runtime.Stopped and os.clock() < identityDeadline and targetDespawnAt == nil do
+                    identityAttempts += 1
                     local identityFolder = workspace:FindFirstChild("AnimalPickups")
                     if identityFolder then
                         for _, candidate in ipairs(identityFolder:GetChildren()) do
@@ -2499,10 +2510,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                 if identity ~= nil then
                                     targetDespawnAt = identity
                                     FlingTargetDespawnAt = identity
+                                    SetTrackerStatus("Fling recovery captured identity: " .. tostring(targetAnimalName) .. " | DespawnAtServerTime=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
                                     break
                                 end
                             end
                         end
+                    end
+                    local now = os.clock()
+                    if targetDespawnAt == nil and now - lastIdentityLog >= 1 then
+                        lastIdentityLog = now
+                        SetTrackerStatus("FLING RECOVERY searching AnimalPickups | animal=" .. tostring(targetAnimalName) .. " | DespawnAtServerTime=waiting | attempts=" .. tostring(identityAttempts))
                     end
                     if targetDespawnAt == nil then task.wait(0.25) end
                 end
