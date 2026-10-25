@@ -1663,6 +1663,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 LastEggHPTarget = target
                 LastEggHPValue = numericHealth
                 LastEggHPProgressAt = os.clock()
+                TouchAutomationProgress()
             end
             SetTrackerStatus("MATCH | target=" .. target:GetFullName()
                 .. " | counter=" .. tostring(hitCounter)
@@ -2866,7 +2867,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if prompt then break end
                     task.wait(0.2)
                 until os.clock() >= searchDeadline or PickupGeneration ~= flingToken
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 if not prompt or not prompt.Parent or not prompt.Enabled or not promptPosition then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY failed: no enabled StealPrompt within 12 studs of reported fling location.")
@@ -2908,7 +2912,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     task.wait(0.05)
                 end
                 humanoid:Move(Vector3.zero, false)
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 if not PickupRequested or not prompt.Parent or not prompt.Enabled or humanoid.Health <= 0 then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY cancelled: prompt or character became unavailable.")
@@ -2927,7 +2934,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 task.wait(0.15)
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 promptPosition = positionOf(prompt) or promptPosition
                 if LocalPlayer.Character ~= character or not character.Parent or humanoid.Health <= 0
                     or not prompt.Parent or not prompt.Enabled
@@ -2948,7 +2958,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         prompt:InputHoldEnd()
                     end
                 end)
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 if not ok then
                     pcall(function() prompt:InputHoldEnd() end)
                     PickupRequested = false
@@ -2974,7 +2987,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     task.wait(0.1)
                 end
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 if not confirmed then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY: prompt activated but collection was not confirmed; staying in place.")
