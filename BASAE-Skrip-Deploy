@@ -2743,7 +2743,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 humanoid:Move(offset.Unit, false)
             end)
         end
-    elseif index == 4 then
+    elseif index == 5 then
         local ConsoleCard = CreateCard(Page, "Debug Console", "")
         ConsoleCard.Size = UDim2.new(1, 0, 0, 190)
         local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
