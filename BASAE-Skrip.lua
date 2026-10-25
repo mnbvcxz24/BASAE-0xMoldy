@@ -47,9 +47,9 @@ local testver = "BASAE v1.151"
 local UIConfig = {
     Title = "SKRIP NI BAI",
     Subtitle = "BASAE v1.151",
-    Width = 620,
+    Width = 480,
     Height = 400,
-    SidebarWidth = 112,
+    SidebarWidth = 96,
     SidebarNames = {
         "Auto",
         "ESP",
@@ -789,7 +789,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         local Card1 = CreateCard(AutoRow, "⚡  Auto Break", "")
         Card1.Position = UDim2.new(0, 0, 0, 0)
-        Card1.Size = UDim2.new(0.49, -4, 1, 0)
+        Card1.Size = UDim2.new(0.5, -6, 1, 0)
         local StartAutoBreak
         local StopAutoBreak
         local StopPickupAutomation
@@ -821,8 +821,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoBreakToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoBreakToggle.Size = UDim2.fromOffset(48, 24)
         local AutoPickupCard = CreateCard(AutoRow, "✦  Auto Pickup", "")
-        AutoPickupCard.Position = UDim2.new(0.51, 4, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.49, -4, 1, 0)
+        AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 1, 0)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
@@ -841,7 +841,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local RarityFilterButton
         RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
-            AutoPickupCard.Size = UDim2.new(0.49, -4, 0, RarityFilterOpen and 300 or 190)
+            AutoPickupCard.Size = UDim2.new(0.5, -6, 0, RarityFilterOpen and 300 or 190)
             AutoRow.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 300 or 190)
             RarityFilterButton.Text = RarityFilterOpen and "Filter for Rarity  ▲" or "Filter for Rarity  ▼"
             RarityList.Visible = RarityFilterOpen
@@ -952,7 +952,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
             SortFrame.Visible = true
-            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 270 or 158)
+            Card1.Size = UDim2.new(0.5, -6, 0, (EggFilterOpen or ZoneFilterOpen) and 270 or 158)
             SortFrame.Position = UDim2.fromOffset(15, 78)
             SortFrame.Size = UDim2.new(1, -30, 0, 28)
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
@@ -1288,7 +1288,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
         TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
-        Card1.Size = UDim2.new(1, 0, 0, 158)
+        Card1.Size = UDim2.new(0.5, -6, 0, 158)
         local function UpdateFilterPanelWithTitanic()
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
