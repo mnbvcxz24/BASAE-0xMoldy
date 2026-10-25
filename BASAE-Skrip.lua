@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.141"
+local testver = "Test v1.142"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -2474,8 +2474,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                local recoveryPosition = LastAnimalPickupPosition or flingPosition
-                local recoveryPositionSource = LastAnimalPickupPosition and "SavedAnimalPickupPosition" or "CatchFlingRemoteFallback"
+                local recoveryPosition = flingPosition
+                local recoveryPositionSource = "CatchFlingRemote"
                 SetTrackerStatus(string.format(
                     "FLING RECOVERY target source=%s | target=(%.6f, %.6f, %.6f).",
                     recoveryPositionSource, recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z
