@@ -45,8 +45,8 @@ end
 local testver = "Test v1.151"
 -- UI CONFIGURATION
 local UIConfig = {
-    Title = "BASAE-Skrip",
-    Subtitle = testver,
+    Title = "SKRIP NI BAI",
+    Subtitle = "BASAE v1.151",
     Width = 300,
     Height = 300,
     SidebarWidth = 94,
@@ -60,19 +60,19 @@ local UIConfig = {
 }
 -- THEME
 local Theme = {
-    Background = Color3.fromRGB(28, 30, 34),
-    Sidebar = Color3.fromRGB(31, 34, 39),
-    Card = Color3.fromRGB(36, 39, 45),
-    Border = Color3.fromRGB(49, 53, 61),
-    Text = Color3.fromRGB(218, 222, 228),
-    DarkGray = Color3.fromRGB(178, 184, 193),
-    Gray = Color3.fromRGB(139, 146, 156),
-    LightGray = Color3.fromRGB(48, 53, 61),
-    SurfaceInput = Color3.fromRGB(39, 43, 50),
-    Selected = Color3.fromRGB(67, 78, 88),
-    SelectedText = Color3.fromRGB(231, 235, 240),
-    Accent = Color3.fromRGB(126, 151, 157),
-    AccentText = Color3.fromRGB(27, 32, 35)
+    Background = Color3.fromRGB(16, 24, 32),
+    Sidebar = Color3.fromRGB(18, 30, 40),
+    Card = Color3.fromRGB(26, 44, 58),
+    Border = Color3.fromRGB(38, 56, 71),
+    Text = Color3.fromRGB(241, 245, 249),
+    DarkGray = Color3.fromRGB(199, 210, 222),
+    Gray = Color3.fromRGB(154, 170, 185),
+    LightGray = Color3.fromRGB(35, 52, 66),
+    SurfaceInput = Color3.fromRGB(26, 38, 49),
+    Selected = Color3.fromRGB(26, 44, 58),
+    SelectedText = Color3.fromRGB(241, 245, 249),
+    Accent = Color3.fromRGB(56, 214, 232),
+    AccentText = Color3.fromRGB(10, 27, 34)
 }
 -- HELPER FUNCTIONS
 local function Create(className, properties)
@@ -166,7 +166,7 @@ local Title = Create("TextLabel", {
     Name = "Title",
     Parent = TopBar,
     Position = UDim2.fromOffset(10, 7),
-    Size = UDim2.fromOffset(105, 20),
+    Size = UDim2.fromOffset(150, 20),
     BackgroundTransparency = 1,
     Text = UIConfig.Title,
     TextColor3 = Theme.Text,
