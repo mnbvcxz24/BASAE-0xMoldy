@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.136"
+local testver = "Test v1.137"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -295,7 +295,7 @@ local SidebarContainer = Create("ScrollingFrame", {
     CanvasSize = UDim2.new(0, 0, 0, 0),
     ClipsDescendants = true
 })
-local SidebarLayout = Create("UIListLayout", {
+Create("UIListLayout", {
     Parent = SidebarContainer,
     Padding = UDim.new(0, 6),
     SortOrder = Enum.SortOrder.LayoutOrder
@@ -333,7 +333,7 @@ local function AddDebugLog(message)
         return
     end
     DebugLogCount += 1
-    local LogLine = Create("TextLabel", {
+    Create("TextLabel", {
         Name = "Log_" .. DebugLogCount,
         Parent = DebugConsoleList,
         Size = UDim2.new(1, -8, 0, 0),
@@ -435,7 +435,7 @@ local function CreateCard(parent, title, description)
     })
     AddCorner(Card, 8)
     AddStroke(Card, Theme.Border, 1)
-    local CardTitle = Create("TextLabel", {
+    Create("TextLabel", {
         Parent = Card,
         Position = UDim2.fromOffset(11, 8),
         Size = UDim2.new(1, -22, 0, 18),
@@ -446,7 +446,7 @@ local function CreateCard(parent, title, description)
         TextSize = 10,
         TextXAlignment = Enum.TextXAlignment.Left
     })
-    local CardDescription = Create("TextLabel", {
+    Create("TextLabel", {
         Parent = Card,
         Position = UDim2.fromOffset(11, 29),
         Size = UDim2.new(1, -22, 0, 30),
@@ -592,7 +592,7 @@ local function CreateDropdown(parent, text, options, callback)
         TextSize = 9,
         TextXAlignment = Enum.TextXAlignment.Left
     })
-    local Arrow = Create("TextLabel", {
+    Create("TextLabel", {
         Parent = Dropdown,
         Position = UDim2.new(1, -25, 0, 0),
         Size = UDim2.fromOffset(20, 28),
@@ -883,7 +883,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AutoButtonColor = false
             })
             AddCorner(RarityButton, 4)
-            local RarityLabel = Create("TextLabel", {
+            Create("TextLabel", {
                 Parent = RarityButton,
                 Position = UDim2.fromOffset(7, 0),
                 Size = UDim2.new(1, -28, 1, 0),
@@ -1848,7 +1848,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local cps, cpsText = -1, "CPS skipped for unindexed animal"
             if not forceUnindexedPickup then
                 SetPickupTracking(pickup, "CPS scan 1/2: warming up")
-                local firstScanCPS, firstScanText = GetPetCPS(pickup)
+                local _, firstScanText = GetPetCPS(pickup)
                 if not pickup.Parent or not AutoPickupEnabled then
                     SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
                     return
@@ -3369,14 +3369,4 @@ UserInputService.InputEnded:Connect(function(input)
         Dragging = false
     end
 end)
--- SEARCH
--- UI-only search; connect it to page controls when needed.
-SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
-    local Query = SearchBox.Text:lower()
-    -- BACKEND/UI SEARCH PLACEHOLDER
-    --
-    -- Later we can make this search buttons, cards,
-    -- features, or pages.
-end)
--- BACKEND PLACEHOLDER
--- Add script-specific functions here and connect them to the UI callbacks above.
+
