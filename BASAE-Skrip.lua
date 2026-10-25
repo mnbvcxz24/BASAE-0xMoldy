@@ -61,15 +61,15 @@ local UIConfig = {
 -- THEME
 local Theme = {
     Background = Color3.fromRGB(16, 24, 32),
-    Sidebar = Color3.fromRGB(18, 30, 40),
-    Card = Color3.fromRGB(26, 44, 58),
+    Sidebar = Color3.fromRGB(19, 31, 42),
+    Card = Color3.fromRGB(24, 38, 50),
     Border = Color3.fromRGB(38, 56, 71),
     Text = Color3.fromRGB(241, 245, 249),
     DarkGray = Color3.fromRGB(199, 210, 222),
     Gray = Color3.fromRGB(154, 170, 185),
     LightGray = Color3.fromRGB(35, 52, 66),
-    SurfaceInput = Color3.fromRGB(26, 38, 49),
-    Selected = Color3.fromRGB(26, 44, 58),
+    SurfaceInput = Color3.fromRGB(26, 42, 55),
+    Selected = Color3.fromRGB(26, 55, 70),
     SelectedText = Color3.fromRGB(241, 245, 249),
     Accent = Color3.fromRGB(56, 214, 232),
     AccentText = Color3.fromRGB(10, 27, 34)
@@ -512,14 +512,14 @@ local function CreateToggle(parent, text, default, callback)
         Text = text,
         TextColor3 = Theme.Text,
         Font = Enum.Font.Gotham,
-        TextSize = 9,
+        TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     local Switch = Create("Frame", {
         Parent = Toggle,
         Position = UDim2.new(1, -45, 0.5, -9),
         Size = UDim2.fromOffset(38, 18),
-        BackgroundColor3 = Theme.LightGray,
+        BackgroundColor3 = Color3.fromRGB(49, 67, 82),
         BorderSizePixel = 0
     })
     AddCorner(Switch, 20)
@@ -527,7 +527,7 @@ local function CreateToggle(parent, text, default, callback)
         Parent = Switch,
         Position = UDim2.fromOffset(2, 2),
         Size = UDim2.fromOffset(14, 14),
-        BackgroundColor3 = Theme.SurfaceInput,
+        BackgroundColor3 = Color3.fromRGB(245, 250, 255),
         BorderSizePixel = 0
     })
     AddCorner(Circle, 20)
@@ -535,14 +535,14 @@ local function CreateToggle(parent, text, default, callback)
     local function Update(runCallback)
         if Enabled then
             Tween(Switch, {
-                BackgroundColor3 = Theme.Selected
+                BackgroundColor3 = Theme.Accent
             })
             Tween(Circle, {
                 Position = UDim2.new(1, -16, 0, 2)
             })
         else
             Tween(Switch, {
-                BackgroundColor3 = Theme.LightGray
+                BackgroundColor3 = Color3.fromRGB(49, 67, 82)
             })
             Tween(Circle, {
                 Position = UDim2.fromOffset(2, 2)
