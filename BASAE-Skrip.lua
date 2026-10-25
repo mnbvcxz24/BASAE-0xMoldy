@@ -42,14 +42,14 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.151"
+local testver = "BASAE v1.151"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIP NI BAI",
     Subtitle = "BASAE v1.151",
-    Width = 300,
-    Height = 300,
-    SidebarWidth = 94,
+    Width = 560,
+    Height = 430,
+    SidebarWidth = 126,
     SidebarNames = {
         "Auto",
         "ESP",
@@ -165,26 +165,26 @@ Create("Frame", {
 local Title = Create("TextLabel", {
     Name = "Title",
     Parent = TopBar,
-    Position = UDim2.fromOffset(10, 7),
-    Size = UDim2.fromOffset(150, 20),
+    Position = UDim2.fromOffset(14, 5),
+    Size = UDim2.fromOffset(220, 22),
     BackgroundTransparency = 1,
     Text = UIConfig.Title,
     TextColor3 = Theme.Text,
     Font = Enum.Font.GothamBold,
-    TextSize = 12,
+    TextSize = 14,
     TextXAlignment = Enum.TextXAlignment.Left
 })
 -- Subtitle
 local Subtitle = Create("TextLabel", {
     Name = "Subtitle",
     Parent = TopBar,
-    Position = UDim2.fromOffset(10, 29),
-    Size = UDim2.fromOffset(130, 16),
+    Position = UDim2.fromOffset(14, 27),
+    Size = UDim2.fromOffset(170, 16),
     BackgroundTransparency = 1,
     Text = UIConfig.Subtitle,
     TextColor3 = Theme.Gray,
     Font = Enum.Font.Gotham,
-    TextSize = 8,
+    TextSize = 10,
     TextXAlignment = Enum.TextXAlignment.Left
 })
 -- Search
