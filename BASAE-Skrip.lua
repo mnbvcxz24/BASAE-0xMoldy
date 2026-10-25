@@ -2419,7 +2419,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
-            SetTrackerStatus(string.format("FLING RECOVERY: received location (%.1f, %.1f, %.1f); moving there before searching for StealPrompt.", recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z))
+            SetTrackerStatus(string.format("FLING RECOVERY: remote reported location (%.1f, %.1f, %.1f); resolving the active animal position.", flingPosition.X, flingPosition.Y, flingPosition.Z))
             task.spawn(function()
                 local recoveryMoveBindName
                 local function finishFlingRecovery()
