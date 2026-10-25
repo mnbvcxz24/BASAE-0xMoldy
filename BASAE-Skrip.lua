@@ -3915,11 +3915,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         CreateButton(Card1, "Example Button", function()
             -- Put your actual function here.
         end)
-        local Card2 = CreateCard(Page, "Example Settings", "Example controls that only change the UI state.")
+        local Card2 = CreateCard(Page, "⚙  Example Settings", "Example controls that only change the UI state.")
         CreateToggle(Card2, "Example Toggle", false, function(state)
             -- state = true / false
         end)
-        local Card3 = CreateCard(Page, "Example Options", "Dropdown and slider examples.")
+        local Card3 = CreateCard(Page, "≡  Example Options", "Dropdown and slider examples.")
         CreateDropdown(Card3, "Mode", {"Option 1", "Option 2", "Option 3"}, function(selection)
             -- selection contains the selected option.
         end)
