@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.137"
+local testver = "Test v1.138"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -2432,7 +2432,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
-            SetTrackerStatus(string.format("FLING RECOVERY: remote reported location (%.1f, %.1f, %.1f); resolving the active animal position.", flingPosition.X, flingPosition.Y, flingPosition.Z))
+            SetTrackerStatus(string.format("FLING RECOVERY: remote location (%.6f, %.6f, %.6f); moving to reported animal location.", flingPosition.X, flingPosition.Y, flingPosition.Z))
             task.spawn(function()
                 local recoveryMoveBindName
                 local function finishFlingRecovery()
@@ -2461,7 +2461,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local recoveryPosition = flingPosition
                 local recoveryPositionSource = "CatchFlingRemote"
                 SetTrackerStatus(string.format(
-                    "FLING RECOVERY target source=%s | target=(%.1f, %.1f, %.1f).",
+                    "FLING RECOVERY target source=%s | target=(%.6f, %.6f, %.6f).",
                     recoveryPositionSource, recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z
                 ))
                 local RunService = game:GetService("RunService")
