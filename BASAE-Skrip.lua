@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.146"
+local testver = "Test v1.147"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -773,6 +773,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
     end)
 end
 local ShutdownAutomation
+local CancelActiveAutomation
+local TouchAutomationProgress
 -- CREATE ALL PAGES
 for index, name in ipairs(UIConfig.SidebarNames) do
     local Page = CreatePage(index, name)
@@ -789,6 +791,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local RefreshTitanicPriority
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
             AutoBreakEnabled = enabled
+            TouchAutomationProgress(enabled and "AUTO_BREAK_ON" or "AUTO_BREAK_OFF")
             if not AutoBreakToggleInitialized then
                 AutoBreakToggleInitialized = true
                 return
@@ -799,6 +802,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             else
                 if DisableAutoBreakOptions then DisableAutoBreakOptions() end
                 if StopAutoBreak then StopAutoBreak("Toggle disabled") end
+                if CancelActiveAutomation then CancelActiveAutomation("Auto Break disabled") end
             end
         end)
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
@@ -1336,6 +1340,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local FlingRemoteConnection
         local FlingRecoveryActive = false
         local FlingAnimalTarget
+        local CancelFlingRecovery
+        local LastAutomationProgressAt = os.clock()
+        local AutomationProgressStage = "INITIALIZING"
+        local AutomationWatchdogBusy = false
+        TouchAutomationProgress = function(stage)
+            if stage and stage ~= AutomationProgressStage then
+                AutomationProgressStage = stage
+                LastAutomationProgressAt = os.clock()
+            elseif not stage then
+                LastAutomationProgressAt = os.clock()
+            end
+        end
         local function GetAnimalWeightKg(animal)
             if not animal then return nil end
             local names = {"WeightKg", "WeightKG", "weightKg", "weightKG", "Weight", "weight"}
@@ -1363,6 +1379,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local SetTrackerStatus
         local function SetPickupPhase(phase, message)
             PickupPhase = phase
+            TouchAutomationProgress("PICKUP:" .. tostring(phase))
             if message then SetTrackerStatus("PICKUP LOCK [" .. phase .. "]: " .. message) end
         end
         StopPickupAutomation = function(reason)
@@ -1371,6 +1388,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ReturningAfterPickup = false
             ActivePickup = nil
             ActivePickupCPS = -1
+            if CancelFlingRecovery then
+                local cancelRecovery = CancelFlingRecovery
+                CancelFlingRecovery = nil
+                pcall(cancelRecovery)
+            end
+            FlingRecoveryActive = false
+            TouchAutomationProgress("IDLE")
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
@@ -1378,6 +1402,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if humanoid then humanoid:Move(Vector3.zero, false) end
             if SetTrackerStatus then SetTrackerStatus(tostring(reason) .. "; all pickup/return movement stopped.") end
+        end
+        CancelActiveAutomation = function(reason)
+            if PickupRequested or ReturningAfterPickup or FlingRecoveryActive then
+                StopPickupAutomation(reason or "Automation cancelled")
+            end
+            WaitingForPickup = false
+            ArrivedAtTarget = false
+            CurrentTarget = nil
+            TouchAutomationProgress("IDLE")
         end
         ShutdownAutomation = function()
             ScriptShuttingDown = true
@@ -1530,6 +1563,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ClearPickupLock()
             ReturningAfterPickup = true
             local returnToken = PickupGeneration
+            TouchAutomationProgress("RETURNING_TO_BASE")
             SetTrackerStatus(reason or "Pickup hold completed. Returning to the pickup point.")
             task.spawn(function()
                 local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -1537,6 +1571,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
                 SetTrackerStatus("Moving to static return position.")
                 local moveStarted = os.clock()
+                local lastReturnDistance = math.huge
                 local connection
                 connection = game:GetService("RunService").RenderStepped:Connect(function()
                     if PickupGeneration ~= returnToken then
@@ -1564,7 +1599,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         0,
                         BaseReturnPosition.Z - root.Position.Z
                     )
+                    if offset.Magnitude < lastReturnDistance - 0.5 then
+                        lastReturnDistance = offset.Magnitude
+                        TouchAutomationProgress()
+                    end
                     if offset.Magnitude <= 4 then
+                        TouchAutomationProgress("RETURNING_TO_BASE:ARRIVED")
                         humanoid:Move(Vector3.zero, false)
                         connection:Disconnect()
                         connection = nil
@@ -1628,6 +1668,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 .. " | counter=" .. tostring(hitCounter)
                 .. " | health=" .. tostring(health))
             if numericHealth and numericHealth <= 0 then
+                TouchAutomationProgress("WAITING_FOR_ANIMAL")
                 CompletedEggs[target] = true
                 WaitingForPickup = true
                 ArrivedAtTarget = false
@@ -2044,6 +2085,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local animalMoveStarted = os.clock()
             local lastAnimalProgressAt = os.clock()
             local bestAnimalDistance = math.huge
+            TouchAutomationProgress("PICKUP:ANIMAL_APPROACH")
             if PickupMovementConnection then
                 PickupMovementConnection:Disconnect()
                 PickupMovementConnection = nil
@@ -2110,6 +2152,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if animalDistance < bestAnimalDistance - 0.75 then
                     bestAnimalDistance = animalDistance
                     lastAnimalProgressAt = now
+                    TouchAutomationProgress()
                 elseif now - lastAnimalProgressAt >= 2.5 then
                     lastAnimalProgressAt = now
                     bestAnimalDistance = animalDistance
@@ -2239,6 +2282,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local moveStarted = os.clock()
                 local lastPromptProgressAt = os.clock()
                 local bestPromptDistance = math.huge
+                TouchAutomationProgress("PICKUP:PROMPT_APPROACH")
                 if PickupMovementConnection then
                     PickupMovementConnection:Disconnect()
                     PickupMovementConnection = nil
@@ -2305,6 +2349,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if promptDistance < bestPromptDistance - 0.75 then
                         bestPromptDistance = promptDistance
                         lastPromptProgressAt = now
+                        TouchAutomationProgress()
                     elseif now - lastPromptProgressAt >= 2.5 then
                         lastPromptProgressAt = now
                         bestPromptDistance = promptDistance
@@ -2586,13 +2631,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus("Fling recovery event received while recovery is active; base-return movement cancelled.")
                 return
             end
+            FlingRecoveryActive = true
+            local recoverySearchToken = PickupGeneration
+            TouchAutomationProgress("FLING_RECOVERY:WAITING_FOR_IDENTITY")
 
             if targetWeightKg == nil then
                 SetTrackerStatus("FLING RECOVERY waiting for WeightKg on " .. tostring(targetAnimalName) .. "...")
                 local identityDeadline = os.clock() + 10
                 local identityAttempts = 0
                 local lastIdentityLog = 0
-                while not Runtime.Stopped and os.clock() < identityDeadline and targetWeightKg == nil do
+                while not Runtime.Stopped and FlingRecoveryActive and PickupGeneration == recoverySearchToken
+                    and os.clock() < identityDeadline and targetWeightKg == nil do
                     identityAttempts += 1
                     local identityFolder = workspace:FindFirstChild("AnimalPickups")
                     if identityFolder then
@@ -2616,13 +2665,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if targetWeightKg == nil then task.wait(0.25) end
                 end
             end
-            if targetWeightKg == nil then
-                PickupRequested = false
-                ActivePickup = nil
-                SetTrackerStatus("FLING RECOVERY stopped: WeightKg still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
+            if not FlingRecoveryActive or PickupGeneration ~= recoverySearchToken then
                 return
             end
-            FlingRecoveryActive = true
+            if targetWeightKg == nil then
+                FlingRecoveryActive = false
+                PickupRequested = false
+                ActivePickup = nil
+                TouchAutomationProgress("IDLE")
+                SetTrackerStatus("FLING RECOVERY stopped: WeightKg still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
+                if AutoBreakEnabled and StartAutoBreak then task.delay(0.2, function() if AutoBreakEnabled then StartAutoBreak(true) end end) end
+                return
+            end
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
@@ -2640,7 +2694,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local recoveryMoveBindName
                 local recoveryHumanoid
                 local originalAutoRotate
-                local function finishFlingRecovery()
+                local function cleanupFlingRecovery()
                     if recoveryHumanoid and recoveryHumanoid.Parent and originalAutoRotate ~= nil then
                         recoveryHumanoid.AutoRotate = originalAutoRotate
                         originalAutoRotate = nil
@@ -2652,6 +2706,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         recoveryMoveBindName = nil
                     end
                     FlingRecoveryActive = false
+                    if CancelFlingRecovery == cleanupFlingRecovery then
+                        CancelFlingRecovery = nil
+                    end
+                end
+                CancelFlingRecovery = cleanupFlingRecovery
+                local function finishFlingRecovery()
+                    cleanupFlingRecovery()
                     if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup and StartAutoBreak then
                         task.delay(0.25, function()
                             if not FlingRecoveryActive and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
@@ -2659,6 +2720,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             end
                         end)
                     end
+                end
+                if PickupGeneration ~= flingToken or not FlingRecoveryActive then
+                    finishFlingRecovery()
+                    return
                 end
                 local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
@@ -2702,6 +2767,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local moveStarted = os.clock()
                 local lastProgressAt = os.clock()
                 local bestDistance = math.huge
+                TouchAutomationProgress("FLING_RECOVERY:ANIMAL_APPROACH")
                 while not Runtime.Stopped and PickupRequested and PickupGeneration == flingToken and humanoid.Health > 0 do
                     if LocalPlayer.Character ~= character or not character.Parent or not root.Parent then
                         PickupRequested = false
@@ -2727,6 +2793,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if distance < bestDistance - 0.75 then
                         bestDistance = distance
                         lastProgressAt = now
+                        TouchAutomationProgress()
                     elseif now - lastProgressAt >= 2.5 then
                         local state = humanoid:GetState()
                         if state == Enum.HumanoidStateType.FallingDown
@@ -2752,7 +2819,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 humanoid:Move(Vector3.zero, false)
                 local arrivalDistance = (Vector3.new(recoveryPosition.X, root.Position.Y, recoveryPosition.Z) - root.Position).Magnitude
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 if not PickupRequested or humanoid.Health <= 0 or arrivalDistance > 5 then
                     PickupRequested = false
                     SetTrackerStatus(string.format("FLING RECOVERY cancelled: arrival verification failed (%.1f studs).", arrivalDistance))
@@ -2806,6 +2876,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - recoveryPosition).Magnitude))
                 local moveStarted = os.clock()
+                local bestPromptDistance = math.huge
+                TouchAutomationProgress("FLING_RECOVERY:PROMPT_APPROACH")
                 while not Runtime.Stopped and PickupRequested and PickupGeneration == flingToken and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
                     promptPosition = positionOf(prompt) or promptPosition
                     local locationError = (promptPosition - recoveryPosition).Magnitude
@@ -2819,6 +2891,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     local offset = Vector3.new(promptPosition.X - root.Position.X, 0, promptPosition.Z - root.Position.Z)
                     local distanceToPrompt = (promptPosition - root.Position).Magnitude
+                    if distanceToPrompt < bestPromptDistance - 0.75 then
+                        bestPromptDistance = distanceToPrompt
+                        TouchAutomationProgress()
+                    end
                     if distanceToPrompt <= math.min(prompt.MaxActivationDistance, 5) then break end
                     if os.clock() - moveStarted >= 25 then
                         humanoid:Move(Vector3.zero, false)
@@ -2917,6 +2993,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end)
         StopAutoBreak = function(reason, preserveTargetState)
+            TouchAutomationProgress(AutoBreakEnabled and "AUTO_BREAK_PAUSED" or "AUTO_BREAK_OFF")
             if MovementConnection then
                 MovementConnection:Disconnect()
                 MovementConnection = nil
@@ -2936,6 +3013,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         StartAutoBreak = function(forceRefresh)
+            if not AutoBreakEnabled or ScriptShuttingDown then return end
+            TouchAutomationProgress("AUTO_BREAK:SELECTING_TARGET")
             if FlingRecoveryActive then
                 SetTrackerStatus("Auto Break paused: fling recovery owns movement until the animal pickup attempt finishes.")
                 return
@@ -3208,6 +3287,43 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 humanoid:Move(offset.Unit, false)
             end)
         end
+        task.spawn(function()
+            while not Runtime.Stopped and not ScriptShuttingDown do
+                task.wait(1)
+                local active = PickupRequested or ReturningAfterPickup or FlingRecoveryActive
+                    or (AutoBreakEnabled and (CurrentTarget ~= nil or WaitingForPickup or ArrivedAtTarget))
+                if active and not AutomationWatchdogBusy
+                    and os.clock() - LastAutomationProgressAt >= 20 then
+                    AutomationWatchdogBusy = true
+                    SetTrackerStatus("STUCK WATCHDOG: no automation progress for 20s during "
+                        .. tostring(AutomationProgressStage) .. "; clearing stale waits/locks and restarting Auto Break.")
+                    if StopPickupAutomation then
+                        StopPickupAutomation("20s stuck watchdog recovery")
+                    end
+                    if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+                    if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+                    if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+                    local character = LocalPlayer.Character
+                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then humanoid:Move(Vector3.zero, false) end
+                    WaitingForPickup = false
+                    ArrivedAtTarget = false
+                    CurrentTarget = nil
+                    FlingRecoveryActive = false
+                    TouchAutomationProgress("WATCHDOG_RECOVERY")
+                    task.spawn(function()
+                        EquipHotbarOne()
+                        task.wait(0.2)
+                        if AutoBreakEnabled and not ScriptShuttingDown then
+                            AutomationWatchdogBusy = false
+                            StartAutoBreak(true)
+                        else
+                            AutomationWatchdogBusy = false
+                        end
+                    end)
+                end
+            end
+        end)
         RefreshTitanicPriority = function()
             if not AutoBreakEnabled or not CurrentTarget then return end
             if FlingRecoveryActive or PickupRequested or ReturningAfterPickup or WaitingForPickup then
