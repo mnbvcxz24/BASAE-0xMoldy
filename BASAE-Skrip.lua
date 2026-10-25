@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.130"
+local testver = "Test v1.131"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -899,6 +899,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local SelectedZones = {}
         local SelectedEggs = {}
+        local PreferredZoneName = nil
         local ZoneFilterOpen = false
         local EggFilterOpen = false
         local SortOrder = "Largest"
@@ -2783,22 +2784,42 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
             end
-            for _, zoneName in ipairs(selectedZoneNames) do
-                if target then break end
-                local zone = ZoneBuilds:FindFirstChild(zoneName)
-                local eggsFolder = zone and zone:FindFirstChild("Eggs")
-                if eggsFolder then
-                    for _, egg in ipairs(eggsFolder:GetChildren()) do
-                        if (egg:IsA("Model") or egg:IsA("BasePart"))
-                        and egg.Name:lower():find("egg", 1, true) then
-                            local eggName = GetEggTypeName(egg.Name)
-                            if SelectedEggs[eggName] ~= false and IsEggAvailable(egg) then
-                                target = egg
-                                break
-                            end
+            if not target then
+                local normalZoneNames = {}
+                local preferredIsSelected = false
+                if PreferredZoneName then
+                    for _, zoneName in ipairs(selectedZoneNames) do
+                        if zoneName == PreferredZoneName then
+                            preferredIsSelected = true
+                            break
                         end
                     end
+                end
+                if preferredIsSelected then
+                    table.insert(normalZoneNames, PreferredZoneName)
+                end
+                for _, zoneName in ipairs(selectedZoneNames) do
+                    if zoneName ~= PreferredZoneName then
+                        table.insert(normalZoneNames, zoneName)
+                    end
+                end
+                for _, zoneName in ipairs(normalZoneNames) do
                     if target then break end
+                    local zone = ZoneBuilds:FindFirstChild(zoneName)
+                    local eggsFolder = zone and zone:FindFirstChild("Eggs")
+                    if eggsFolder then
+                        for _, egg in ipairs(eggsFolder:GetChildren()) do
+                            if (egg:IsA("Model") or egg:IsA("BasePart"))
+                            and egg.Name:lower():find("egg", 1, true) then
+                                local eggName = GetEggTypeName(egg.Name)
+                                if SelectedEggs[eggName] ~= false and IsEggAvailable(egg) then
+                                    target = egg
+                                    break
+                                end
+                            end
+                        end
+                        if target then break end
+                    end
                 end
             end
             if not target then
@@ -2809,6 +2830,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
             local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
             CurrentTarget = target
+            local targetEggsFolder = target.Parent
+            local targetZone = targetEggsFolder and targetEggsFolder.Parent
+            if targetZone and targetZone.Parent == ZoneBuilds then
+                PreferredZoneName = targetZone.Name
+            end
             ArrivedAtTarget = false
             WaitingForPickup = false
             table.clear(BaselinePickups)
