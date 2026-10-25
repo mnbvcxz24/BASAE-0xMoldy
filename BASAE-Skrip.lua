@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.149"
+local testver = "Test v1.150"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1354,6 +1354,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 LastAutomationProgressAt = os.clock()
             end
         end
+        local function WaitForCharacterAndParts(timeout, isValid)
+            local deadline = os.clock() + timeout
+            while not Runtime.Stopped and not ScriptShuttingDown and os.clock() < deadline do
+                if isValid and not isValid() then return nil end
+                local character = LocalPlayer.Character
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                if character and humanoid and root then
+                    return character, humanoid, root
+                end
+                task.wait(0.1)
+            end
+            return nil
+        end
         local function GetAnimalWeightKg(animal)
             if not animal then return nil end
             local names = {"WeightKg", "WeightKG", "weightKg", "weightKG", "Weight", "weight"}
@@ -1570,9 +1584,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             TouchAutomationProgress("RETURNING_TO_BASE")
             SetTrackerStatus(reason or "Pickup hold completed. Returning to the pickup point.")
             task.spawn(function()
-                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                local character, humanoid, root = WaitForCharacterAndParts(10, function()
+                    return PickupGeneration == returnToken and ReturningAfterPickup
+                end)
+                if not character then
+                    if PickupGeneration == returnToken then
+                        ReturningAfterPickup = false
+                        SetTrackerStatus("Return cancelled: character parts unavailable or return was cancelled.")
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    end
+                    return
+                end
                 SetTrackerStatus("Moving to static return position.")
                 local moveStarted = os.clock()
                 local lastReturnDistance = math.huge
@@ -2291,9 +2313,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SetPickupPhase("PROMPT_APPROACH", pickup.Name .. " | moving to matching StealPrompt; target and movement remain locked.")
             task.spawn(function()
                 SetPickupPhase("PROMPT_APPROACH", "Lock held by " .. pickup.Name .. "; moving to its matching prompt.")
-                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                local character, humanoid, root = WaitForCharacterAndParts(10, function()
+                    return PickupRequested and PickupGeneration == pickupToken and AutoPickupEnabled
+                end)
+                if not character then
+                    if PickupGeneration == pickupToken then
+                        PickupRequested = false
+                        ActivePickup = nil
+                        ActivePickupCPS = -1
+                        SetTrackerStatus("Pickup cancelled: character parts unavailable while approaching prompt.")
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    end
+                    return
+                end
                 local promptPosition = getPromptPosition(prompt)
                 if not promptPosition then
                     PickupRequested = false
@@ -2747,9 +2779,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                local character, humanoid, root = WaitForCharacterAndParts(10, function()
+                    return PickupGeneration == flingToken and PickupRequested and FlingRecoveryActive
+                end)
+                if not character then
+                    if PickupGeneration ~= flingToken or not FlingRecoveryActive then
+                        cleanupFlingRecovery()
+                        return
+                    end
+                    PickupRequested = false
+                    SetTrackerStatus("FLING RECOVERY cancelled: character parts unavailable.")
+                    finishFlingRecovery()
+                    return
+                end
                 recoveryHumanoid = humanoid
                 originalAutoRotate = humanoid.AutoRotate
                 humanoid.AutoRotate = false
