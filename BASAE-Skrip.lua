@@ -1916,15 +1916,30 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             FlingAnimalTarget = pickup
             FlingTargetAnimalName = pickup.Name
             FlingTargetDespawnAt = nil
-            local identityFolder = workspace:FindFirstChild("AnimalPickups")
-            if identityFolder then
-                for _, candidate in ipairs(identityFolder:GetChildren()) do
-                    if candidate == pickup and candidate.Name == FlingTargetAnimalName then
-                        FlingTargetDespawnAt = candidate:GetAttribute("DespawnAtServerTime")
-                        break
+            task.spawn(function()
+                local identityDeadline = os.clock() + 12
+                while not Runtime.Stopped and PickupRequested and PickupGeneration == pickupToken
+                    and ActivePickup == pickup and FlingTargetDespawnAt == nil
+                    and os.clock() < identityDeadline do
+                    local identityFolder = workspace:FindFirstChild("AnimalPickups")
+                    if identityFolder then
+                        for _, candidate in ipairs(identityFolder:GetChildren()) do
+                            if candidate == pickup and candidate.Name == FlingTargetAnimalName then
+                                local identity = candidate:GetAttribute("DespawnAtServerTime")
+                                if identity ~= nil then
+                                    FlingTargetDespawnAt = identity
+                                    SetTrackerStatus("Captured pickup identity: " .. tostring(FlingTargetAnimalName) .. " | DespawnAtServerTime=" .. tostring(identity))
+                                    break
+                                end
+                            end
+                        end
                     end
+                    if FlingTargetDespawnAt == nil then task.wait(0.25) end
                 end
-            end
+                if FlingTargetDespawnAt == nil and PickupGeneration == pickupToken then
+                    SetTrackerStatus("Still waiting for DespawnAtServerTime on selected animal " .. tostring(FlingTargetAnimalName) .. "; will retry during fling recovery.")
+                end
+            end)
             ActivePickupCPS = cps
             PickupPhase = "ANIMAL_APPROACH"
             SetPickupTracking(pickup, "Selected for pickup", cpsText)
@@ -2473,9 +2488,29 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
 
             if targetDespawnAt == nil then
+                SetTrackerStatus("FLING RECOVERY waiting for DespawnAtServerTime on " .. tostring(targetAnimalName) .. "...")
+                local identityDeadline = os.clock() + 10
+                while not Runtime.Stopped and os.clock() < identityDeadline and targetDespawnAt == nil do
+                    local identityFolder = workspace:FindFirstChild("AnimalPickups")
+                    if identityFolder then
+                        for _, candidate in ipairs(identityFolder:GetChildren()) do
+                            if candidate == flingAnimal and candidate.Name == targetAnimalName then
+                                local identity = candidate:GetAttribute("DespawnAtServerTime")
+                                if identity ~= nil then
+                                    targetDespawnAt = identity
+                                    FlingTargetDespawnAt = identity
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    if targetDespawnAt == nil then task.wait(0.25) end
+                end
+            end
+            if targetDespawnAt == nil then
                 PickupRequested = false
                 ActivePickup = nil
-                SetTrackerStatus("FLING RECOVERY stopped: could not capture DespawnAtServerTime for selected animal " .. tostring(targetAnimalName) .. " inside AnimalPickups.")
+                SetTrackerStatus("FLING RECOVERY stopped: DespawnAtServerTime still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
                 return
             end
             FlingRecoveryActive = true
