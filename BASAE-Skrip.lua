@@ -48,7 +48,7 @@ local UIConfig = {
     Title = "SKRIP NI BAI",
     Subtitle = "BASAE v1.151",
     Width = 480,
-    Height = 420,
+    Height = 350,
     SidebarWidth = 108,
     SidebarNames = {
         "Auto",
