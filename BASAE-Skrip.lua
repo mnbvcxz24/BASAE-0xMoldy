@@ -35,6 +35,7 @@ local UIConfig = {
         "Auto",
         "ESP",
         "Placed Animals",
+        "Animal Pickups",
         "Debug Console"
     }
 }
@@ -2742,7 +2743,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 humanoid:Move(offset.Unit, false)
             end)
         end
-    elseif index == 4 then
+    elseif index == 5 then
         local ConsoleCard = CreateCard(Page, "Debug Console", "")
         ConsoleCard.Size = UDim2.new(1, 0, 0, 190)
         local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
@@ -2991,6 +2992,45 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return -1, "CPS unavailable"
         end
+        local function RefreshPlacedAnimals()
+            for _, child in ipairs(AnimalsList:GetChildren()) do
+                if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
+            end
+            local base = FindOwnedBase()
+            if not base then
+                BaseStatus.Text = "Your Base not found"
+                local waiting = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "Waiting for Your Base...", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
+                return
+            end
+            local placed = base:FindFirstChild("PlacedAnimals")
+            BaseStatus.Text = base.Name .. (placed and " | Placed animals" or " | PlacedAnimals not found")
+            if not placed then return end
+            local records = {}
+            for _, animal in ipairs(placed:GetChildren()) do
+                local value, display = ReadCPS(animal)
+                table.insert(records, {name = animal.Name, value = value, display = display})
+            end
+            table.sort(records, function(a, b) if a.value == b.value then return a.name < b.name end return a.value > b.value end)
+            if #records == 0 then
+                Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No placed animals found.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
+            end
+            for order, record in ipairs(records) do
+                local row = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 25), BackgroundColor3 = Theme.Card, BorderSizePixel = 0, Text = "  " .. record.name .. "  |  " .. record.display, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = order})
+                AddCorner(row, 4)
+            end
+            AnimalsList.CanvasSize = UDim2.new(0, 0, 0, AnimalsLayout.AbsoluteContentSize.Y + 10)
+        end
+        AnimalsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            AnimalsList.CanvasSize = UDim2.new(0, 0, 0, AnimalsLayout.AbsoluteContentSize.Y + 10)
+        end)
+        task.spawn(function()
+            while not Runtime.Stopped and ScreenGui.Parent and Page.Parent do
+                RefreshPlacedAnimals()
+                task.wait(2)
+            end
+        end)
+
+    elseif index == 4 then
         local PickupCard = CreateCard(Page, "Animal Pick ups", "")
         PickupCard.Size = UDim2.new(1, 0, 0, 230)
         local pickupTitle = PickupCard:FindFirstChildWhichIsA("TextLabel")
@@ -3044,40 +3084,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         PickupLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             PickupList.CanvasSize = UDim2.new(0, 0, 0, PickupLayout.AbsoluteContentSize.Y + 10)
         end)
-        local function RefreshPlacedAnimals()
-            for _, child in ipairs(AnimalsList:GetChildren()) do
-                if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
-            end
-            local base = FindOwnedBase()
-            if not base then
-                BaseStatus.Text = "Your Base not found"
-                local waiting = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "Waiting for Your Base...", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
-                return
-            end
-            local placed = base:FindFirstChild("PlacedAnimals")
-            BaseStatus.Text = base.Name .. (placed and " | Placed animals" or " | PlacedAnimals not found")
-            if not placed then return end
-            local records = {}
-            for _, animal in ipairs(placed:GetChildren()) do
-                local value, display = ReadCPS(animal)
-                table.insert(records, {name = animal.Name, value = value, display = display})
-            end
-            table.sort(records, function(a, b) if a.value == b.value then return a.name < b.name end return a.value > b.value end)
-            if #records == 0 then
-                Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No placed animals found.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
-            end
-            for order, record in ipairs(records) do
-                local row = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 25), BackgroundColor3 = Theme.Card, BorderSizePixel = 0, Text = "  " .. record.name .. "  |  " .. record.display, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = order})
-                AddCorner(row, 4)
-            end
-            AnimalsList.CanvasSize = UDim2.new(0, 0, 0, AnimalsLayout.AbsoluteContentSize.Y + 10)
-        end
-        AnimalsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            AnimalsList.CanvasSize = UDim2.new(0, 0, 0, AnimalsLayout.AbsoluteContentSize.Y + 10)
-        end)
         task.spawn(function()
             while not Runtime.Stopped and ScreenGui.Parent and Page.Parent do
-                RefreshPlacedAnimals()
                 RefreshAnimalPickups()
                 task.wait(2)
             end
