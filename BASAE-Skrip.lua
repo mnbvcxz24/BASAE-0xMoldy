@@ -954,7 +954,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
         RarityFilterButton.Size = UDim2.new(1, -22, 0, 28)
         local HighestCashEnabled = false
-        local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest CPS", false, function(enabled)
+        local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest $/s", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
@@ -1490,7 +1490,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         UpdateSortButtons()
         local TitanicPriorityEnabled = false
-        local TitanicPriorityToggle = CreateToggle(Card1, "TITANIC priority", false, function(enabled)
+        local TitanicPriorityToggle = CreateToggle(Card1, "Titanic Priority", false, function(enabled)
             TitanicPriorityEnabled = enabled
             AddDebugLog("[Auto Break] TITANIC priority " .. (enabled and "ON" or "OFF"))
             if RefreshTitanicPriority then
@@ -3949,7 +3949,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
 
     elseif index == 4 then
-        local PickupCard = CreateCard(Page, "◇  Animal Pick ups", "")
+        local PickupCard = CreateCard(Page, "◇  Animal Pickups", "")
         PickupCard.Size = UDim2.new(1, 0, 0, 230)
         local pickupTitle = PickupCard:FindFirstChildWhichIsA("TextLabel")
         if pickupTitle then pickupTitle.Position = UDim2.fromOffset(15, 10) end
