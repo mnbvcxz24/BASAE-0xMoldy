@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Deploy text v1.0"
+local testver = "Deploy text v1.0 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
