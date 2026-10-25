@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.140"
+local testver = "Test v1.141"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1321,6 +1321,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local PickupRequested = false
         local ReturningAfterPickup = false
         local ActivePickup
+        local LastAnimalPickupPosition
         local ActivePickupCPS = -1
         local PickupPhase = "IDLE"
         local PickupGeneration = 0
@@ -1925,7 +1926,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if pickup:IsA("Model") then return pickup:GetPivot().Position end
                 if pickup:IsA("BasePart") then return pickup.Position end
             end)
-            if positionOk then pickupPosition = position end
+            if positionOk then
+                pickupPosition = position
+                LastAnimalPickupPosition = position
+            end
             local moveCharacter = LocalPlayer.Character
             local moveHumanoid = moveCharacter and moveCharacter:FindFirstChildOfClass("Humanoid")
             local moveRoot = moveCharacter and moveCharacter:FindFirstChild("HumanoidRootPart")
@@ -1986,7 +1990,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if pickup:IsA("Model") then return pickup:GetPivot().Position end
                     if pickup:IsA("BasePart") then return pickup.Position end
                 end)
-                if ok and currentPosition then pickupPosition = currentPosition end
+                if ok and currentPosition then
+                    pickupPosition = currentPosition
+                    LastAnimalPickupPosition = currentPosition
+                end
                 local animalOffset = Vector3.new(pickupPosition.X - moveRoot.Position.X, 0, pickupPosition.Z - moveRoot.Position.Z)
                 local animalDistance = animalOffset.Magnitude
                 if animalDistance <= 4 then break end
@@ -2467,8 +2474,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                local recoveryPosition = flingPosition
-                local recoveryPositionSource = "CatchFlingRemote"
+                local recoveryPosition = LastAnimalPickupPosition or flingPosition
+                local recoveryPositionSource = LastAnimalPickupPosition and "SavedAnimalPickupPosition" or "CatchFlingRemoteFallback"
                 SetTrackerStatus(string.format(
                     "FLING RECOVERY target source=%s | target=(%.6f, %.6f, %.6f).",
                     recoveryPositionSource, recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z
