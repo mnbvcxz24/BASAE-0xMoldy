@@ -793,7 +793,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
             AutoBreakEnabled = enabled
             AutoBreakGeneration += 1
-            TouchAutomationProgress(enabled and "AUTO_BREAK_ON" or "AUTO_BREAK_OFF")
+            if TouchAutomationProgress then
+                TouchAutomationProgress(enabled and "AUTO_BREAK_ON" or "AUTO_BREAK_OFF")
+            end
             if not AutoBreakToggleInitialized then
                 AutoBreakToggleInitialized = true
                 return
