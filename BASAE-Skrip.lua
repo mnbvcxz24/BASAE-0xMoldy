@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.138"
+local testver = "Test v1.139"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1382,7 +1382,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
         local AnimalPickups = workspace:FindFirstChild("AnimalPickups")
-        local ReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
+        local BaseReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
         local function EquipHotbarOne()
             local Players = game:GetService("Players")
             local currentPlayer = LocalPlayer or Players.LocalPlayer
@@ -1495,7 +1495,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BindAnimalBankEquip(instance)
         end)
         local function ReturnToPickup(reason)
-            if ReturningAfterPickup then return end
+            if FlingRecoveryActive or ReturningAfterPickup then return end
             ClearPickupLock()
             ReturningAfterPickup = true
             local returnToken = PickupGeneration
@@ -1529,9 +1529,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         return
                     end
                     local offset = Vector3.new(
-                        ReturnPosition.X - root.Position.X,
+                        BaseReturnPosition.X - root.Position.X,
                         0,
-                        ReturnPosition.Z - root.Position.Z
+                        BaseReturnPosition.Z - root.Position.Z
                     )
                     if offset.Magnitude <= 4 then
                         humanoid:Move(Vector3.zero, false)
@@ -2432,7 +2432,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
-            SetTrackerStatus(string.format("FLING RECOVERY: remote location (%.6f, %.6f, %.6f); moving to reported animal location.", flingPosition.X, flingPosition.Y, flingPosition.Z))
+            SetTrackerStatus(string.format("Base return paused. FLING RECOVERY target=(%.6f, %.6f, %.6f).", flingPosition.X, flingPosition.Y, flingPosition.Z))
             task.spawn(function()
                 local recoveryMoveBindName
                 local function finishFlingRecovery()
@@ -2686,9 +2686,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                SetTrackerStatus("FLING RECOVERY collection confirmed; returning to base.")
+                SetTrackerStatus("FLING RECOVERY collection confirmed; resuming base return to the saved base position.")
                 finishFlingRecovery()
-                ReturnToPickup("Fling recovery pickup confirmed. Returning to base.")
+                ReturnToPickup("Fling recovery pickup confirmed. Returning to saved base position.")
             end)
         end)
         AnimalFolderConnection = workspace.ChildAdded:Connect(function(child)
