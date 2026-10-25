@@ -1330,6 +1330,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local FlingRemoteConnection
         local FlingRecoveryActive = false
         local FlingAnimalTarget
+        local FlingTargetAnimalName
         local FlingTargetDespawnAt
         local HitEventConnection
         local SetTrackerStatus
@@ -1913,7 +1914,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local pickupToken = PickupGeneration
             ActivePickup = pickup
             FlingAnimalTarget = pickup
-            FlingTargetDespawnAt = pickup:GetAttribute("DespawnAtServerTime")
+            FlingTargetAnimalName = pickup.Name
+            FlingTargetDespawnAt = nil
+            local identityFolder = workspace:FindFirstChild("AnimalPickups")
+            if identityFolder then
+                for _, candidate in ipairs(identityFolder:GetChildren()) do
+                    if candidate == pickup and candidate.Name == FlingTargetAnimalName then
+                        FlingTargetDespawnAt = candidate:GetAttribute("DespawnAtServerTime")
+                        break
+                    end
+                end
+            end
             ActivePickupCPS = cps
             PickupPhase = "ANIMAL_APPROACH"
             SetPickupTracking(pickup, "Selected for pickup", cpsText)
@@ -2404,18 +2415,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
             if tostring(action):lower() ~= "fling" then return end
             local flingAnimal = ActivePickup or FlingAnimalTarget
-            local targetDespawnAt = flingAnimal and flingAnimal:GetAttribute("DespawnAtServerTime") or FlingTargetDespawnAt
+            local targetAnimalName = (flingAnimal and flingAnimal.Name) or FlingTargetAnimalName
+            local targetDespawnAt = FlingTargetDespawnAt
             local function findTrackedAnimal()
-                if flingAnimal and flingAnimal.Parent and targetDespawnAt ~= nil
+                local folder = workspace:FindFirstChild("AnimalPickups")
+                if not folder or targetAnimalName == nil or targetDespawnAt == nil then return nil end
+                if flingAnimal and flingAnimal.Parent == folder
+                    and flingAnimal.Name == targetAnimalName
                     and flingAnimal:GetAttribute("DespawnAtServerTime") == targetDespawnAt then
                     return flingAnimal
                 end
-                if targetDespawnAt == nil then return nil end
-                local folder = workspace:FindFirstChild("AnimalPickups")
-                if not folder then return nil end
                 local match
                 for _, candidate in ipairs(folder:GetChildren()) do
-                    if candidate:GetAttribute("DespawnAtServerTime") == targetDespawnAt then
+                    if candidate.Name == targetAnimalName
+                        and candidate:GetAttribute("DespawnAtServerTime") == targetDespawnAt then
                         if match then return nil end
                         match = candidate
                     end
@@ -2462,7 +2475,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if targetDespawnAt == nil then
                 PickupRequested = false
                 ActivePickup = nil
-                SetTrackerStatus("FLING RECOVERY stopped: the selected animal has no DespawnAtServerTime attribute, so its identity cannot be verified safely.")
+                SetTrackerStatus("FLING RECOVERY stopped: could not capture DespawnAtServerTime for selected animal " .. tostring(targetAnimalName) .. " inside AnimalPickups.")
                 return
             end
             FlingRecoveryActive = true
@@ -2478,7 +2491,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
-            SetTrackerStatus("Base return paused. FLING RECOVERY locating the selected animal by DespawnAtServerTime=" .. tostring(targetDespawnAt) .. ".")
+            SetTrackerStatus("Base return paused. FLING RECOVERY searching AnimalPickups for " .. tostring(targetAnimalName) .. " | DespawnAtServerTime=" .. tostring(targetDespawnAt) .. ".")
             task.spawn(function()
                 local recoveryMoveBindName
                 local recoveryHumanoid
@@ -2516,13 +2529,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local recoveryPosition = getTrackedAnimalPosition()
                 if not recoveryPosition then
                     PickupRequested = false
-                    SetTrackerStatus("FLING RECOVERY cancelled: no unique active animal matches DespawnAtServerTime=" .. tostring(targetDespawnAt) .. ".")
+                    SetTrackerStatus("FLING RECOVERY cancelled: no unique AnimalPickups match for " .. tostring(targetAnimalName) .. " + DespawnAtServerTime=" .. tostring(targetDespawnAt) .. ".")
                     finishFlingRecovery()
                     return
                 end
                 SetTrackerStatus(string.format(
-                    "FLING RECOVERY matched %s by DespawnAtServerTime=%s at (%.3f, %.3f, %.3f).",
-                    tostring(flingAnimal and flingAnimal.Name or "animal"), tostring(targetDespawnAt),
+                    "FLING RECOVERY matched %s by name + DespawnAtServerTime=%s at (%.3f, %.3f, %.3f).",
+                    tostring(flingAnimal and flingAnimal.Name or targetAnimalName or "animal"), tostring(targetDespawnAt),
                     recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z
                 ))
                 local RunService = game:GetService("RunService")
@@ -2732,7 +2745,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local targetStillExists = false
                     if folder then
                         for _, animal in ipairs(folder:GetChildren()) do
-                            if animal:GetAttribute("DespawnAtServerTime") == targetDespawnAt then
+                            if animal.Name == targetAnimalName and animal:GetAttribute("DespawnAtServerTime") == targetDespawnAt then
                                 targetStillExists = true
                                 break
                             end
