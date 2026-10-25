@@ -795,7 +795,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local StartAutoBreak
         local StopAutoBreak
         local StopPickupAutomation
-        local DisableAutoBreakOptions
         local CompletedEggs = {}
         local AutoBreakToggleInitialized = false
         local AutoBreakEnabled = false
@@ -815,7 +814,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if enabled then
                 if StartAutoBreak then StartAutoBreak() end
             else
-                if DisableAutoBreakOptions then DisableAutoBreakOptions() end
                 if StopAutoBreak then StopAutoBreak("Toggle disabled") end
                 if CancelActiveAutomation then CancelActiveAutomation("Auto Break disabled") end
             end
@@ -1415,13 +1413,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             HighestLuckToggle.Size = UDim2.new(1, 0, 0, 28)
             TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
             TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
-        end
-        DisableAutoBreakOptions = function()
-            SortOrder = "Default"
-            TitanicPriorityEnabled = false
-            if HighestLuckToggle then ToggleControllers[HighestLuckToggle].SetEnabled(false, false) end
-            if TitanicPriorityToggle then ToggleControllers[TitanicPriorityToggle].SetEnabled(false, false) end
-            if RefreshEggList then RefreshEggList() end
         end
         ZoneFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
         EggFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
