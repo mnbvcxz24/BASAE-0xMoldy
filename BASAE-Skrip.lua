@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.135"
+local testver = "Test v1.136"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -799,7 +799,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             else
                 if DisableAutoBreakOptions then DisableAutoBreakOptions() end
                 if StopAutoBreak then StopAutoBreak("Toggle disabled") end
-                if StopPickupAutomation then StopPickupAutomation("Auto Break disabled") end
             end
         end)
         AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
@@ -1779,7 +1778,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local label = GetIndexNameLabel(pickup.Name)
             for attempt = 1, 8 do
                 if label and label.Parent then break end
-                if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                if not pickup.Parent or not AutoPickupEnabled then
                     return nil, "verification cancelled"
                 end
                 SetPickupTracking(pickup, string.format("Waiting for Index entry (%d/8)", attempt))
@@ -1850,12 +1849,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not forceUnindexedPickup then
                 SetPickupTracking(pickup, "CPS scan 1/2: warming up")
                 local firstScanCPS, firstScanText = GetPetCPS(pickup)
-                if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                if not pickup.Parent or not AutoPickupEnabled then
                     SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
                     return
                 end
                 task.wait(0.15)
-                if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then
+                if not pickup.Parent or not AutoPickupEnabled then
                     SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
                     return
                 end
@@ -1863,7 +1862,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 cps, cpsText = GetPetCPS(pickup)
                 if cps < 0 then
                     for attempt = 1, 8 do
-                        if not pickup.Parent or not AutoPickupEnabled or not AutoBreakEnabled then break end
+                        if not pickup.Parent or not AutoPickupEnabled then break end
                         SetPickupTracking(pickup, string.format("Waiting for valid second CPS scan (%d/8)", attempt), cpsText)
                         task.wait(0.25)
                         cps, cpsText = GetPetCPS(pickup)
@@ -2347,8 +2346,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             folder.ChildAdded:Connect(function(pickup)
                 if BaselinePickups[pickup] then return end
-                if not AutoBreakEnabled or not AutoPickupEnabled then
-                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | Auto Pickup/Auto Break not both enabled; ignored.")
+                if not AutoPickupEnabled then
+                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | Auto Pickup is OFF; ignored.")
                     return
                 end
                 if ReturningAfterPickup then
@@ -2356,11 +2355,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 SetTrackerStatus("NEW ANIMAL detected: " .. pickup.Name .. " | pausing Auto Break and checking filters/priority.")
-                if AutoPickupEnabled and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
+                if AutoPickupEnabled and not PickupRequested and not ReturningAfterPickup then
                     if StopAutoBreak then StopAutoBreak("Auto Break paused: evaluating new animal pickup.", true) end
                 end
                 task.defer(function()
-                    if not pickup.Parent or not AutoBreakEnabled or not AutoPickupEnabled or ReturningAfterPickup then
+                    if not pickup.Parent or not AutoPickupEnabled or ReturningAfterPickup then
                         return
                     end
                     local ok, err = xpcall(function()
@@ -2393,8 +2392,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
         FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
             if tostring(action):lower() ~= "fling" or typeof(flingPosition) ~= "Vector3" then return end
-            if not AutoBreakEnabled or not AutoPickupEnabled then
-                SetTrackerStatus("Fling recovery ignored: Auto Break and Auto Pickup must both be ON.")
+            if not AutoPickupEnabled then
+                SetTrackerStatus("Fling recovery ignored: Auto Pickup must be ON.")
                 return
             end
             if FlingRecoveryActive then
@@ -2434,7 +2433,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
                 local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
-                if PickupGeneration ~= flingToken or not PickupRequested or not AutoBreakEnabled or not AutoPickupEnabled then
+                if PickupGeneration ~= flingToken or not PickupRequested or not AutoPickupEnabled then
                     finishFlingRecovery()
                     return
                 end
