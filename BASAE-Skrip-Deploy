@@ -42,36 +42,37 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Deploy v1.146 -- 0xMoldy"
+local testver = "Deploy v1.151 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
     Subtitle = testver,
-    Width = 300,
-    Height = 300,
-    SidebarWidth = 94,
+    Width = 480,
+    Height = 350,
+    SidebarWidth = 108,
     SidebarNames = {
         "Auto",
         "ESP",
-        "Placed Animals",
-        "Animal Pickups"
+        "Placed",
+        "Pickups",
+        "Settings"
     }
 }
 -- THEME
 local Theme = {
-    Background = Color3.fromRGB(28, 30, 34),
-    Sidebar = Color3.fromRGB(31, 34, 39),
-    Card = Color3.fromRGB(36, 39, 45),
-    Border = Color3.fromRGB(49, 53, 61),
-    Text = Color3.fromRGB(218, 222, 228),
-    DarkGray = Color3.fromRGB(178, 184, 193),
-    Gray = Color3.fromRGB(139, 146, 156),
-    LightGray = Color3.fromRGB(48, 53, 61),
-    SurfaceInput = Color3.fromRGB(39, 43, 50),
-    Selected = Color3.fromRGB(67, 78, 88),
-    SelectedText = Color3.fromRGB(231, 235, 240),
-    Accent = Color3.fromRGB(126, 151, 157),
-    AccentText = Color3.fromRGB(27, 32, 35)
+    Background = Color3.fromRGB(16, 24, 32),
+    Sidebar = Color3.fromRGB(19, 31, 42),
+    Card = Color3.fromRGB(24, 38, 50),
+    Border = Color3.fromRGB(38, 56, 71),
+    Text = Color3.fromRGB(241, 245, 249),
+    DarkGray = Color3.fromRGB(199, 210, 222),
+    Gray = Color3.fromRGB(154, 170, 185),
+    LightGray = Color3.fromRGB(35, 52, 66),
+    SurfaceInput = Color3.fromRGB(26, 42, 55),
+    Selected = Color3.fromRGB(26, 55, 70),
+    SelectedText = Color3.fromRGB(241, 245, 249),
+    Accent = Color3.fromRGB(56, 214, 232),
+    AccentText = Color3.fromRGB(10, 27, 34)
 }
 -- HELPER FUNCTIONS
 local function Create(className, properties)
@@ -115,6 +116,160 @@ pcall(function()
     local oldESP = playerGui and playerGui:FindFirstChild("BASE_Skrip_EggESP")
     if oldESP then oldESP:Destroy() end
 end)
+-- THEME PRESETS
+local ThemePresets = {
+    ["Midnight Blue + Cyan"] = {
+        Background = Color3.fromRGB(16, 24, 32),
+        Sidebar = Color3.fromRGB(19, 31, 42),
+        Card = Color3.fromRGB(24, 38, 50),
+        Border = Color3.fromRGB(38, 56, 71),
+        Text = Color3.fromRGB(241, 245, 249),
+        DarkGray = Color3.fromRGB(199, 210, 222),
+        Gray = Color3.fromRGB(154, 170, 185),
+        LightGray = Color3.fromRGB(35, 52, 66),
+        SurfaceInput = Color3.fromRGB(26, 42, 55),
+        Selected = Color3.fromRGB(26, 55, 70),
+        SelectedText = Color3.fromRGB(241, 245, 249),
+        Accent = Color3.fromRGB(56, 214, 232),
+        AccentText = Color3.fromRGB(10, 27, 34)
+    },
+    ["Black + Purple"] = {
+        Background = Color3.fromRGB(13, 12, 18),
+        Sidebar = Color3.fromRGB(20, 17, 28),
+        Card = Color3.fromRGB(29, 24, 39),
+        Border = Color3.fromRGB(61, 48, 78),
+        Text = Color3.fromRGB(248, 245, 255),
+        DarkGray = Color3.fromRGB(220, 211, 235),
+        Gray = Color3.fromRGB(166, 153, 188),
+        LightGray = Color3.fromRGB(42, 34, 55),
+        SurfaceInput = Color3.fromRGB(35, 28, 47),
+        Selected = Color3.fromRGB(66, 40, 91),
+        SelectedText = Color3.fromRGB(255, 255, 255),
+        Accent = Color3.fromRGB(190, 100, 255),
+        AccentText = Color3.fromRGB(25, 12, 35)
+    },
+    ["Dark Gray + Green"] = {
+        Background = Color3.fromRGB(23, 26, 27),
+        Sidebar = Color3.fromRGB(30, 34, 35),
+        Card = Color3.fromRGB(39, 44, 45),
+        Border = Color3.fromRGB(65, 75, 72),
+        Text = Color3.fromRGB(245, 248, 246),
+        DarkGray = Color3.fromRGB(205, 216, 211),
+        Gray = Color3.fromRGB(155, 170, 163),
+        LightGray = Color3.fromRGB(49, 57, 54),
+        SurfaceInput = Color3.fromRGB(33, 39, 37),
+        Selected = Color3.fromRGB(37, 76, 57),
+        SelectedText = Color3.fromRGB(245, 255, 248),
+        Accent = Color3.fromRGB(90, 230, 145),
+        AccentText = Color3.fromRGB(9, 30, 18)
+    },
+    ["Black + Electric Blue"] = {
+        Background = Color3.fromRGB(10, 12, 18),
+        Sidebar = Color3.fromRGB(15, 18, 27),
+        Card = Color3.fromRGB(23, 27, 39),
+        Border = Color3.fromRGB(42, 53, 76),
+        Text = Color3.fromRGB(242, 247, 255),
+        DarkGray = Color3.fromRGB(202, 214, 232),
+        Gray = Color3.fromRGB(146, 163, 190),
+        LightGray = Color3.fromRGB(31, 38, 54),
+        SurfaceInput = Color3.fromRGB(25, 31, 46),
+        Selected = Color3.fromRGB(24, 53, 94),
+        SelectedText = Color3.fromRGB(245, 250, 255),
+        Accent = Color3.fromRGB(45, 135, 255),
+        AccentText = Color3.fromRGB(7, 17, 35)
+    },
+    ["OLED Black + Amber"] = {
+        Background = Color3.fromRGB(5, 5, 7),
+        Sidebar = Color3.fromRGB(10, 10, 12),
+        Card = Color3.fromRGB(17, 17, 19),
+        Border = Color3.fromRGB(48, 39, 25),
+        Text = Color3.fromRGB(250, 247, 239),
+        DarkGray = Color3.fromRGB(208, 201, 187),
+        Gray = Color3.fromRGB(153, 146, 132),
+        LightGray = Color3.fromRGB(28, 27, 24),
+        SurfaceInput = Color3.fromRGB(22, 21, 18),
+        Selected = Color3.fromRGB(70, 47, 18),
+        SelectedText = Color3.fromRGB(255, 248, 230),
+        Accent = Color3.fromRGB(255, 181, 55),
+        AccentText = Color3.fromRGB(35, 21, 3)
+    },
+    ["Obsidian + Crimson"] = {
+        Background = Color3.fromRGB(8, 7, 10),
+        Sidebar = Color3.fromRGB(14, 11, 15),
+        Card = Color3.fromRGB(22, 17, 22),
+        Border = Color3.fromRGB(66, 32, 42),
+        Text = Color3.fromRGB(255, 243, 246),
+        DarkGray = Color3.fromRGB(218, 197, 203),
+        Gray = Color3.fromRGB(165, 137, 146),
+        LightGray = Color3.fromRGB(34, 25, 30),
+        SurfaceInput = Color3.fromRGB(28, 20, 25),
+        Selected = Color3.fromRGB(82, 25, 42),
+        SelectedText = Color3.fromRGB(255, 246, 248),
+        Accent = Color3.fromRGB(255, 65, 95),
+        AccentText = Color3.fromRGB(38, 4, 12)
+    },
+    ["Deep Ocean + Teal"] = {
+        Background = Color3.fromRGB(5, 13, 17),
+        Sidebar = Color3.fromRGB(8, 19, 24),
+        Card = Color3.fromRGB(13, 27, 33),
+        Border = Color3.fromRGB(24, 57, 63),
+        Text = Color3.fromRGB(237, 252, 251),
+        DarkGray = Color3.fromRGB(190, 215, 214),
+        Gray = Color3.fromRGB(129, 166, 166),
+        LightGray = Color3.fromRGB(20, 38, 42),
+        SurfaceInput = Color3.fromRGB(16, 33, 38),
+        Selected = Color3.fromRGB(15, 68, 69),
+        SelectedText = Color3.fromRGB(238, 255, 252),
+        Accent = Color3.fromRGB(45, 226, 199),
+        AccentText = Color3.fromRGB(3, 31, 29)
+    },
+    ["Graphite + Orange"] = {
+        Background = Color3.fromRGB(12, 12, 13),
+        Sidebar = Color3.fromRGB(18, 18, 19),
+        Card = Color3.fromRGB(27, 27, 28),
+        Border = Color3.fromRGB(60, 45, 32),
+        Text = Color3.fromRGB(250, 247, 243),
+        DarkGray = Color3.fromRGB(211, 203, 194),
+        Gray = Color3.fromRGB(160, 151, 141),
+        LightGray = Color3.fromRGB(37, 35, 32),
+        SurfaceInput = Color3.fromRGB(31, 29, 26),
+        Selected = Color3.fromRGB(77, 43, 19),
+        SelectedText = Color3.fromRGB(255, 249, 241),
+        Accent = Color3.fromRGB(255, 139, 54),
+        AccentText = Color3.fromRGB(38, 18, 4)
+    },
+    ["Dark Plum + Rose"] = {
+        Background = Color3.fromRGB(12, 8, 15),
+        Sidebar = Color3.fromRGB(19, 12, 23),
+        Card = Color3.fromRGB(28, 18, 33),
+        Border = Color3.fromRGB(61, 37, 66),
+        Text = Color3.fromRGB(255, 244, 252),
+        DarkGray = Color3.fromRGB(218, 199, 215),
+        Gray = Color3.fromRGB(165, 139, 162),
+        LightGray = Color3.fromRGB(37, 25, 42),
+        SurfaceInput = Color3.fromRGB(32, 21, 37),
+        Selected = Color3.fromRGB(76, 34, 67),
+        SelectedText = Color3.fromRGB(255, 246, 252),
+        Accent = Color3.fromRGB(255, 105, 180),
+        AccentText = Color3.fromRGB(40, 8, 27)
+    },
+    ["Forest Night + Lime"] = {
+        Background = Color3.fromRGB(6, 12, 9),
+        Sidebar = Color3.fromRGB(11, 19, 14),
+        Card = Color3.fromRGB(17, 28, 21),
+        Border = Color3.fromRGB(37, 58, 42),
+        Text = Color3.fromRGB(244, 252, 242),
+        DarkGray = Color3.fromRGB(202, 216, 199),
+        Gray = Color3.fromRGB(145, 169, 141),
+        LightGray = Color3.fromRGB(25, 39, 28),
+        SurfaceInput = Color3.fromRGB(21, 34, 24),
+        Selected = Color3.fromRGB(36, 72, 36),
+        SelectedText = Color3.fromRGB(248, 255, 240),
+        Accent = Color3.fromRGB(174, 255, 74),
+        AccentText = Color3.fromRGB(19, 35, 4)
+    }
+}
+local ActiveThemeName = "Midnight Blue + Cyan"
 -- SCREEN GUI
 local ScreenGui = Create("ScreenGui", {
     Name = "BASAESkripUI",
@@ -122,6 +277,36 @@ local ScreenGui = Create("ScreenGui", {
     ResetOnSpawn = false,
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 })
+local function ApplyTheme(themeName)
+    local selectedTheme = ThemePresets[themeName]
+    if not selectedTheme then return end
+    local previousTheme = {}
+    for key, color in pairs(Theme) do
+        previousTheme[key] = color
+    end
+    for key, color in pairs(selectedTheme) do
+        Theme[key] = color
+    end
+    ActiveThemeName = themeName
+    local colorProperties = {"BackgroundColor3", "TextColor3", "TextStrokeColor3", "ImageColor3", "ScrollBarImageColor3", "Color"}
+    for _, object in ipairs(ScreenGui:GetDescendants()) do
+        for _, property in ipairs(colorProperties) do
+            local ok, currentColor = pcall(function()
+                return object[property]
+            end)
+            if ok and typeof(currentColor) == "Color3" then
+                for key, previousColor in pairs(previousTheme) do
+                    if currentColor == previousColor then
+                        pcall(function()
+                            object[property] = selectedTheme[key]
+                        end)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
 -- MAIN WINDOW
 local Main = Create("Frame", {
     Name = "Main",
@@ -164,26 +349,26 @@ Create("Frame", {
 local Title = Create("TextLabel", {
     Name = "Title",
     Parent = TopBar,
-    Position = UDim2.fromOffset(10, 7),
-    Size = UDim2.fromOffset(105, 20),
+    Position = UDim2.fromOffset(14, 5),
+    Size = UDim2.fromOffset(220, 22),
     BackgroundTransparency = 1,
     Text = UIConfig.Title,
     TextColor3 = Theme.Text,
     Font = Enum.Font.GothamBold,
-    TextSize = 12,
+    TextSize = 14,
     TextXAlignment = Enum.TextXAlignment.Left
 })
 -- Subtitle
 local Subtitle = Create("TextLabel", {
     Name = "Subtitle",
     Parent = TopBar,
-    Position = UDim2.fromOffset(10, 29),
-    Size = UDim2.fromOffset(130, 16),
+    Position = UDim2.fromOffset(14, 27),
+    Size = UDim2.fromOffset(170, 16),
     BackgroundTransparency = 1,
     Text = UIConfig.Subtitle,
     TextColor3 = Theme.Gray,
     Font = Enum.Font.Gotham,
-    TextSize = 8,
+    TextSize = 10,
     TextXAlignment = Enum.TextXAlignment.Left
 })
 -- Search
@@ -465,8 +650,8 @@ end
 local function CreateButton(parent, text, callback)
     local Button = Create("TextButton", {
         Parent = parent,
-        Size = UDim2.new(1, -30, 0, 28),
-        Position = UDim2.fromOffset(15, 68),
+        Size = UDim2.new(1, -22, 0, 28),
+        Position = UDim2.fromOffset(11, 68),
         BackgroundColor3 = Theme.Selected,
         Text = text,
         TextColor3 = Theme.SelectedText,
@@ -511,14 +696,14 @@ local function CreateToggle(parent, text, default, callback)
         Text = text,
         TextColor3 = Theme.Text,
         Font = Enum.Font.Gotham,
-        TextSize = 9,
+        TextSize = 11,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     local Switch = Create("Frame", {
         Parent = Toggle,
         Position = UDim2.new(1, -45, 0.5, -9),
         Size = UDim2.fromOffset(38, 18),
-        BackgroundColor3 = Theme.LightGray,
+        BackgroundColor3 = Color3.fromRGB(49, 67, 82),
         BorderSizePixel = 0
     })
     AddCorner(Switch, 20)
@@ -526,7 +711,7 @@ local function CreateToggle(parent, text, default, callback)
         Parent = Switch,
         Position = UDim2.fromOffset(2, 2),
         Size = UDim2.fromOffset(14, 14),
-        BackgroundColor3 = Theme.SurfaceInput,
+        BackgroundColor3 = Color3.fromRGB(245, 250, 255),
         BorderSizePixel = 0
     })
     AddCorner(Circle, 20)
@@ -534,14 +719,14 @@ local function CreateToggle(parent, text, default, callback)
     local function Update(runCallback)
         if Enabled then
             Tween(Switch, {
-                BackgroundColor3 = Theme.Selected
+                BackgroundColor3 = Theme.Accent
             })
             Tween(Circle, {
                 Position = UDim2.new(1, -16, 0, 2)
             })
         else
             Tween(Switch, {
-                BackgroundColor3 = Theme.LightGray
+                BackgroundColor3 = Color3.fromRGB(49, 67, 82)
             })
             Tween(Circle, {
                 Position = UDim2.fromOffset(2, 2)
@@ -648,8 +833,8 @@ end
 local function CreateSlider(parent, text, minimum, maximum, default, callback)
     local Holder = Create("Frame", {
         Parent = parent,
-        Size = UDim2.new(1, -30, 0, 55),
-        Position = UDim2.fromOffset(15, 68),
+        Size = UDim2.new(1, -22, 0, 55),
+        Position = UDim2.fromOffset(11, 68),
         BackgroundTransparency = 1
     })
     local Label = Create("TextLabel", {
@@ -740,19 +925,23 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Parent = SidebarContainer,
         Size = UDim2.new(1, -2, 0, 34),
         BackgroundColor3 = Theme.Sidebar,
-        Text = name,
+        Text = ({"⌂", "◎", "◇", "♧", "⚙", "≡"})[index] .. "  " .. name,
         TextColor3 = Theme.DarkGray,
         Font = Enum.Font.GothamMedium,
         TextSize = 9,
+        TextTruncate = Enum.TextTruncate.AtEnd,
         TextXAlignment = Enum.TextXAlignment.Left,
         BorderSizePixel = 0,
         AutoButtonColor = false,
         LayoutOrder = index
     })
     AddCorner(Button, 7)
+    Button.BackgroundTransparency = 1
+    local ActiveLine = Create("Frame", {Name = "ActiveLine", Parent = Button, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -2, 0.5, 0), Size = UDim2.fromOffset(2, 18), BackgroundColor3 = Theme.Accent, BorderSizePixel = 0, Visible = index == 1})
+    AddCorner(ActiveLine, 1)
     local Padding = Create("UIPadding", {
         Parent = Button,
-        PaddingLeft = UDim.new(0, 14)
+        PaddingLeft = UDim.new(0, 10)
     })
     SidebarButtons[index] = Button
     Button.MouseButton1Click:Connect(function()
@@ -760,34 +949,47 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             page.Visible = pageIndex == index
         end
         for buttonIndex, sidebarButton in pairs(SidebarButtons) do
-            if buttonIndex == index then
-                sidebarButton.BackgroundColor3 = Theme.Selected
-                sidebarButton.TextColor3 = Theme.SelectedText
-            else
-                sidebarButton.BackgroundColor3 = Theme.Sidebar
-                sidebarButton.TextColor3 = Theme.DarkGray
-            end
+            local active = buttonIndex == index
+            sidebarButton.BackgroundTransparency = 1
+            sidebarButton.TextColor3 = active and Theme.Text or Theme.DarkGray
+            local line = sidebarButton:FindFirstChild("ActiveLine")
+            if line then line.Visible = active end
         end
         CurrentPage = index
     end)
 end
 local ShutdownAutomation
+local CancelActiveAutomation
+local TouchAutomationProgress
 -- CREATE ALL PAGES
 for index, name in ipairs(UIConfig.SidebarNames) do
     local Page = CreatePage(index, name)
     if index == 1 then
-        local Card1 = CreateCard(Page, "Auto break", "")
-        Card1.Size = UDim2.new(1, 0, 0, 114)
+        local AutoRow = Create("Frame", {
+            Name = "AutoControlsRow",
+            Parent = Page,
+            Size = UDim2.new(1, 0, 0, 190),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            LayoutOrder = 1
+        })
+        local Card1 = CreateCard(AutoRow, "⚡  Auto Break", "")
+        Card1.Position = UDim2.new(0, 0, 0, 0)
+        Card1.Size = UDim2.new(0.5, -6, 0, 190)
         local StartAutoBreak
         local StopAutoBreak
         local StopPickupAutomation
-        local DisableAutoBreakOptions
         local CompletedEggs = {}
         local AutoBreakToggleInitialized = false
         local AutoBreakEnabled = false
+        local AutoBreakGeneration = 0
         local RefreshTitanicPriority
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
             AutoBreakEnabled = enabled
+            AutoBreakGeneration += 1
+            if TouchAutomationProgress then
+                TouchAutomationProgress(enabled and "AUTO_BREAK_ON" or "AUTO_BREAK_OFF")
+            end
             if not AutoBreakToggleInitialized then
                 AutoBreakToggleInitialized = true
                 return
@@ -796,22 +998,23 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if enabled then
                 if StartAutoBreak then StartAutoBreak() end
             else
-                if DisableAutoBreakOptions then DisableAutoBreakOptions() end
                 if StopAutoBreak then StopAutoBreak("Toggle disabled") end
+                if CancelActiveAutomation then CancelActiveAutomation("Auto Break disabled") end
             end
         end)
-        AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
-        AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
-        local AutoPickupCard = CreateCard(Page, "Auto pickup", "")
-        AutoPickupCard.Size = UDim2.new(1, 0, 0, 170)
+        AutoBreakToggle.Position = UDim2.new(1, -58, 0, 7)
+        AutoBreakToggle.Size = UDim2.fromOffset(48, 24)
+        local AutoPickupCard = CreateCard(AutoRow, "◇  Auto Pickup", "")
+        AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Monitoring ON." or "Monitoring OFF."))
             if not enabled and StopPickupAutomation then StopPickupAutomation("Auto Pickup disabled") end
         end)
-        AutoPickupToggle.Position = UDim2.new(1, -68, 0, 10)
-        AutoPickupToggle.Size = UDim2.fromOffset(58, 26)
+        AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
+        AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
@@ -820,39 +1023,51 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local RarityList
         local RarityFilterButton
-        RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
+        local ZoneFilterOpen = false
+        local EggFilterOpen = false
+        local ZoneList
+        local EggFilterList
+        RarityFilterButton = CreateButton(AutoPickupCard, "Rarity Filter  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
-            AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 300 or 170)
-            RarityFilterButton.Text = RarityFilterOpen and "Filter for Rarity  ▲" or "Filter for Rarity  ▼"
+            ZoneFilterOpen = false
+            EggFilterOpen = false
+            if RarityFilterOpen then
+                RarityList.Position = UDim2.fromOffset(RarityFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, RarityFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + RarityFilterButton.AbsoluteSize.Y + 4)
+                RarityList.Size = UDim2.fromOffset(math.max(150, RarityFilterButton.AbsoluteSize.X), 155)
+            end
+            RarityFilterButton.Text = RarityFilterOpen and "Rarity Filter  ▲" or "Rarity Filter  ▼"
             RarityList.Visible = RarityFilterOpen
+            if ZoneList then ZoneList.Visible = false end
+            if EggFilterList then EggFilterList.Visible = false end
         end)
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
-        RarityFilterButton.Size = UDim2.new(1, -22, 0, 26)
+        RarityFilterButton.Size = UDim2.new(1, -22, 0, 28)
         local HighestCashEnabled = false
-        local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest CPS", false, function(enabled)
+        local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest $/s", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(11, 73)
-        HighestCashToggle.Size = UDim2.new(1, -22, 0, 26)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 77)
+        HighestCashToggle.Size = UDim2.new(1, -22, 0, 28)
         local UnindexedOnlyEnabled = false
         local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
-        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 101)
-        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 26)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 111)
+        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 28)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
-            Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 132),
-            Size = UDim2.new(1, -22, 0, 155),
+            Parent = Main,
+            Position = UDim2.fromOffset(0, 0),
+            Size = UDim2.fromOffset(160, 155),
             CanvasSize = UDim2.new(0, 0, 0, 0),
             ScrollBarThickness = 3,
             ScrollBarImageColor3 = Theme.Gray,
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
-            Visible = false
+            Visible = false,
+            ZIndex = 100
         })
         AddCorner(RarityList, 6)
         local RarityLayout = Create("UIListLayout", {
@@ -870,58 +1085,76 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         RarityLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             RarityList.CanvasSize = UDim2.new(0, 0, 0, RarityLayout.AbsoluteContentSize.Y + 10)
         end)
-        for rarityIndex, rarityName in ipairs(RarityOptions) do
-            local RarityButton = Create("TextButton", {
-                Name = "Rarity_" .. rarityName,
-                Parent = RarityList,
-                Size = UDim2.new(1, -4, 0, 19),
-                BackgroundColor3 = Theme.Card,
-                Text = "",
-                BorderSizePixel = 0,
-                LayoutOrder = rarityIndex,
-                AutoButtonColor = false
-            })
-            AddCorner(RarityButton, 4)
-            Create("TextLabel", {
-                Parent = RarityButton,
-                Position = UDim2.fromOffset(7, 0),
-                Size = UDim2.new(1, -28, 1, 0),
-                BackgroundTransparency = 1,
-                Text = rarityName,
-                TextColor3 = Theme.Text,
-                Font = Enum.Font.Gotham,
-                TextSize = 9,
-                TextXAlignment = Enum.TextXAlignment.Left
-            })
-            local RarityCheck = Create("TextLabel", {
-                Parent = RarityButton,
-                Position = UDim2.new(1, -23, 0, 0),
-                Size = UDim2.fromOffset(20, 19),
-                BackgroundTransparency = 1,
-                Text = SelectedRarities[rarityName] and "✓" or "○",
-                TextColor3 = SelectedRarities[rarityName] and Color3.fromRGB(110, 205, 145) or Theme.Gray,
-                Font = Enum.Font.GothamBold,
-                TextSize = 11
-            })
-            if SelectedRarities[rarityName] then
-                RarityButton.BackgroundColor3 = Theme.Selected
+        local function RefreshRarityList()
+            for _, item in ipairs(RarityList:GetChildren()) do
+                if item:IsA("TextButton") then item:Destroy() end
             end
-            RarityButton.MouseButton1Click:Connect(function()
-                SelectedRarities[rarityName] = not SelectedRarities[rarityName] or nil
-                local selected = SelectedRarities[rarityName] == true
-                RarityCheck.Text = selected and "✓" or "○"
-                RarityCheck.TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray
-                RarityButton.BackgroundColor3 = selected and Theme.Selected or Theme.Card
+            local allSelected = #RarityOptions > 0
+            for _, name in ipairs(RarityOptions) do
+                if SelectedRarities[name] ~= true then allSelected = false break end
+            end
+            local SelectAllRarities = Create("TextButton", {
+                Name = "SelectAllRarities", Parent = RarityList,
+                Size = UDim2.new(1, -4, 0, 22),
+                BackgroundColor3 = allSelected and Theme.Selected or Theme.Card,
+                Text = "", BorderSizePixel = 0, LayoutOrder = 0,
+                AutoButtonColor = false, ZIndex = 101
+            })
+            AddCorner(SelectAllRarities, 4)
+            Create("TextLabel", {
+                Parent = SelectAllRarities, Position = UDim2.fromOffset(7, 0),
+                Size = UDim2.new(1, -28, 1, 0), BackgroundTransparency = 1,
+                Text = allSelected and "All Rarities Selected" or "Select All",
+                TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
+                TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 102
+            })
+            Create("TextLabel", {
+                Parent = SelectAllRarities, Position = UDim2.new(1, -23, 0, 0),
+                Size = UDim2.fromOffset(20, 22), BackgroundTransparency = 1,
+                Text = allSelected and "✓" or "○",
+                TextColor3 = allSelected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                Font = Enum.Font.GothamBold, TextSize = 11, ZIndex = 102
+            })
+            SelectAllRarities.MouseButton1Click:Connect(function()
+                local selectEverything = not allSelected
+                for _, name in ipairs(RarityOptions) do SelectedRarities[name] = selectEverything end
+                RefreshRarityList()
             end)
+            for rarityIndex, rarityName in ipairs(RarityOptions) do
+                local selected = SelectedRarities[rarityName] == true
+                local RarityButton = Create("TextButton", {
+                    Name = "Rarity_" .. rarityName, Parent = RarityList,
+                    Size = UDim2.new(1, -4, 0, 22),
+                    BackgroundColor3 = selected and Theme.Selected or Theme.Card,
+                    Text = "", BorderSizePixel = 0, LayoutOrder = rarityIndex,
+                    AutoButtonColor = false, ZIndex = 101
+                })
+                AddCorner(RarityButton, 4)
+                Create("TextLabel", {
+                    Parent = RarityButton, Position = UDim2.fromOffset(7, 0),
+                    Size = UDim2.new(1, -28, 1, 0), BackgroundTransparency = 1,
+                    Text = rarityName, TextColor3 = Theme.Text,
+                    Font = Enum.Font.Gotham, TextSize = 9,
+                    TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 102
+                })
+                Create("TextLabel", {
+                    Parent = RarityButton, Position = UDim2.new(1, -23, 0, 0),
+                    Size = UDim2.fromOffset(20, 22), BackgroundTransparency = 1,
+                    Text = selected and "✓" or "○",
+                    TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                    Font = Enum.Font.GothamBold, TextSize = 11, ZIndex = 102
+                })
+                RarityButton.MouseButton1Click:Connect(function()
+                    SelectedRarities[rarityName] = not SelectedRarities[rarityName] or nil
+                    RefreshRarityList()
+                end)
+            end
         end
+        RefreshRarityList()
         local SelectedZones = {}
         local SelectedEggs = {}
         local PreferredZoneName = nil
-        local ZoneFilterOpen = false
-        local EggFilterOpen = false
         local SortOrder = "Largest"
-        local ZoneList
-        local EggFilterList
         local SortFrame
         local ZoneFilterButton
         local EggFilterButton
@@ -931,39 +1164,49 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function UpdateFilterPanel()
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
+            RarityList.Visible = RarityFilterOpen
             SortFrame.Visible = true
-            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 270 or 158)
-            SortFrame.Position = UDim2.fromOffset(15, 78)
-            SortFrame.Size = UDim2.new(1, -30, 0, 28)
+            if ZoneFilterOpen then
+                ZoneList.Position = UDim2.fromOffset(ZoneFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, ZoneFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + ZoneFilterButton.AbsoluteSize.Y + 4)
+                ZoneList.Size = UDim2.fromOffset(math.max(130, ZoneFilterButton.AbsoluteSize.X), 150)
+            end
+            if EggFilterOpen then
+                EggFilterList.Position = UDim2.fromOffset(EggFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, EggFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + EggFilterButton.AbsoluteSize.Y + 4)
+                EggFilterList.Size = UDim2.fromOffset(math.max(130, EggFilterButton.AbsoluteSize.X), 150)
+            end
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
+            RarityFilterButton.Text = RarityFilterOpen and "Rarity Filter ▲" or "Rarity Filter ▼"
         end
         ZoneFilterButton = CreateButton(Card1, "Zones ▼", function()
             ZoneFilterOpen = not ZoneFilterOpen
             EggFilterOpen = false
+            RarityFilterOpen = false
             UpdateFilterPanel()
         end)
-        ZoneFilterButton.Position = UDim2.fromOffset(15, 44)
-        ZoneFilterButton.Size = UDim2.new(0.5, -20, 0, 26)
+        ZoneFilterButton.Position = UDim2.fromOffset(11, 44)
+        ZoneFilterButton.Size = UDim2.new(0.5, -17, 0, 28)
         EggFilterButton = CreateButton(Card1, "Eggs ▼", function()
             EggFilterOpen = not EggFilterOpen
             ZoneFilterOpen = false
+            RarityFilterOpen = false
             UpdateFilterPanel()
         end)
-        EggFilterButton.Position = UDim2.new(0.5, 5, 0, 44)
-        EggFilterButton.Size = UDim2.new(0.5, -20, 0, 26)
+        EggFilterButton.Position = UDim2.new(0.5, 6, 0, 44)
+        EggFilterButton.Size = UDim2.new(0.5, -17, 0, 28)
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
-            Parent = Card1,
-            Position = UDim2.fromOffset(15, 112),
-            Size = UDim2.new(1, -30, 0, 102),
+            Parent = Main,
+            Position = UDim2.fromOffset(0, 0),
+            Size = UDim2.fromOffset(140, 150),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             ScrollBarThickness = 3,
             ScrollBarImageColor3 = Theme.Gray,
             CanvasSize = UDim2.new(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
-            Visible = false
+            Visible = false,
+            ZIndex = 100
         })
         AddCorner(ZoneList, 6)
         local ZoneLayout = Create("UIListLayout", {
@@ -980,16 +1223,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         EggFilterList = Create("ScrollingFrame", {
             Name = "EggFilterList",
-            Parent = Card1,
-            Position = UDim2.fromOffset(15, 112),
-            Size = UDim2.new(1, -30, 0, 102),
+            Parent = Main,
+            Position = UDim2.fromOffset(0, 0),
+            Size = UDim2.fromOffset(140, 150),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             ScrollBarThickness = 3,
             ScrollBarImageColor3 = Theme.Gray,
             CanvasSize = UDim2.new(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
-            Visible = false
+            Visible = false,
+            ZIndex = 100
         })
         AddCorner(EggFilterList, 6)
         local EggLayout = Create("UIListLayout", {
@@ -1152,7 +1396,44 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, zone in ipairs(ZoneBuilds:GetChildren()) do
                 if zone:IsA("Model") then table.insert(zones, zone) end
             end
-            table.sort(zones, function(a, b) return a.Name < b.Name end)
+            table.sort(zones, function(a, b)
+                local aNumber = tonumber(a.Name:match("%d+"))
+                local bNumber = tonumber(b.Name:match("%d+"))
+                if aNumber and bNumber and aNumber ~= bNumber then return aNumber > bNumber end
+                if aNumber and not bNumber then return true end
+                if bNumber and not aNumber then return false end
+                return a.Name > b.Name
+            end)
+            local allSelected = #zones > 0
+            for _, zone in ipairs(zones) do
+                if SelectedZones[zone.Name] ~= true then allSelected = false break end
+            end
+            local SelectAllButton = Create("TextButton", {
+                Name = "SelectAllZones", Parent = ZoneList, Size = UDim2.new(1, -8, 0, 24),
+                BackgroundColor3 = allSelected and Theme.Selected or Theme.Card, Text = "",
+                BorderSizePixel = 0, LayoutOrder = 0, AutoButtonColor = false, ZIndex = 101
+            })
+            AddCorner(SelectAllButton, 5)
+            Create("TextLabel", {
+                Parent = SelectAllButton, Position = UDim2.fromOffset(8, 0),
+                Size = UDim2.new(1, -34, 1, 0), BackgroundTransparency = 1,
+                Text = allSelected and "All Zones Selected" or "Select All",
+                TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
+                TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 102
+            })
+            Create("TextLabel", {
+                Parent = SelectAllButton, Position = UDim2.new(1, -26, 0, 0),
+                Size = UDim2.fromOffset(22, 24), BackgroundTransparency = 1,
+                Text = allSelected and "✓" or "○",
+                TextColor3 = allSelected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                Font = Enum.Font.GothamBold, TextSize = 12, ZIndex = 102
+            })
+            SelectAllButton.MouseButton1Click:Connect(function()
+                local selectEverything = not allSelected
+                for _, zone in ipairs(zones) do SelectedZones[zone.Name] = selectEverything and true or nil end
+                RefreshZoneList()
+                RefreshEggList()
+            end)
             for zoneIndex, zone in ipairs(zones) do
                 local zoneName = zone.Name
                 local selected = SelectedZones[zoneName] == true
@@ -1164,7 +1445,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = "",
                     BorderSizePixel = 0,
                     LayoutOrder = zoneIndex,
-                    AutoButtonColor = false
+                    AutoButtonColor = false,
+                    ZIndex = 101
                 })
                 AddCorner(ZoneButton, 5)
                 Create("TextLabel", {
@@ -1176,7 +1458,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     TextColor3 = Theme.Text,
                     Font = Enum.Font.Gotham,
                     TextSize = 9,
-                    TextXAlignment = Enum.TextXAlignment.Left
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 102
                 })
                 local Checkmark = Create("TextLabel", {
                     Parent = ZoneButton,
@@ -1186,7 +1469,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = selected and "✓" or "○",
                     TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
                     Font = Enum.Font.GothamBold,
-                    TextSize = 12
+                    TextSize = 12,
+                    ZIndex = 102
                 })
                 ZoneButton.MouseButton1Click:Connect(function()
                     SelectedZones[zoneName] = not SelectedZones[zoneName] or nil
@@ -1200,6 +1484,39 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if item:IsA("TextButton") or item:IsA("TextLabel") then item:Destroy() end
             end
             local records = GetEggRecords()
+            local allSelected = #records > 0
+            for _, record in ipairs(records) do
+                if SelectedEggs[record.name] == false then allSelected = false break end
+            end
+            local SelectAllEggs = Create("TextButton", {
+                Name = "SelectAllEggs", Parent = EggFilterList,
+                Size = UDim2.new(1, -8, 0, 24),
+                BackgroundColor3 = allSelected and Theme.Selected or Theme.Card,
+                Text = "", BorderSizePixel = 0, LayoutOrder = 0,
+                AutoButtonColor = false, ZIndex = 101
+            })
+            AddCorner(SelectAllEggs, 5)
+            Create("TextLabel", {
+                Parent = SelectAllEggs, Position = UDim2.fromOffset(8, 0),
+                Size = UDim2.new(1, -34, 1, 0), BackgroundTransparency = 1,
+                Text = allSelected and "All Eggs Selected" or "Select All",
+                TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
+                TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 102
+            })
+            Create("TextLabel", {
+                Parent = SelectAllEggs, Position = UDim2.new(1, -26, 0, 0),
+                Size = UDim2.fromOffset(22, 24), BackgroundTransparency = 1,
+                Text = allSelected and "✓" or "○",
+                TextColor3 = allSelected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                Font = Enum.Font.GothamBold, TextSize = 12, ZIndex = 102
+            })
+            SelectAllEggs.MouseButton1Click:Connect(function()
+                local selectEverything = not allSelected
+                for _, record in ipairs(records) do
+                    if selectEverything then SelectedEggs[record.name] = nil else SelectedEggs[record.name] = false end
+                end
+                RefreshEggList()
+            end)
             if #records == 0 then
                 Create("TextLabel", {
                     Parent = EggFilterList,
@@ -1223,7 +1540,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = "",
                     BorderSizePixel = 0,
                     LayoutOrder = eggIndex,
-                    AutoButtonColor = false
+                    AutoButtonColor = false,
+                    ZIndex = 101
                 })
                 AddCorner(EggButton, 5)
                 Create("TextLabel", {
@@ -1235,7 +1553,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     TextColor3 = Theme.Text,
                     Font = Enum.Font.Gotham,
                     TextSize = 9,
-                    TextXAlignment = Enum.TextXAlignment.Left
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 102
                 })
                 local Checkmark = Create("TextLabel", {
                     Parent = EggButton,
@@ -1245,7 +1564,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = selected and "✓" or "○",
                     TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
                     Font = Enum.Font.GothamBold,
-                    TextSize = 12
+                    TextSize = 12,
+                    ZIndex = 102
                 })
                 EggButton.MouseButton1Click:Connect(function()
                     if SelectedEggs[eggName] == false then
@@ -1259,7 +1579,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         UpdateSortButtons()
         local TitanicPriorityEnabled = false
-        local TitanicPriorityToggle = CreateToggle(Card1, "TITANIC priority", false, function(enabled)
+        local TitanicPriorityToggle = CreateToggle(Card1, "Titanic Priority", false, function(enabled)
             TitanicPriorityEnabled = enabled
             AddDebugLog("[Auto Break] TITANIC priority " .. (enabled and "ON" or "OFF"))
             if RefreshTitanicPriority then
@@ -1268,29 +1588,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
         TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
-        Card1.Size = UDim2.new(1, 0, 0, 158)
+        Card1.Size = UDim2.new(0.5, -6, 0, 190)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
+        AutoRow.Size = UDim2.new(1, 0, 0, 190)
         local function UpdateFilterPanelWithTitanic()
-            ZoneList.Visible = ZoneFilterOpen
-            EggFilterList.Visible = EggFilterOpen
-            SortFrame.Visible = true
-            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 270 or 158)
-            SortFrame.Position = UDim2.fromOffset(15, 78)
-            SortFrame.Size = UDim2.new(1, -30, 0, 28)
+            UpdateFilterPanel()
             HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
             HighestLuckToggle.Size = UDim2.new(1, 0, 0, 28)
             TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
             TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
-            ZoneFilterButton.Text = ZoneFilterOpen and "Filter zone ▲" or "Filter zone"
-            EggFilterButton.Text = EggFilterOpen and "Filter egg ▲" or "Filter egg"
-            ZoneList.Position = UDim2.fromOffset(15, 150)
-            EggFilterList.Position = UDim2.fromOffset(15, 150)
-        end
-        DisableAutoBreakOptions = function()
-            SortOrder = "Default"
-            TitanicPriorityEnabled = false
-            if HighestLuckToggle then ToggleControllers[HighestLuckToggle].SetEnabled(false, false) end
-            if TitanicPriorityToggle then ToggleControllers[TitanicPriorityToggle].SetEnabled(false, false) end
-            if RefreshEggList then RefreshEggList() end
         end
         ZoneFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
         EggFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
@@ -1335,6 +1641,32 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local FlingRemoteConnection
         local FlingRecoveryActive = false
         local FlingAnimalTarget
+        local CancelFlingRecovery
+        local LastAutomationProgressAt = os.clock()
+        local AutomationProgressStage = "INITIALIZING"
+        local AutomationWatchdogBusy = false
+        TouchAutomationProgress = function(stage)
+            if stage and stage ~= AutomationProgressStage then
+                AutomationProgressStage = stage
+                LastAutomationProgressAt = os.clock()
+            elseif not stage then
+                LastAutomationProgressAt = os.clock()
+            end
+        end
+        local function WaitForCharacterAndParts(timeout, isValid)
+            local deadline = os.clock() + timeout
+            while not Runtime.Stopped and not ScriptShuttingDown and os.clock() < deadline do
+                if isValid and not isValid() then return nil end
+                local character = LocalPlayer.Character
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                if character and humanoid and root then
+                    return character, humanoid, root
+                end
+                task.wait(0.1)
+            end
+            return nil
+        end
         local function GetAnimalWeightKg(animal)
             if not animal then return nil end
             local names = {"WeightKg", "WeightKG", "weightKg", "weightKG", "Weight", "weight"}
@@ -1362,6 +1694,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local SetTrackerStatus
         local function SetPickupPhase(phase, message)
             PickupPhase = phase
+            TouchAutomationProgress("PICKUP:" .. tostring(phase))
             if message then SetTrackerStatus("PICKUP LOCK [" .. phase .. "]: " .. message) end
         end
         StopPickupAutomation = function(reason)
@@ -1370,6 +1703,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ReturningAfterPickup = false
             ActivePickup = nil
             ActivePickupCPS = -1
+            if CancelFlingRecovery then
+                local cancelRecovery = CancelFlingRecovery
+                CancelFlingRecovery = nil
+                pcall(cancelRecovery)
+            end
+            FlingRecoveryActive = false
+            TouchAutomationProgress("IDLE")
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
@@ -1377,6 +1717,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if humanoid then humanoid:Move(Vector3.zero, false) end
             if SetTrackerStatus then SetTrackerStatus(tostring(reason) .. "; all pickup/return movement stopped.") end
+        end
+        CancelActiveAutomation = function(reason)
+            if PickupRequested or ReturningAfterPickup or FlingRecoveryActive then
+                StopPickupAutomation(reason or "Automation cancelled")
+            end
+            WaitingForPickup = false
+            ArrivedAtTarget = false
+            CurrentTarget = nil
+            table.clear(PendingAnimalPickups)
+            table.clear(PendingAnimalPickupSet)
+            TouchAutomationProgress("IDLE")
         end
         ShutdownAutomation = function()
             ScriptShuttingDown = true
@@ -1529,13 +1880,23 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ClearPickupLock()
             ReturningAfterPickup = true
             local returnToken = PickupGeneration
+            TouchAutomationProgress("RETURNING_TO_BASE")
             SetTrackerStatus(reason or "Pickup hold completed. Returning to the pickup point.")
             task.spawn(function()
-                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                local character, humanoid, root = WaitForCharacterAndParts(10, function()
+                    return PickupGeneration == returnToken and ReturningAfterPickup
+                end)
+                if not character then
+                    if PickupGeneration == returnToken then
+                        ReturningAfterPickup = false
+                        SetTrackerStatus("Return cancelled: character parts unavailable or return was cancelled.")
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    end
+                    return
+                end
                 SetTrackerStatus("Moving to static return position.")
                 local moveStarted = os.clock()
+                local lastReturnDistance = math.huge
                 local connection
                 connection = game:GetService("RunService").RenderStepped:Connect(function()
                     if PickupGeneration ~= returnToken then
@@ -1563,7 +1924,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         0,
                         BaseReturnPosition.Z - root.Position.Z
                     )
+                    if offset.Magnitude < lastReturnDistance - 0.5 then
+                        lastReturnDistance = offset.Magnitude
+                        TouchAutomationProgress()
+                    end
                     if offset.Magnitude <= 4 then
+                        TouchAutomationProgress("RETURNING_TO_BASE:ARRIVED")
                         humanoid:Move(Vector3.zero, false)
                         connection:Disconnect()
                         connection = nil
@@ -1622,11 +1988,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 LastEggHPTarget = target
                 LastEggHPValue = numericHealth
                 LastEggHPProgressAt = os.clock()
+                TouchAutomationProgress()
             end
             SetTrackerStatus("MATCH | target=" .. target:GetFullName()
                 .. " | counter=" .. tostring(hitCounter)
                 .. " | health=" .. tostring(health))
             if numericHealth and numericHealth <= 0 then
+                TouchAutomationProgress("WAITING_FOR_ANIMAL")
                 CompletedEggs[target] = true
                 WaitingForPickup = true
                 ArrivedAtTarget = false
@@ -1834,7 +2202,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return false, displayName
         end
         local function EvaluatePickup(pickup)
+            local evaluationGeneration = AutoBreakGeneration
+            local function evaluationCancelled()
+                return ScriptShuttingDown or evaluationGeneration ~= AutoBreakGeneration or not AutoPickupEnabled
+            end
             SetPickupTracking(pickup, "Checking")
+            if evaluationCancelled() then
+                SetPickupTracking(pickup, "Cancelled: automation toggled")
+                return
+            end
             if ReturningAfterPickup then
                 SetPickupTracking(pickup, "Skipped: returning to base")
                 SetTrackerStatus("Eligible pet " .. pickup.Name .. " ignored: already returning to base.")
@@ -1855,6 +2231,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local forceUnindexedPickup = false
             if UnindexedOnlyEnabled then
                 local isUnindexed, indexDisplay = EvaluateUnindexedStatus(pickup)
+                if evaluationCancelled() then
+                    SetPickupTracking(pickup, "Cancelled: automation toggled")
+                    return
+                end
                 if isUnindexed == nil then
                     SetPickupTracking(pickup, "Rejected: Index verification unavailable", tostring(indexDisplay))
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | Index verification failed: " .. tostring(indexDisplay))
@@ -1885,12 +2265,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not forceUnindexedPickup then
                 SetPickupTracking(pickup, "CPS scan 1/2: warming up")
                 local _, firstScanText = GetPetCPS(pickup)
-                if not pickup.Parent or not AutoPickupEnabled then
+                if evaluationCancelled() or not pickup.Parent then
                     SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
                     return
                 end
                 task.wait(0.15)
-                if not pickup.Parent or not AutoPickupEnabled then
+                if evaluationCancelled() or not pickup.Parent then
                     SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
                     return
                 end
@@ -1898,9 +2278,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 cps, cpsText = GetPetCPS(pickup)
                 if cps < 0 then
                     for attempt = 1, 8 do
-                        if not pickup.Parent or not AutoPickupEnabled then break end
+                        if evaluationCancelled() or not pickup.Parent then break end
                         SetPickupTracking(pickup, string.format("Waiting for valid second CPS scan (%d/8)", attempt), cpsText)
                         task.wait(0.25)
+                        if evaluationCancelled() or not pickup.Parent then return end
                         cps, cpsText = GetPetCPS(pickup)
                         if cps >= 0 then break end
                     end
@@ -1920,6 +2301,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         return
                     end
                 end
+            end
+            if evaluationCancelled() or not pickup.Parent then
+                SetPickupTracking(pickup, "Cancelled: automation toggled")
+                return
             end
             if PickupRequested then
                 if forceUnindexedPickup or (HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS) then
@@ -2043,6 +2428,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local animalMoveStarted = os.clock()
             local lastAnimalProgressAt = os.clock()
             local bestAnimalDistance = math.huge
+            TouchAutomationProgress("PICKUP:ANIMAL_APPROACH")
             if PickupMovementConnection then
                 PickupMovementConnection:Disconnect()
                 PickupMovementConnection = nil
@@ -2109,6 +2495,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if animalDistance < bestAnimalDistance - 0.75 then
                     bestAnimalDistance = animalDistance
                     lastAnimalProgressAt = now
+                    TouchAutomationProgress()
                 elseif now - lastAnimalProgressAt >= 2.5 then
                     lastAnimalProgressAt = now
                     bestAnimalDistance = animalDistance
@@ -2225,9 +2612,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SetPickupPhase("PROMPT_APPROACH", pickup.Name .. " | moving to matching StealPrompt; target and movement remain locked.")
             task.spawn(function()
                 SetPickupPhase("PROMPT_APPROACH", "Lock held by " .. pickup.Name .. "; moving to its matching prompt.")
-                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                local character, humanoid, root = WaitForCharacterAndParts(10, function()
+                    return PickupRequested and PickupGeneration == pickupToken and AutoPickupEnabled
+                end)
+                if not character then
+                    if PickupGeneration == pickupToken then
+                        PickupRequested = false
+                        ActivePickup = nil
+                        ActivePickupCPS = -1
+                        SetTrackerStatus("Pickup cancelled: character parts unavailable while approaching prompt.")
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    end
+                    return
+                end
                 local promptPosition = getPromptPosition(prompt)
                 if not promptPosition then
                     PickupRequested = false
@@ -2238,6 +2635,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local moveStarted = os.clock()
                 local lastPromptProgressAt = os.clock()
                 local bestPromptDistance = math.huge
+                TouchAutomationProgress("PICKUP:PROMPT_APPROACH")
                 if PickupMovementConnection then
                     PickupMovementConnection:Disconnect()
                     PickupMovementConnection = nil
@@ -2304,6 +2702,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if promptDistance < bestPromptDistance - 0.75 then
                         bestPromptDistance = promptDistance
                         lastPromptProgressAt = now
+                        TouchAutomationProgress()
                     elseif now - lastPromptProgressAt >= 2.5 then
                         lastPromptProgressAt = now
                         bestPromptDistance = promptDistance
@@ -2577,21 +2976,25 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
             if interruptedHumanoid then interruptedHumanoid:Move(Vector3.zero, false) end
 
-            if not AutoPickupEnabled then
-                SetTrackerStatus("Fling detected: base return cancelled, but recovery requires Auto Pickup ON.")
+            if not AutoPickupEnabled or not AutoBreakEnabled then
+                SetTrackerStatus("Fling detected: recovery cancelled because Auto Break or Auto Pickup is OFF.")
                 return
             end
             if FlingRecoveryActive then
                 SetTrackerStatus("Fling recovery event received while recovery is active; base-return movement cancelled.")
                 return
             end
+            FlingRecoveryActive = true
+            local recoverySearchToken = PickupGeneration
+            TouchAutomationProgress("FLING_RECOVERY:WAITING_FOR_IDENTITY")
 
             if targetWeightKg == nil then
                 SetTrackerStatus("FLING RECOVERY waiting for WeightKg on " .. tostring(targetAnimalName) .. "...")
                 local identityDeadline = os.clock() + 10
                 local identityAttempts = 0
                 local lastIdentityLog = 0
-                while not Runtime.Stopped and os.clock() < identityDeadline and targetWeightKg == nil do
+                while not Runtime.Stopped and FlingRecoveryActive and PickupGeneration == recoverySearchToken
+                    and os.clock() < identityDeadline and targetWeightKg == nil do
                     identityAttempts += 1
                     local identityFolder = workspace:FindFirstChild("AnimalPickups")
                     if identityFolder then
@@ -2615,13 +3018,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if targetWeightKg == nil then task.wait(0.25) end
                 end
             end
-            if targetWeightKg == nil then
-                PickupRequested = false
-                ActivePickup = nil
-                SetTrackerStatus("FLING RECOVERY stopped: WeightKg still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
+            if not FlingRecoveryActive or PickupGeneration ~= recoverySearchToken then
                 return
             end
-            FlingRecoveryActive = true
+            if targetWeightKg == nil then
+                FlingRecoveryActive = false
+                PickupRequested = false
+                ActivePickup = nil
+                TouchAutomationProgress("IDLE")
+                SetTrackerStatus("FLING RECOVERY stopped: WeightKg still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
+                if AutoBreakEnabled and StartAutoBreak then task.delay(0.2, function() if AutoBreakEnabled then StartAutoBreak(true) end end) end
+                return
+            end
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
@@ -2639,7 +3047,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local recoveryMoveBindName
                 local recoveryHumanoid
                 local originalAutoRotate
-                local function finishFlingRecovery()
+                local function cleanupFlingRecovery()
                     if recoveryHumanoid and recoveryHumanoid.Parent and originalAutoRotate ~= nil then
                         recoveryHumanoid.AutoRotate = originalAutoRotate
                         originalAutoRotate = nil
@@ -2651,6 +3059,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         recoveryMoveBindName = nil
                     end
                     FlingRecoveryActive = false
+                    if CancelFlingRecovery == cleanupFlingRecovery then
+                        CancelFlingRecovery = nil
+                    end
+                end
+                CancelFlingRecovery = cleanupFlingRecovery
+                local function finishFlingRecovery()
+                    cleanupFlingRecovery()
                     if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup and StartAutoBreak then
                         task.delay(0.25, function()
                             if not FlingRecoveryActive and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
@@ -2659,9 +3074,23 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         end)
                     end
                 end
-                local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-                local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-                local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+                if PickupGeneration ~= flingToken or not FlingRecoveryActive then
+                    finishFlingRecovery()
+                    return
+                end
+                local character, humanoid, root = WaitForCharacterAndParts(10, function()
+                    return PickupGeneration == flingToken and PickupRequested and FlingRecoveryActive
+                end)
+                if not character then
+                    if PickupGeneration ~= flingToken or not FlingRecoveryActive then
+                        cleanupFlingRecovery()
+                        return
+                    end
+                    PickupRequested = false
+                    SetTrackerStatus("FLING RECOVERY cancelled: character parts unavailable.")
+                    finishFlingRecovery()
+                    return
+                end
                 recoveryHumanoid = humanoid
                 originalAutoRotate = humanoid.AutoRotate
                 humanoid.AutoRotate = false
@@ -2701,6 +3130,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local moveStarted = os.clock()
                 local lastProgressAt = os.clock()
                 local bestDistance = math.huge
+                TouchAutomationProgress("FLING_RECOVERY:ANIMAL_APPROACH")
                 while not Runtime.Stopped and PickupRequested and PickupGeneration == flingToken and humanoid.Health > 0 do
                     if LocalPlayer.Character ~= character or not character.Parent or not root.Parent then
                         PickupRequested = false
@@ -2726,6 +3156,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if distance < bestDistance - 0.75 then
                         bestDistance = distance
                         lastProgressAt = now
+                        TouchAutomationProgress()
                     elseif now - lastProgressAt >= 2.5 then
                         local state = humanoid:GetState()
                         if state == Enum.HumanoidStateType.FallingDown
@@ -2751,7 +3182,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 humanoid:Move(Vector3.zero, false)
                 local arrivalDistance = (Vector3.new(recoveryPosition.X, root.Position.Y, recoveryPosition.Z) - root.Position).Magnitude
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 if not PickupRequested or humanoid.Health <= 0 or arrivalDistance > 5 then
                     PickupRequested = false
                     SetTrackerStatus(string.format("FLING RECOVERY cancelled: arrival verification failed (%.1f studs).", arrivalDistance))
@@ -2795,7 +3229,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if prompt then break end
                     task.wait(0.2)
                 until os.clock() >= searchDeadline or PickupGeneration ~= flingToken
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 if not prompt or not prompt.Parent or not prompt.Enabled or not promptPosition then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY failed: no enabled StealPrompt within 12 studs of reported fling location.")
@@ -2805,6 +3242,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - recoveryPosition).Magnitude))
                 local moveStarted = os.clock()
+                local bestPromptDistance = math.huge
+                TouchAutomationProgress("FLING_RECOVERY:PROMPT_APPROACH")
                 while not Runtime.Stopped and PickupRequested and PickupGeneration == flingToken and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
                     promptPosition = positionOf(prompt) or promptPosition
                     local locationError = (promptPosition - recoveryPosition).Magnitude
@@ -2818,6 +3257,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     local offset = Vector3.new(promptPosition.X - root.Position.X, 0, promptPosition.Z - root.Position.Z)
                     local distanceToPrompt = (promptPosition - root.Position).Magnitude
+                    if distanceToPrompt < bestPromptDistance - 0.75 then
+                        bestPromptDistance = distanceToPrompt
+                        TouchAutomationProgress()
+                    end
                     if distanceToPrompt <= math.min(prompt.MaxActivationDistance, 5) then break end
                     if os.clock() - moveStarted >= 25 then
                         humanoid:Move(Vector3.zero, false)
@@ -2831,7 +3274,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     task.wait(0.05)
                 end
                 humanoid:Move(Vector3.zero, false)
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 if not PickupRequested or not prompt.Parent or not prompt.Enabled or humanoid.Health <= 0 then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY cancelled: prompt or character became unavailable.")
@@ -2850,7 +3296,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 task.wait(0.15)
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 promptPosition = positionOf(prompt) or promptPosition
                 if LocalPlayer.Character ~= character or not character.Parent or humanoid.Health <= 0
                     or not prompt.Parent or not prompt.Enabled
@@ -2871,7 +3320,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         prompt:InputHoldEnd()
                     end
                 end)
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 if not ok then
                     pcall(function() prompt:InputHoldEnd() end)
                     PickupRequested = false
@@ -2897,7 +3349,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     task.wait(0.1)
                 end
-                if PickupGeneration ~= flingToken then return end
+                if PickupGeneration ~= flingToken then
+                    finishFlingRecovery()
+                    return
+                end
                 if not confirmed then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY: prompt activated but collection was not confirmed; staying in place.")
@@ -2916,6 +3371,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end)
         StopAutoBreak = function(reason, preserveTargetState)
+            TouchAutomationProgress(AutoBreakEnabled and "AUTO_BREAK_PAUSED" or "AUTO_BREAK_OFF")
             if MovementConnection then
                 MovementConnection:Disconnect()
                 MovementConnection = nil
@@ -2935,6 +3391,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         StartAutoBreak = function(forceRefresh)
+            if not AutoBreakEnabled or ScriptShuttingDown then return end
+            local startGeneration = AutoBreakGeneration
+            TouchAutomationProgress("AUTO_BREAK:SELECTING_TARGET")
             if FlingRecoveryActive then
                 SetTrackerStatus("Auto Break paused: fling recovery owns movement until the animal pickup attempt finishes.")
                 return
@@ -3068,6 +3527,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 else
                     SetTrackerStatus("HIGHEST LUCK PRIORITY is ON, but no readable positive luck values were found. Auto Break paused instead of choosing a random egg.")
                     AddDebugLog("[Auto Break] HighLuck found no readable positive luck values; normal egg fallback blocked.")
+                    TouchAutomationProgress("IDLE")
                     return
                 end
             end
@@ -3111,11 +3571,28 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             if not target then
                 SetTrackerStatus("No target found. Select a zone and keep at least one egg type enabled.")
+                TouchAutomationProgress("IDLE")
                 return
             end
-            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-            local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-            local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+            local character = LocalPlayer.Character
+            local characterDeadline = os.clock() + 10
+            while not character and os.clock() < characterDeadline
+                and not Runtime.Stopped and AutoBreakEnabled and startGeneration == AutoBreakGeneration do
+                task.wait(0.1)
+                character = LocalPlayer.Character
+            end
+            if not character or Runtime.Stopped or ScriptShuttingDown
+                or not AutoBreakEnabled or startGeneration ~= AutoBreakGeneration then
+                TouchAutomationProgress("IDLE")
+                return
+            end
+            local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 5)
+            local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart", 5)
+            if not humanoid or not root or not AutoBreakEnabled or startGeneration ~= AutoBreakGeneration then
+                TouchAutomationProgress("IDLE")
+                SetTrackerStatus("Auto Break cancelled: character parts were unavailable or the toggle changed while waiting.")
+                return
+            end
             CurrentTarget = target
             local targetEggsFolder = target.Parent
             local targetZone = targetEggsFolder and targetEggsFolder.Parent
@@ -3207,6 +3684,45 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 humanoid:Move(offset.Unit, false)
             end)
         end
+        task.spawn(function()
+            while not Runtime.Stopped and not ScriptShuttingDown do
+                task.wait(1)
+                local active = PickupRequested or ReturningAfterPickup or FlingRecoveryActive
+                    or (AutoBreakEnabled and (CurrentTarget ~= nil or WaitingForPickup or ArrivedAtTarget
+                        or AutomationProgressStage:find("^AUTO_BREAK:") ~= nil))
+                if active and not AutomationWatchdogBusy
+                    and os.clock() - LastAutomationProgressAt >= 20 then
+                    AutomationWatchdogBusy = true
+                    AutoBreakGeneration += 1
+                    SetTrackerStatus("STUCK WATCHDOG: no automation progress for 20s during "
+                        .. tostring(AutomationProgressStage) .. "; clearing stale waits/locks and restarting Auto Break.")
+                    if StopPickupAutomation then
+                        StopPickupAutomation("20s stuck watchdog recovery")
+                    end
+                    if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+                    if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+                    if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+                    local character = LocalPlayer.Character
+                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then humanoid:Move(Vector3.zero, false) end
+                    WaitingForPickup = false
+                    ArrivedAtTarget = false
+                    CurrentTarget = nil
+                    FlingRecoveryActive = false
+                    TouchAutomationProgress("WATCHDOG_RECOVERY")
+                    task.spawn(function()
+                        EquipHotbarOne()
+                        task.wait(0.2)
+                        if AutoBreakEnabled and not ScriptShuttingDown then
+                            AutomationWatchdogBusy = false
+                            StartAutoBreak(true)
+                        else
+                            AutomationWatchdogBusy = false
+                        end
+                    end)
+                end
+            end
+        end)
         RefreshTitanicPriority = function()
             if not AutoBreakEnabled or not CurrentTarget then return end
             if FlingRecoveryActive or PickupRequested or ReturningAfterPickup or WaitingForPickup then
@@ -3221,9 +3737,155 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end)
         end
-    -- Debug Console intentionally hidden in deploy builds.
-    elseif index == 5 and false then
-        local ConsoleCard = CreateCard(Page, "Debug Console", "")
+    elseif index == 5 then
+        local ThemeCard = CreateCard(Page, "⚙  Theme Settings", "Choose a color palette for the interface.")
+        local ThemeOptions = {
+            "Midnight Blue + Cyan",
+            "Black + Purple",
+            "Dark Gray + Green",
+            "Black + Electric Blue",
+            "OLED Black + Amber",
+            "Obsidian + Crimson",
+            "Deep Ocean + Teal",
+            "Graphite + Orange",
+            "Dark Plum + Rose",
+            "Forest Night + Lime"
+        }
+        local ThemeRows = {}
+        local RowHeight = 34
+        local ColumnGap = 8
+        local ThemeRowCount = math.ceil(#ThemeOptions / 2)
+        ThemeCard.Size = UDim2.new(1, 0, 0, 48 + (ThemeRowCount * RowHeight) + 8)
+
+        for i, themeName in ipairs(ThemeOptions) do
+            local palette = ThemePresets[themeName]
+            local column = i > ThemeRowCount and 2 or 1
+            local rowIndex = column == 1 and i or (i - ThemeRowCount)
+            local rowWidth = (1 - 0.0) / 2
+            local rowXScale = column == 1 and 0 or 0.5
+            local Row = Create("TextButton", {
+                Name = "ThemeOption_" .. tostring(i),
+                Parent = ThemeCard,
+                Position = UDim2.new(rowXScale, column == 1 and 10 or 4, 0, 42 + ((rowIndex - 1) * RowHeight)),
+                Size = UDim2.new(0.5, column == 1 and -14 or -14, 0, 30),
+                BackgroundColor3 = Theme.SurfaceInput,
+                BorderSizePixel = 0,
+                AutoButtonColor = false,
+                Text = "",
+                ZIndex = 2
+            })
+            AddCorner(Row, 5)
+            AddStroke(Row, Theme.Border, 1)
+
+            local RadioOuter = Create("Frame", {
+                Parent = Row,
+                Position = UDim2.fromOffset(6, 7),
+                Size = UDim2.fromOffset(13, 13),
+                BackgroundColor3 = Theme.SurfaceInput,
+                BorderSizePixel = 0,
+                ZIndex = 3
+            })
+            AddCorner(RadioOuter, 20)
+            AddStroke(RadioOuter, Theme.Gray, 1)
+
+            local RadioInner = Create("Frame", {
+                Parent = RadioOuter,
+                Position = UDim2.fromOffset(3, 3),
+                Size = UDim2.fromOffset(7, 7),
+                BackgroundColor3 = palette.Accent,
+                BorderSizePixel = 0,
+                Visible = themeName == ActiveThemeName,
+                ZIndex = 4
+            })
+            AddCorner(RadioInner, 20)
+
+            local Swatch = Create("Frame", {
+                Parent = Row,
+                Position = UDim2.fromOffset(24, 7),
+                Size = UDim2.fromOffset(30, 16),
+                BackgroundColor3 = palette.Background,
+                BorderSizePixel = 0,
+                ZIndex = 3
+            })
+            AddCorner(Swatch, 4)
+            AddStroke(Swatch, palette.Border, 1)
+
+            Create("Frame", {
+                Parent = Swatch,
+                Position = UDim2.fromOffset(3, 4),
+                Size = UDim2.fromOffset(7, 8),
+                BackgroundColor3 = palette.Card,
+                BorderSizePixel = 0,
+                ZIndex = 4
+            })
+            Create("Frame", {
+                Parent = Swatch,
+                Position = UDim2.fromOffset(12, 4),
+                Size = UDim2.fromOffset(7, 8),
+                BackgroundColor3 = palette.Accent,
+                BorderSizePixel = 0,
+                ZIndex = 4
+            })
+            Create("Frame", {
+                Parent = Swatch,
+                Position = UDim2.fromOffset(21, 4),
+                Size = UDim2.fromOffset(6, 8),
+                BackgroundColor3 = palette.Selected,
+                BorderSizePixel = 0,
+                ZIndex = 4
+            })
+
+            Create("TextLabel", {
+                Parent = Row,
+                Position = UDim2.fromOffset(59, 1),
+                Size = UDim2.new(1, -64, 1, -2),
+                BackgroundTransparency = 1,
+                Text = themeName,
+                TextColor3 = Theme.Text,
+                Font = Enum.Font.Gotham,
+                TextSize = 8,
+                TextWrapped = true,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Center,
+                ZIndex = 3
+            })
+
+            ThemeRows[#ThemeRows + 1] = {
+                Name = themeName,
+                Row = Row,
+                RadioInner = RadioInner,
+                Swatch = Swatch,
+                Palette = palette
+            }
+
+            Row.MouseButton1Click:Connect(function()
+                ApplyTheme(themeName)
+                for _, item in ipairs(ThemeRows) do
+                    item.RadioInner.Visible = item.Name == themeName
+                    item.RadioInner.BackgroundColor3 = item.Palette.Accent
+                    item.Swatch.BackgroundColor3 = item.Palette.Background
+                    local swatchStroke = item.Swatch:FindFirstChildOfClass("UIStroke")
+                    if swatchStroke then swatchStroke.Color = item.Palette.Border end
+                    local swatchFrames = {}
+                    for _, child in ipairs(item.Swatch:GetChildren()) do
+                        if child:IsA("Frame") then
+                            swatchFrames[#swatchFrames + 1] = child
+                        end
+                    end
+                    if swatchFrames[1] then swatchFrames[1].BackgroundColor3 = item.Palette.Card end
+                    if swatchFrames[2] then swatchFrames[2].BackgroundColor3 = item.Palette.Accent end
+                    if swatchFrames[3] then swatchFrames[3].BackgroundColor3 = item.Palette.Selected end
+                    item.Row.BackgroundColor3 = item.Name == themeName and item.Palette.Selected or Theme.SurfaceInput
+                end
+            end)
+        end
+
+        for _, item in ipairs(ThemeRows) do
+            item.Row.BackgroundColor3 = item.Name == ActiveThemeName and Theme.Selected or Theme.SurfaceInput
+        end
+
+    elseif index == 6 then
+        local ConsoleCard = CreateCard(Page, "≡  Debug Console", "")
         ConsoleCard.Size = UDim2.new(1, 0, 0, 190)
         local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
         if consoleTitle then consoleTitle.Position = UDim2.fromOffset(11, 7); consoleTitle.TextSize = 10 end
@@ -3287,7 +3949,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddDebugLog("Debug console ready.")
 
     elseif index == 2 then
-        local ESPCard = CreateCard(Page, "Egg ESP", "")
+        local ESPCard = CreateCard(Page, "◎  Egg ESP", "")
         ESPCard.Size = UDim2.new(1, 0, 0, 125)
         local ESPStatus = Create("TextLabel", {
             Parent = ESPCard,
@@ -3428,7 +4090,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ESPCard.Size = UDim2.new(1, 0, 0, 125)
 
     elseif index == 3 then
-        local AnimalsCard = CreateCard(Page, "Placed Animals", "")
+        local AnimalsCard = CreateCard(Page, "♧  Placed Animals", "")
         AnimalsCard.Size = UDim2.new(1, 0, 0, 230)
         local animalsTitle = AnimalsCard:FindFirstChildWhichIsA("TextLabel")
         if animalsTitle then animalsTitle.Position = UDim2.fromOffset(15, 10) end
@@ -3510,7 +4172,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
 
     elseif index == 4 then
-        local PickupCard = CreateCard(Page, "Animal Pick ups", "")
+        local PickupCard = CreateCard(Page, "◇  Animal Pickups", "")
         PickupCard.Size = UDim2.new(1, 0, 0, 230)
         local pickupTitle = PickupCard:FindFirstChildWhichIsA("TextLabel")
         if pickupTitle then pickupTitle.Position = UDim2.fromOffset(15, 10) end
@@ -3575,11 +4237,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         CreateButton(Card1, "Example Button", function()
             -- Put your actual function here.
         end)
-        local Card2 = CreateCard(Page, "Example Settings", "Example controls that only change the UI state.")
+        local Card2 = CreateCard(Page, "⚙  Example Settings", "Example controls that only change the UI state.")
         CreateToggle(Card2, "Example Toggle", false, function(state)
             -- state = true / false
         end)
-        local Card3 = CreateCard(Page, "Example Options", "Dropdown and slider examples.")
+        local Card3 = CreateCard(Page, "≡  Example Options", "Dropdown and slider examples.")
         CreateDropdown(Card3, "Mode", {"Option 1", "Option 2", "Option 3"}, function(selection)
             -- selection contains the selected option.
         end)
