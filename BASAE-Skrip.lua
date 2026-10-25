@@ -14,6 +14,25 @@ local Runtime = {Stopped = false}
 RuntimeEnv.__BASAESkripCleanup = function()
     Runtime.Stopped = true
     pcall(function()
+        if type(Runtime.Shutdown) == "function" then
+            Runtime.Shutdown()
+        end
+    end)
+    pcall(function()
+        for _, bindName in ipairs(Runtime.BoundRenderSteps or {}) do
+            RunService:UnbindFromRenderStep(bindName)
+        end
+        table.clear(Runtime.BoundRenderSteps or {})
+    end)
+    pcall(function()
+        for _, connection in ipairs(Runtime.PersistentConnections or {}) do
+            if connection and connection.Connected then
+                connection:Disconnect()
+            end
+        end
+        table.clear(Runtime.PersistentConnections or {})
+    end)
+    pcall(function()
         local oldUI = game.CoreGui:FindFirstChild("BASAESkripUI")
         if oldUI then oldUI:Destroy() end
     end)
@@ -23,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.132"
+local testver = "Test v1.133"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1348,6 +1367,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local character = LocalPlayer.Character
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if humanoid then humanoid:Move(Vector3.zero, false) end
+        end
+        Runtime.Shutdown = function()
+            if ShutdownAutomation then
+                ShutdownAutomation()
+            end
         end
         local function ClearPickupLock(token)
             if token and token ~= PickupGeneration then return false end
