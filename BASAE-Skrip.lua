@@ -47,8 +47,8 @@ local testver = "BASAE v1.151"
 local UIConfig = {
     Title = "SKRIP NI BAI",
     Subtitle = "BASAE v1.151",
-    Width = 560,
-    Height = 430,
+    Width = 720,
+    Height = 460,
     SidebarWidth = 126,
     SidebarNames = {
         "Auto",
@@ -741,10 +741,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Parent = SidebarContainer,
         Size = UDim2.new(1, -2, 0, 34),
         BackgroundColor3 = Theme.Sidebar,
-        Text = name,
+        Text = ({"⌂", "◎", "◇", "♧", "≡"})[index] .. "   " .. name,
         TextColor3 = Theme.DarkGray,
         Font = Enum.Font.GothamMedium,
-        TextSize = 9,
+        TextSize = 10,
         TextXAlignment = Enum.TextXAlignment.Left,
         BorderSizePixel = 0,
         AutoButtonColor = false,
@@ -753,7 +753,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
     AddCorner(Button, 7)
     local Padding = Create("UIPadding", {
         Parent = Button,
-        PaddingLeft = UDim.new(0, 14)
+        PaddingLeft = UDim.new(0, 10)
     })
     SidebarButtons[index] = Button
     Button.MouseButton1Click:Connect(function()
@@ -779,8 +779,17 @@ local TouchAutomationProgress
 for index, name in ipairs(UIConfig.SidebarNames) do
     local Page = CreatePage(index, name)
     if index == 1 then
-        local Card1 = CreateCard(Page, "Auto break", "")
-        Card1.Size = UDim2.new(1, 0, 0, 114)
+        local AutoRow = Create("Frame", {
+            Name = "AutoControlsRow",
+            Parent = Page,
+            Size = UDim2.new(1, 0, 0, 190),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            LayoutOrder = 1
+        })
+        local Card1 = CreateCard(AutoRow, "⚡  Auto Break", "")
+        Card1.Position = UDim2.new(0, 0, 0, 0)
+        Card1.Size = UDim2.new(0.49, -4, 1, 0)
         local StartAutoBreak
         local StopAutoBreak
         local StopPickupAutomation
@@ -809,18 +818,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if CancelActiveAutomation then CancelActiveAutomation("Auto Break disabled") end
             end
         end)
-        AutoBreakToggle.Position = UDim2.new(1, -68, 0, 10)
-        AutoBreakToggle.Size = UDim2.fromOffset(58, 26)
-        local AutoPickupCard = CreateCard(Page, "Auto pickup", "")
-        AutoPickupCard.Size = UDim2.new(1, 0, 0, 170)
+        AutoBreakToggle.Position = UDim2.new(1, -58, 0, 7)
+        AutoBreakToggle.Size = UDim2.fromOffset(48, 24)
+        local AutoPickupCard = CreateCard(AutoRow, "✦  Auto Pickup", "")
+        AutoPickupCard.Position = UDim2.new(0.51, 4, 0, 0)
+        AutoPickupCard.Size = UDim2.new(0.49, -4, 1, 0)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Monitoring ON." or "Monitoring OFF."))
             if not enabled and StopPickupAutomation then StopPickupAutomation("Auto Pickup disabled") end
         end)
-        AutoPickupToggle.Position = UDim2.new(1, -68, 0, 10)
-        AutoPickupToggle.Size = UDim2.fromOffset(58, 26)
+        AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
+        AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
@@ -831,7 +841,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local RarityFilterButton
         RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
-            AutoPickupCard.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 300 or 170)
+            AutoPickupCard.Size = UDim2.new(0.49, -4, 0, RarityFilterOpen and 300 or 190)
+            AutoRow.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 300 or 190)
             RarityFilterButton.Text = RarityFilterOpen and "Filter for Rarity  ▲" or "Filter for Rarity  ▼"
             RarityList.Visible = RarityFilterOpen
         end)
