@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.143"
+local testver = "Test v1.144"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1330,8 +1330,29 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local FlingRemoteConnection
         local FlingRecoveryActive = false
         local FlingAnimalTarget
+        local function GetAnimalWeightKg(animal)
+            if not animal then return nil end
+            local names = {"WeightKg", "WeightKG", "weightKg", "weightKG", "Weight", "weight"}
+            for _, name in ipairs(names) do
+                local value = animal:GetAttribute(name)
+                if value ~= nil then return tostring(value) end
+            end
+            for _, node in ipairs(animal:GetDescendants()) do
+                for _, name in ipairs(names) do
+                    local value = node:GetAttribute(name)
+                    if value ~= nil then return tostring(value) end
+                    if node.Name == name then
+                        if node:IsA("ValueBase") then return tostring(node.Value) end
+                        if (node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox")) and node.Text ~= "" then
+                            return tostring(node.Text)
+                        end
+                    end
+                end
+            end
+            return nil
+        end
         local FlingTargetAnimalName
-        local FlingTargetDespawnAt
+        local FlingTargetWeightKg
         local HitEventConnection
         local SetTrackerStatus
         local function SetPickupPhase(phase, message)
@@ -1915,36 +1936,36 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ActivePickup = pickup
             FlingAnimalTarget = pickup
             FlingTargetAnimalName = pickup.Name
-            FlingTargetDespawnAt = nil
+            FlingTargetWeightKg = nil
             task.spawn(function()
                 local identityDeadline = os.clock() + 12
                 local identityAttempts = 0
                 local lastIdentityLog = 0
                 while not Runtime.Stopped and PickupGeneration == pickupToken
-                    and ActivePickup == pickup and FlingTargetDespawnAt == nil
+                    and ActivePickup == pickup and FlingTargetWeightKg == nil
                     and os.clock() < identityDeadline do
                     identityAttempts += 1
                     local identityFolder = workspace:FindFirstChild("AnimalPickups")
                     if identityFolder then
                         for _, candidate in ipairs(identityFolder:GetChildren()) do
                             if candidate == pickup and candidate.Name == FlingTargetAnimalName then
-                                local identity = candidate:GetAttribute("DespawnAtServerTime")
+                                local identity = GetAnimalWeightKg(candidate)
                                 if identity ~= nil then
-                                    FlingTargetDespawnAt = identity
-                                    SetTrackerStatus("Captured pickup identity: " .. tostring(FlingTargetAnimalName) .. " | DespawnAtServerTime=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
+                                    FlingTargetWeightKg = identity
+                                    SetTrackerStatus("Captured pickup identity: " .. tostring(FlingTargetAnimalName) .. " | WeightKg=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
                                     break
                                 end
                             end
                         end
                     end
                     local now = os.clock()
-                    if FlingTargetDespawnAt == nil and now - lastIdentityLog >= 1 then
+                    if FlingTargetWeightKg == nil and now - lastIdentityLog >= 1 then
                         lastIdentityLog = now
-                        SetTrackerStatus("Searching AnimalPickups | animal=" .. tostring(FlingTargetAnimalName) .. " | DespawnAtServerTime=waiting | attempts=" .. tostring(identityAttempts))
+                        SetTrackerStatus("Searching AnimalPickups | animal=" .. tostring(FlingTargetAnimalName) .. " | WeightKg=waiting | attempts=" .. tostring(identityAttempts))
                     end
-                    if FlingTargetDespawnAt == nil then task.wait(0.25) end
+                    if FlingTargetWeightKg == nil then task.wait(0.25) end
                 end
-                if FlingTargetDespawnAt == nil and PickupGeneration == pickupToken then
+                if FlingTargetWeightKg == nil and PickupGeneration == pickupToken then
                     SetTrackerStatus("Initial identity search timed out for " .. tostring(FlingTargetAnimalName) .. "; fling recovery will retry.")
                 end
             end)
@@ -2439,19 +2460,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if tostring(action):lower() ~= "fling" then return end
             local flingAnimal = ActivePickup or FlingAnimalTarget
             local targetAnimalName = (flingAnimal and flingAnimal.Name) or FlingTargetAnimalName
-            local targetDespawnAt = FlingTargetDespawnAt
+            local targetWeightKg = FlingTargetWeightKg
             local function findTrackedAnimal()
                 local folder = workspace:FindFirstChild("AnimalPickups")
-                if not folder or targetAnimalName == nil or targetDespawnAt == nil then return nil end
+                if not folder or targetAnimalName == nil or targetWeightKg == nil then return nil end
                 if flingAnimal and flingAnimal.Parent == folder
                     and flingAnimal.Name == targetAnimalName
-                    and flingAnimal:GetAttribute("DespawnAtServerTime") == targetDespawnAt then
+                    and GetAnimalWeightKg(flingAnimal) == targetWeightKg then
                     return flingAnimal
                 end
                 local match
                 for _, candidate in ipairs(folder:GetChildren()) do
                     if candidate.Name == targetAnimalName
-                        and candidate:GetAttribute("DespawnAtServerTime") == targetDespawnAt then
+                        and candidate:GetAttribute("WeightKg") == targetWeightKg then
                         if match then return nil end
                         match = candidate
                     end
@@ -2495,39 +2516,39 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
 
-            if targetDespawnAt == nil then
-                SetTrackerStatus("FLING RECOVERY waiting for DespawnAtServerTime on " .. tostring(targetAnimalName) .. "...")
+            if targetWeightKg == nil then
+                SetTrackerStatus("FLING RECOVERY waiting for WeightKg on " .. tostring(targetAnimalName) .. "...")
                 local identityDeadline = os.clock() + 10
                 local identityAttempts = 0
                 local lastIdentityLog = 0
-                while not Runtime.Stopped and os.clock() < identityDeadline and targetDespawnAt == nil do
+                while not Runtime.Stopped and os.clock() < identityDeadline and targetWeightKg == nil do
                     identityAttempts += 1
                     local identityFolder = workspace:FindFirstChild("AnimalPickups")
                     if identityFolder then
                         for _, candidate in ipairs(identityFolder:GetChildren()) do
                             if candidate == flingAnimal and candidate.Name == targetAnimalName then
-                                local identity = candidate:GetAttribute("DespawnAtServerTime")
+                                local identity = candidate:GetAttribute("WeightKg")
                                 if identity ~= nil then
-                                    targetDespawnAt = identity
-                                    FlingTargetDespawnAt = identity
-                                    SetTrackerStatus("Fling recovery captured identity: " .. tostring(targetAnimalName) .. " | DespawnAtServerTime=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
+                                    targetWeightKg = identity
+                                    FlingTargetWeightKg = identity
+                                    SetTrackerStatus("Fling recovery captured identity: " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
                                     break
                                 end
                             end
                         end
                     end
                     local now = os.clock()
-                    if targetDespawnAt == nil and now - lastIdentityLog >= 1 then
+                    if targetWeightKg == nil and now - lastIdentityLog >= 1 then
                         lastIdentityLog = now
-                        SetTrackerStatus("FLING RECOVERY searching AnimalPickups | animal=" .. tostring(targetAnimalName) .. " | DespawnAtServerTime=waiting | attempts=" .. tostring(identityAttempts))
+                        SetTrackerStatus("FLING RECOVERY searching AnimalPickups | animal=" .. tostring(targetAnimalName) .. " | WeightKg=waiting | attempts=" .. tostring(identityAttempts))
                     end
-                    if targetDespawnAt == nil then task.wait(0.25) end
+                    if targetWeightKg == nil then task.wait(0.25) end
                 end
             end
-            if targetDespawnAt == nil then
+            if targetWeightKg == nil then
                 PickupRequested = false
                 ActivePickup = nil
-                SetTrackerStatus("FLING RECOVERY stopped: DespawnAtServerTime still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
+                SetTrackerStatus("FLING RECOVERY stopped: WeightKg still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
                 return
             end
             FlingRecoveryActive = true
@@ -2543,7 +2564,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
-            SetTrackerStatus("Base return paused. FLING RECOVERY searching AnimalPickups for " .. tostring(targetAnimalName) .. " | DespawnAtServerTime=" .. tostring(targetDespawnAt) .. ".")
+            SetTrackerStatus("Base return paused. FLING RECOVERY searching AnimalPickups for " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(targetWeightKg) .. ".")
             task.spawn(function()
                 local recoveryMoveBindName
                 local recoveryHumanoid
@@ -2581,13 +2602,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local recoveryPosition = getTrackedAnimalPosition()
                 if not recoveryPosition then
                     PickupRequested = false
-                    SetTrackerStatus("FLING RECOVERY cancelled: no unique AnimalPickups match for " .. tostring(targetAnimalName) .. " + DespawnAtServerTime=" .. tostring(targetDespawnAt) .. ".")
+                    SetTrackerStatus("FLING RECOVERY cancelled: no unique AnimalPickups match for " .. tostring(targetAnimalName) .. " + WeightKg=" .. tostring(targetWeightKg) .. ".")
                     finishFlingRecovery()
                     return
                 end
                 SetTrackerStatus(string.format(
-                    "FLING RECOVERY matched %s by name + DespawnAtServerTime=%s at (%.3f, %.3f, %.3f).",
-                    tostring(flingAnimal and flingAnimal.Name or targetAnimalName or "animal"), tostring(targetDespawnAt),
+                    "FLING RECOVERY matched %s by name + WeightKg=%s at (%.3f, %.3f, %.3f).",
+                    tostring(flingAnimal and flingAnimal.Name or targetAnimalName or "animal"), tostring(targetWeightKg),
                     recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z
                 ))
                 local RunService = game:GetService("RunService")
@@ -2797,7 +2818,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local targetStillExists = false
                     if folder then
                         for _, animal in ipairs(folder:GetChildren()) do
-                            if animal.Name == targetAnimalName and animal:GetAttribute("DespawnAtServerTime") == targetDespawnAt then
+                            if animal.Name == targetAnimalName and animal:GetAttribute("WeightKg") == targetWeightKg then
                                 targetStillExists = true
                                 break
                             end
