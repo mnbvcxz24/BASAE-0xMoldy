@@ -817,7 +817,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         HighestCashToggle.Position = UDim2.fromOffset(11, 73)
         HighestCashToggle.Size = UDim2.new(1, -22, 0, 26)
         local UnindexedOnlyEnabled = false
-        local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Pick Up Unindexed Animals", false, function(enabled)
+        local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
@@ -997,7 +997,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function UpdateSortButtons()
             SortOrder = HighestLuckToggle and ToggleControllers[HighestLuckToggle].GetEnabled() and "Highest Luck" or "Default"
         end
-        HighestLuckToggle = CreateToggle(SortFrame, "Highest Luck first", false, function(enabled)
+        HighestLuckToggle = CreateToggle(SortFrame, "HighLuck Priority", false, function(enabled)
             SortOrder = enabled and "Highest Luck" or "Default"
             if RefreshEggList then RefreshEggList() end
             AddDebugLog("[Auto Break] Highest Luck first " .. (enabled and "ON" or "OFF"))
