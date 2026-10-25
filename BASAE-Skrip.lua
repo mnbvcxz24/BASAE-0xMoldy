@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.148"
+local testver = "Test v1.149"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -3051,6 +3051,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         StartAutoBreak = function(forceRefresh)
             if not AutoBreakEnabled or ScriptShuttingDown then return end
+            local startGeneration = AutoBreakGeneration
             TouchAutomationProgress("AUTO_BREAK:SELECTING_TARGET")
             if FlingRecoveryActive then
                 SetTrackerStatus("Auto Break paused: fling recovery owns movement until the animal pickup attempt finishes.")
@@ -3185,6 +3186,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 else
                     SetTrackerStatus("HIGHEST LUCK PRIORITY is ON, but no readable positive luck values were found. Auto Break paused instead of choosing a random egg.")
                     AddDebugLog("[Auto Break] HighLuck found no readable positive luck values; normal egg fallback blocked.")
+                    TouchAutomationProgress("IDLE")
                     return
                 end
             end
@@ -3228,11 +3230,28 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             if not target then
                 SetTrackerStatus("No target found. Select a zone and keep at least one egg type enabled.")
+                TouchAutomationProgress("IDLE")
                 return
             end
-            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-            local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-            local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart")
+            local character = LocalPlayer.Character
+            local characterDeadline = os.clock() + 10
+            while not character and os.clock() < characterDeadline
+                and not Runtime.Stopped and AutoBreakEnabled and startGeneration == AutoBreakGeneration do
+                task.wait(0.1)
+                character = LocalPlayer.Character
+            end
+            if not character or Runtime.Stopped or ScriptShuttingDown
+                or not AutoBreakEnabled or startGeneration ~= AutoBreakGeneration then
+                TouchAutomationProgress("IDLE")
+                return
+            end
+            local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid", 5)
+            local root = character:FindFirstChild("HumanoidRootPart") or character:WaitForChild("HumanoidRootPart", 5)
+            if not humanoid or not root or not AutoBreakEnabled or startGeneration ~= AutoBreakGeneration then
+                TouchAutomationProgress("IDLE")
+                SetTrackerStatus("Auto Break cancelled: character parts were unavailable or the toggle changed while waiting.")
+                return
+            end
             CurrentTarget = target
             local targetEggsFolder = target.Parent
             local targetZone = targetEggsFolder and targetEggsFolder.Parent
@@ -3328,10 +3347,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             while not Runtime.Stopped and not ScriptShuttingDown do
                 task.wait(1)
                 local active = PickupRequested or ReturningAfterPickup or FlingRecoveryActive
-                    or (AutoBreakEnabled and (CurrentTarget ~= nil or WaitingForPickup or ArrivedAtTarget))
+                    or (AutoBreakEnabled and (CurrentTarget ~= nil or WaitingForPickup or ArrivedAtTarget
+                        or AutomationProgressStage:find("^AUTO_BREAK:") ~= nil))
                 if active and not AutomationWatchdogBusy
                     and os.clock() - LastAutomationProgressAt >= 20 then
                     AutomationWatchdogBusy = true
+                    AutoBreakGeneration += 1
                     SetTrackerStatus("STUCK WATCHDOG: no automation progress for 20s during "
                         .. tostring(AutomationProgressStage) .. "; clearing stale waits/locks and restarting Auto Break.")
                     if StopPickupAutomation then
