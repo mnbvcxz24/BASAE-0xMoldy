@@ -55,6 +55,7 @@ local UIConfig = {
         "ESP",
         "Placed",
         "Pickups",
+        "Settings",
         "Debug"
     }
 }
@@ -116,6 +117,70 @@ pcall(function()
     local oldESP = playerGui and playerGui:FindFirstChild("BASE_Skrip_EggESP")
     if oldESP then oldESP:Destroy() end
 end)
+-- THEME PRESETS
+local ThemePresets = {
+    ["Midnight Blue + Cyan"] = {
+        Background = Color3.fromRGB(16, 24, 32),
+        Sidebar = Color3.fromRGB(19, 31, 42),
+        Card = Color3.fromRGB(24, 38, 50),
+        Border = Color3.fromRGB(38, 56, 71),
+        Text = Color3.fromRGB(241, 245, 249),
+        DarkGray = Color3.fromRGB(199, 210, 222),
+        Gray = Color3.fromRGB(154, 170, 185),
+        LightGray = Color3.fromRGB(35, 52, 66),
+        SurfaceInput = Color3.fromRGB(26, 42, 55),
+        Selected = Color3.fromRGB(26, 55, 70),
+        SelectedText = Color3.fromRGB(241, 245, 249),
+        Accent = Color3.fromRGB(56, 214, 232),
+        AccentText = Color3.fromRGB(10, 27, 34)
+    },
+    ["Black + Purple"] = {
+        Background = Color3.fromRGB(13, 12, 18),
+        Sidebar = Color3.fromRGB(20, 17, 28),
+        Card = Color3.fromRGB(29, 24, 39),
+        Border = Color3.fromRGB(61, 48, 78),
+        Text = Color3.fromRGB(248, 245, 255),
+        DarkGray = Color3.fromRGB(220, 211, 235),
+        Gray = Color3.fromRGB(166, 153, 188),
+        LightGray = Color3.fromRGB(42, 34, 55),
+        SurfaceInput = Color3.fromRGB(35, 28, 47),
+        Selected = Color3.fromRGB(66, 40, 91),
+        SelectedText = Color3.fromRGB(255, 255, 255),
+        Accent = Color3.fromRGB(190, 100, 255),
+        AccentText = Color3.fromRGB(25, 12, 35)
+    },
+    ["Dark Gray + Green"] = {
+        Background = Color3.fromRGB(23, 26, 27),
+        Sidebar = Color3.fromRGB(30, 34, 35),
+        Card = Color3.fromRGB(39, 44, 45),
+        Border = Color3.fromRGB(65, 75, 72),
+        Text = Color3.fromRGB(245, 248, 246),
+        DarkGray = Color3.fromRGB(205, 216, 211),
+        Gray = Color3.fromRGB(155, 170, 163),
+        LightGray = Color3.fromRGB(49, 57, 54),
+        SurfaceInput = Color3.fromRGB(33, 39, 37),
+        Selected = Color3.fromRGB(37, 76, 57),
+        SelectedText = Color3.fromRGB(245, 255, 248),
+        Accent = Color3.fromRGB(90, 230, 145),
+        AccentText = Color3.fromRGB(9, 30, 18)
+    },
+    ["Black + Electric Blue"] = {
+        Background = Color3.fromRGB(10, 12, 18),
+        Sidebar = Color3.fromRGB(15, 18, 27),
+        Card = Color3.fromRGB(23, 27, 39),
+        Border = Color3.fromRGB(42, 53, 76),
+        Text = Color3.fromRGB(242, 247, 255),
+        DarkGray = Color3.fromRGB(202, 214, 232),
+        Gray = Color3.fromRGB(146, 163, 190),
+        LightGray = Color3.fromRGB(31, 38, 54),
+        SurfaceInput = Color3.fromRGB(25, 31, 46),
+        Selected = Color3.fromRGB(24, 53, 94),
+        SelectedText = Color3.fromRGB(245, 250, 255),
+        Accent = Color3.fromRGB(45, 135, 255),
+        AccentText = Color3.fromRGB(7, 17, 35)
+    }
+}
+local ActiveThemeName = "Midnight Blue + Cyan"
 -- SCREEN GUI
 local ScreenGui = Create("ScreenGui", {
     Name = "BASAESkripUI",
@@ -123,6 +188,36 @@ local ScreenGui = Create("ScreenGui", {
     ResetOnSpawn = false,
     ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 })
+local function ApplyTheme(themeName)
+    local selectedTheme = ThemePresets[themeName]
+    if not selectedTheme then return end
+    local previousTheme = {}
+    for key, color in pairs(Theme) do
+        previousTheme[key] = color
+    end
+    for key, color in pairs(selectedTheme) do
+        Theme[key] = color
+    end
+    ActiveThemeName = themeName
+    local colorProperties = {"BackgroundColor3", "TextColor3", "TextStrokeColor3", "ImageColor3", "ScrollBarImageColor3", "Color"}
+    for _, object in ipairs(ScreenGui:GetDescendants()) do
+        for _, property in ipairs(colorProperties) do
+            local ok, currentColor = pcall(function()
+                return object[property]
+            end)
+            if ok and typeof(currentColor) == "Color3" then
+                for key, previousColor in pairs(previousTheme) do
+                    if currentColor == previousColor then
+                        pcall(function()
+                            object[property] = selectedTheme[key]
+                        end)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
 -- MAIN WINDOW
 local Main = Create("Frame", {
     Name = "Main",
@@ -741,7 +836,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Parent = SidebarContainer,
         Size = UDim2.new(1, -2, 0, 34),
         BackgroundColor3 = Theme.Sidebar,
-        Text = ({"⌂", "◎", "◇", "♧", "≡"})[index] .. "  " .. name,
+        Text = ({"⌂", "◎", "◇", "♧", "⚙", "≡"})[index] .. "  " .. name,
         TextColor3 = Theme.DarkGray,
         Font = Enum.Font.GothamMedium,
         TextSize = 9,
@@ -3554,6 +3649,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end)
         end
     elseif index == 5 then
+        local ThemeCard = CreateCard(Page, "⚙  Theme Settings", "Choose a color palette for the interface.")
+        ThemeCard.Size = UDim2.new(1, 0, 0, 112)
+        local ThemeOptions = {
+            "Midnight Blue + Cyan",
+            "Black + Purple",
+            "Dark Gray + Green",
+            "Black + Electric Blue"
+        }
+        CreateDropdown(ThemeCard, "Color Theme", ThemeOptions, function(selection)
+            ApplyTheme(selection)
+        end)
+
+    elseif index == 6 then
         local ConsoleCard = CreateCard(Page, "≡  Debug Console", "")
         ConsoleCard.Size = UDim2.new(1, 0, 0, 190)
         local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
