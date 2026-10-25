@@ -1768,13 +1768,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetPickupTracking(pickup, "Rejected: Index verification unavailable", tostring(indexDisplay))
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | Index verification failed: " .. tostring(indexDisplay))
                     return
-                elseif not isUnindexed then
-                    SetPickupTracking(pickup, "Skipped: already indexed", tostring(indexDisplay))
-                    RejectPickupAndRestart("Skipped " .. pickup.Name .. " | already indexed as " .. tostring(indexDisplay))
-                    return
+                elseif isUnindexed then
+                    forceUnindexedPickup = true
+                    SetPickupTracking(pickup, "Unindexed (???); bypassing filters", "???")
+                else
+                    SetPickupTracking(pickup, "Already indexed; applying normal filters", tostring(indexDisplay))
                 end
-                forceUnindexedPickup = true
-                SetPickupTracking(pickup, "Unindexed (???); bypassing filters", "???")
             end
             if not forceUnindexedPickup then
                 if not IsRarityAllowed(pickup) then
