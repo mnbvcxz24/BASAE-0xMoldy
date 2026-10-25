@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.128"
+local testver = "Test v1.129"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -767,6 +767,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local CompletedEggs = {}
         local AutoBreakToggleInitialized = false
         local AutoBreakEnabled = false
+        local RefreshTitanicPriority
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
             AutoBreakEnabled = enabled
             if not AutoBreakToggleInitialized then
@@ -1230,6 +1231,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local TitanicPriorityToggle = CreateToggle(Card1, "TITANIC priority", false, function(enabled)
             TitanicPriorityEnabled = enabled
             AddDebugLog("[Auto Break] TITANIC priority " .. (enabled and "ON" or "OFF"))
+            if RefreshTitanicPriority then
+                RefreshTitanicPriority()
+            end
         end)
         TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
         TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
@@ -2676,20 +2680,23 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             if (egg:IsA("Model") or egg:IsA("BasePart"))
                                 and egg.Name:lower():find("egg", 1, true)
                                 and IsEggAvailable(egg) then
-                                local weightBracket = GetEggWeightBracket(egg)
-                                local hasWeightBracket = weightBracket ~= nil
-                                    and tostring(weightBracket):match("%S") ~= nil
-                                local weightKg = nil
-                                if not hasWeightBracket then
-                                    weightKg = GetEggWeightKg(egg)
-                                end
-                                if hasWeightBracket or weightKg then
-                                    table.insert(weightCandidates, {
-                                        egg = egg,
-                                        weightBracket = hasWeightBracket and tostring(weightBracket) or nil,
-                                        weightKg = weightKg,
-                                        hasWeightBracket = hasWeightBracket
-                                    })
+                                local eggName = GetEggTypeName(egg.Name)
+                                if SelectedEggs[eggName] ~= false then
+                                    local weightBracket = GetEggWeightBracket(egg)
+                                    local hasWeightBracket = weightBracket ~= nil
+                                        and tostring(weightBracket):match("%S") ~= nil
+                                    local weightKg = nil
+                                    if not hasWeightBracket then
+                                        weightKg = GetEggWeightKg(egg)
+                                    end
+                                    if hasWeightBracket or weightKg then
+                                        table.insert(weightCandidates, {
+                                            egg = egg,
+                                            weightBracket = hasWeightBracket and tostring(weightBracket) or nil,
+                                            weightKg = weightKg,
+                                            hasWeightBracket = hasWeightBracket
+                                        })
+                                    end
                                 end
                             end
                         end
@@ -2830,6 +2837,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 humanoid:Move(offset.Unit, false)
+            end)
+        end
+        RefreshTitanicPriority = function()
+            if not AutoBreakEnabled or not CurrentTarget then return end
+            if FlingRecoveryActive or PickupRequested or ReturningAfterPickup or WaitingForPickup then
+                AddDebugLog("[Auto Break] Priority changed; will apply after the current pickup/recovery finishes.")
+                return
+            end
+            AddDebugLog("[Auto Break] Refreshing target immediately for updated TITANIC priority.")
+            task.defer(function()
+                if AutoBreakEnabled and not FlingRecoveryActive and not PickupRequested
+                    and not ReturningAfterPickup and not WaitingForPickup then
+                    StartAutoBreak()
+                end
             end)
         end
     elseif index == 5 then
