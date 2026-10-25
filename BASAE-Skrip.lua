@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.129"
+local testver = "Test v1.130"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1077,8 +1077,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             rawLuck = rawLuck or GetEggDataValue(egg, "LuckMulti")
                 or GetEggDataValue(egg, "LuckMultiplier")
                 or GetEggDataValue(egg, "Luck")
-            local luck = tonumber(tostring(rawLuck or ""):gsub(",", ""):match("[%d%.]+"))
-            return luck or 0
+            if rawLuck == nil or tostring(rawLuck):match("%S") == nil then return 0 end
+            local text = tostring(rawLuck):lower():gsub(",", ""):gsub("%s+", "")
+            local explicitMultiplier = text:match("[x×]([%d%.]+)") or text:match("([%d%.]+)[x×]")
+            if explicitMultiplier then
+                return tonumber(explicitMultiplier) or 0
+            end
+            local ratioDenominator = text:match("^%d+/(%d+%.?%d*)$")
+            if ratioDenominator then
+                return tonumber(ratioDenominator) or 0
+            end
+            local lastNumber
+            for numberText in text:gmatch("%d+%.?%d*") do
+                lastNumber = numberText
+            end
+            return tonumber(lastNumber) or 0
         end
         local function GetEggRecords()
             local records = {}
@@ -2732,6 +2745,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             if not target and SortOrder == "Highest Luck" then
                 local luckCandidates = {}
+                local unreadableLuckCount = 0
                 for _, zoneName in ipairs(selectedZoneNames) do
                     local zone = ZoneBuilds:FindFirstChild(zoneName)
                     local eggsFolder = zone and zone:FindFirstChild("Eggs")
@@ -2742,7 +2756,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                 and IsEggAvailable(egg) then
                                 local eggName = GetEggTypeName(egg.Name)
                                 if SelectedEggs[eggName] ~= false then
-                                    table.insert(luckCandidates, {egg = egg, luck = GetEggLuck(egg)})
+                                    local luck = GetEggLuck(egg)
+                                    if luck > 0 then
+                                        table.insert(luckCandidates, {egg = egg, luck = luck})
+                                    else
+                                        unreadableLuckCount += 1
+                                    end
                                 end
                             end
                         end
@@ -2755,7 +2774,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if #luckCandidates > 0 then
                     target = luckCandidates[1].egg
                     SetTrackerStatus("HIGHEST LUCK PRIORITY: selected " .. target.Name
-                        .. " | Luck=" .. tostring(luckCandidates[1].luck) .. " before the normal egg route.")
+                        .. " | Luck=" .. tostring(luckCandidates[1].luck)
+                        .. " | readable candidates=" .. tostring(#luckCandidates)
+                        .. " | ignored unreadable=" .. tostring(unreadableLuckCount))
+                else
+                    SetTrackerStatus("HIGHEST LUCK PRIORITY is ON, but no readable positive luck values were found. Auto Break paused instead of choosing a random egg.")
+                    AddDebugLog("[Auto Break] HighLuck found no readable positive luck values; normal egg fallback blocked.")
+                    return
                 end
             end
             for _, zoneName in ipairs(selectedZoneNames) do
