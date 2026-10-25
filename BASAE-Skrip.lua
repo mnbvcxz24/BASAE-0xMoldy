@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.134"
+local testver = "Test v1.135"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -2476,7 +2476,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         bestDistance = distance
                         SetTrackerStatus(string.format("FLING RECOVERY: no progress; retrying MoveTo (%.1f studs away, state=%s).", distance, tostring(state)))
                     end
-                    humanoid:MoveTo(Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z))
+                    if offset.Magnitude > 0 then
+                        humanoid:Move(offset.Unit, false)
+                    else
+                        humanoid:Move(Vector3.zero, false)
+                    end
                     task.wait(0.1)
                 end
                 humanoid:Move(Vector3.zero, false)
@@ -2555,7 +2559,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         finishFlingRecovery()
                         return
                     end
-                    humanoid:MoveTo(Vector3.new(promptPosition.X, root.Position.Y, promptPosition.Z))
+                    humanoid:Move(offset.Magnitude > 0 and offset.Unit or Vector3.zero, false)
                     task.wait(0.05)
                 end
                 humanoid:Move(Vector3.zero, false)
