@@ -2392,24 +2392,37 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
         FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
             if tostring(action):lower() ~= "fling" or typeof(flingPosition) ~= "Vector3" then return end
+
+            if ReturnMovementConnection then
+                ReturnMovementConnection:Disconnect()
+                ReturnMovementConnection = nil
+            end
+            if PickupMovementConnection then
+                PickupMovementConnection:Disconnect()
+                PickupMovementConnection = nil
+            end
+            if MovementConnection then
+                MovementConnection:Disconnect()
+                MovementConnection = nil
+            end
+            ReturningAfterPickup = false
+            local interruptedCharacter = LocalPlayer.Character
+            local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
+            if interruptedHumanoid then interruptedHumanoid:Move(Vector3.zero, false) end
+
             if not AutoPickupEnabled then
-                SetTrackerStatus("Fling recovery ignored: Auto Pickup must be ON.")
+                SetTrackerStatus("Fling detected: base return cancelled, but recovery requires Auto Pickup ON.")
                 return
             end
             if FlingRecoveryActive then
-                SetTrackerStatus("Fling recovery event ignored: recovery is already active.")
+                SetTrackerStatus("Fling recovery event received while recovery is active; base-return movement cancelled.")
                 return
             end
+
             FlingRecoveryActive = true
-            local recoveryPickup = ActivePickup
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
-            local interruptedCharacter = LocalPlayer.Character
-            local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
-            if interruptedHumanoid then
-                interruptedHumanoid:Move(Vector3.zero, false)
-            end
             ReturningAfterPickup = false
             PickupGeneration += 1
             local flingToken = PickupGeneration
@@ -2447,23 +2460,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 local recoveryPosition = flingPosition
                 local recoveryPositionSource = "CatchFlingRemote"
-                if recoveryPickup and recoveryPickup.Parent then
-                    local isInPickupFolder = false
-                    local pickupFolder = workspace:FindFirstChild("AnimalPickups")
-                    if pickupFolder and recoveryPickup:IsDescendantOf(pickupFolder) then
-                        isInPickupFolder = true
-                    end
-                    if isInPickupFolder then
-                        local okPosition, animalPosition = pcall(function()
-                            if recoveryPickup:IsA("Model") then return recoveryPickup:GetPivot().Position end
-                            if recoveryPickup:IsA("BasePart") then return recoveryPickup.Position end
-                        end)
-                        if okPosition and typeof(animalPosition) == "Vector3" then
-                            recoveryPosition = animalPosition
-                            recoveryPositionSource = "ActivePickup"
-                        end
-                    end
-                end
                 SetTrackerStatus(string.format(
                     "FLING RECOVERY target source=%s | target=(%.1f, %.1f, %.1f).",
                     recoveryPositionSource, recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z
