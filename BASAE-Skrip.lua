@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.123"
+local testver = "Test v1.124"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1034,6 +1034,24 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function GetEggWeightBracket(egg)
             return GetEggDataValue(egg, "WeightBracket")
         end
+        local function IsEggAvailable(egg)
+            if not egg or not egg.Parent or CompletedEggs[egg] then return false end
+            local eggsFolder = egg.Parent
+            if eggsFolder.Name ~= "Eggs" then return false end
+            local zone = eggsFolder.Parent
+            if not zone or zone.Parent ~= ZoneBuilds then return false end
+            if not (egg:IsA("Model") or egg:IsA("BasePart")) then return false end
+            if not egg.Name:lower():find("egg", 1, true) then return false end
+            for _, healthName in ipairs({"Health", "CurrentHealth", "EggHealth", "HP"}) do
+                local rawHealth = GetEggDataValue(egg, healthName)
+                local health = tonumber(rawHealth)
+                if health and health <= 0 then
+                    return false
+                end
+            end
+            return true
+        end
+
         local function GetEggLuck(egg)
             local eggModel = egg:FindFirstChild("Egg") or egg
             local info = eggModel:FindFirstChild("EggInfoUi", true)
@@ -2580,7 +2598,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         for _, egg in ipairs(eggsFolder:GetChildren()) do
                             if (egg:IsA("Model") or egg:IsA("BasePart"))
                                 and egg.Name:lower():find("egg", 1, true)
-                                and not CompletedEggs[egg] then
+                                and IsEggAvailable(egg) then
                                 local bracket = GetEggWeightBracket(egg)
                                 if bracket and bracket:match("^%s*(.-)%s*$"):lower() == "titanic" then
                                     target = egg
@@ -2602,7 +2620,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         if (egg:IsA("Model") or egg:IsA("BasePart"))
                         and egg.Name:lower():find("egg", 1, true) then
                             local eggName = GetEggTypeName(egg.Name)
-                            if SelectedEggs[eggName] ~= false and not CompletedEggs[egg] then
+                            if SelectedEggs[eggName] ~= false and IsEggAvailable(egg) then
                                 target = egg
                                 break
                             end
@@ -2639,11 +2657,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     return
                 end
-                if CurrentTarget ~= target or not target.Parent or not character.Parent
+                if CurrentTarget ~= target or not IsEggAvailable(target) or not character.Parent
                 or humanoid.Health <= 0 then
-                    if CurrentTarget == target and (not target.Parent or humanoid.Health <= 0) then
+                    if CurrentTarget == target and (not IsEggAvailable(target) or humanoid.Health <= 0) then
                         CompletedEggs[target] = true
-                        SetTrackerStatus("Target egg became invalid while travelling; rescanning eggs.")
+                        SetTrackerStatus("Target egg is no longer available or is already broken; refreshing the egg list.")
                         StopAutoBreak()
                         task.defer(function()
                             task.wait(0.2)
