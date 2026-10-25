@@ -1002,16 +1002,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             RarityFilterOpen = false
             UpdateFilterPanel()
         end)
-        ZoneFilterButton.Position = UDim2.fromOffset(15, 44)
-        ZoneFilterButton.Size = UDim2.new(0.5, -20, 0, 26)
+        ZoneFilterButton.Position = UDim2.fromOffset(11, 44)
+        ZoneFilterButton.Size = UDim2.new(0.5, -17, 0, 28)
         EggFilterButton = CreateButton(Card1, "Eggs ▼", function()
             EggFilterOpen = not EggFilterOpen
             ZoneFilterOpen = false
             RarityFilterOpen = false
             UpdateFilterPanel()
         end)
-        EggFilterButton.Position = UDim2.new(0.5, 5, 0, 44)
-        EggFilterButton.Size = UDim2.new(0.5, -20, 0, 26)
+        EggFilterButton.Position = UDim2.new(0.5, 6, 0, 44)
+        EggFilterButton.Size = UDim2.new(0.5, -17, 0, 28)
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
             Parent = ScreenGui,
