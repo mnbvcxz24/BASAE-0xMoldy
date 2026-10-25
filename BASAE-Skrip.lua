@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.150"
+local testver = "Test v1.151"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -2677,8 +2677,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
             if interruptedHumanoid then interruptedHumanoid:Move(Vector3.zero, false) end
 
-            if not AutoPickupEnabled then
-                SetTrackerStatus("Fling detected: base return cancelled, but recovery requires Auto Pickup ON.")
+            if not AutoPickupEnabled or not AutoBreakEnabled then
+                SetTrackerStatus("Fling detected: recovery cancelled because Auto Break or Auto Pickup is OFF.")
                 return
             end
             if FlingRecoveryActive then
