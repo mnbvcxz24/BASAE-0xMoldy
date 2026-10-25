@@ -1281,6 +1281,39 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if item:IsA("TextButton") or item:IsA("TextLabel") then item:Destroy() end
             end
             local records = GetEggRecords()
+            local allSelected = #records > 0
+            for _, record in ipairs(records) do
+                if SelectedEggs[record.name] == false then allSelected = false break end
+            end
+            local SelectAllEggs = Create("TextButton", {
+                Name = "SelectAllEggs", Parent = EggFilterList,
+                Size = UDim2.new(1, -8, 0, 24),
+                BackgroundColor3 = allSelected and Theme.Selected or Theme.Card,
+                Text = "", BorderSizePixel = 0, LayoutOrder = 0,
+                AutoButtonColor = false, ZIndex = 101
+            })
+            AddCorner(SelectAllEggs, 5)
+            Create("TextLabel", {
+                Parent = SelectAllEggs, Position = UDim2.fromOffset(8, 0),
+                Size = UDim2.new(1, -34, 1, 0), BackgroundTransparency = 1,
+                Text = allSelected and "All Eggs Selected" or "Select All",
+                TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
+                TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 102
+            })
+            Create("TextLabel", {
+                Parent = SelectAllEggs, Position = UDim2.new(1, -26, 0, 0),
+                Size = UDim2.fromOffset(22, 24), BackgroundTransparency = 1,
+                Text = allSelected and "✓" or "○",
+                TextColor3 = allSelected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                Font = Enum.Font.GothamBold, TextSize = 12, ZIndex = 102
+            })
+            SelectAllEggs.MouseButton1Click:Connect(function()
+                local selectEverything = not allSelected
+                for _, record in ipairs(records) do
+                    if selectEverything then SelectedEggs[record.name] = nil else SelectedEggs[record.name] = false end
+                end
+                RefreshEggList()
+            end)
             if #records == 0 then
                 Create("TextLabel", {
                     Parent = EggFilterList,
