@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.126"
+local testver = "Test v1.127"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1034,6 +1034,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local function GetEggWeightBracket(egg)
             return GetEggDataValue(egg, "WeightBracket")
+        end
+        local function GetEggWeightKg(egg)
+            local raw = GetEggDataValue(egg, "weightKg")
+                or GetEggDataValue(egg, "WeightKg")
+                or GetEggDataValue(egg, "WeightKG")
+                or GetEggDataValue(egg, "weightKG")
+            if not raw then return nil end
+            local value = tonumber(tostring(raw):lower():gsub(",", ""):match("[%d%.]+"))
+            return value
         end
         local function IsEggAvailable(egg)
             if not egg or not egg.Parent or CompletedEggs[egg] then return false end
@@ -2372,6 +2381,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             task.spawn(function()
                 local function finishFlingRecovery()
                     FlingRecoveryActive = false
+                    if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup and StartAutoBreak then
+                        task.delay(0.25, function()
+                            if not FlingRecoveryActive and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
+                                StartAutoBreak()
+                            end
+                        end)
+                    end
                 end
                 local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
@@ -2618,6 +2634,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         StartAutoBreak = function()
+            if FlingRecoveryActive then
+                SetTrackerStatus("Auto Break paused: fling recovery owns movement until the animal pickup attempt finishes.")
+                return
+            end
             if not AutoBreakEnabled then
                 SetTrackerStatus("Auto Break start ignored: toggle is OFF.")
                 return
@@ -2646,15 +2666,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             table.sort(selectedZoneNames)
             local target
-            local function IsTitanicEgg(egg)
-                local bracket = GetEggWeightBracket(egg)
-                if bracket and tostring(bracket):lower():find("titanic", 1, true) then
-                    return true, tostring(bracket)
-                end
-                return false, bracket and tostring(bracket) or "unavailable"
-            end
             if TitanicPriorityEnabled then
-                local titanicCandidates = {}
+                local weightCandidates = {}
                 for _, zoneName in ipairs(selectedZoneNames) do
                     local zone = ZoneBuilds:FindFirstChild(zoneName)
                     local eggsFolder = zone and zone:FindFirstChild("Eggs")
@@ -2663,26 +2676,25 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             if (egg:IsA("Model") or egg:IsA("BasePart"))
                                 and egg.Name:lower():find("egg", 1, true)
                                 and IsEggAvailable(egg) then
-                                local isTitanic, bracket = IsTitanicEgg(egg)
-                                if isTitanic then
-                                    table.insert(titanicCandidates, {egg = egg, bracket = bracket})
+                                local weightKg = GetEggWeightKg(egg)
+                                if weightKg then
+                                    table.insert(weightCandidates, {egg = egg, weightKg = weightKg})
                                 end
                             end
                         end
                     end
                 end
-                table.sort(titanicCandidates, function(a, b)
-                    local luckA, luckB = GetEggLuck(a.egg), GetEggLuck(b.egg)
-                    if luckA ~= luckB then return luckA > luckB end
+                table.sort(weightCandidates, function(a, b)
+                    if a.weightKg ~= b.weightKg then return a.weightKg > b.weightKg end
                     return a.egg.Name < b.egg.Name
                 end)
-                if #titanicCandidates > 0 then
-                    target = titanicCandidates[1].egg
-                    SetTrackerStatus("TITANIC PRIORITY: selected " .. target.Name
-                        .. " | WeightBracket=" .. titanicCandidates[1].bracket
-                        .. " | Luck=" .. tostring(GetEggLuck(target)) .. " before the normal egg route.")
+                if #weightCandidates > 0 then
+                    target = weightCandidates[1].egg
+                    SetTrackerStatus("TITANIC / HIGHEST KG PRIORITY: selected " .. target.Name
+                        .. " | WeightKg=" .. tostring(weightCandidates[1].weightKg)
+                        .. " before the normal egg route.")
                 else
-                    SetTrackerStatus("TITANIC PRIORITY is ON, but no eligible TITANIC egg was detected in the selected zones.")
+                    SetTrackerStatus("TITANIC / HIGHEST KG PRIORITY is ON, but no eligible egg with readable weightKg was found in the selected zones.")
                 end
             end
             if not target and SortOrder == "Highest Luck" then
