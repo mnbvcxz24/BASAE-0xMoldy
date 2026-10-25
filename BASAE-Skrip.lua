@@ -901,7 +901,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 Text = "",
                 BorderSizePixel = 0,
                 LayoutOrder = rarityIndex,
-                AutoButtonColor = false
+                AutoButtonColor = false,
+                ZIndex = 101
             })
             AddCorner(RarityButton, 4)
             Create("TextLabel", {
@@ -913,7 +914,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.Gotham,
                 TextSize = 9,
-                TextXAlignment = Enum.TextXAlignment.Left
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ZIndex = 102
             })
             local RarityCheck = Create("TextLabel", {
                 Parent = RarityButton,
@@ -923,7 +925,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 Text = SelectedRarities[rarityName] and "✓" or "○",
                 TextColor3 = SelectedRarities[rarityName] and Color3.fromRGB(110, 205, 145) or Theme.Gray,
                 Font = Enum.Font.GothamBold,
-                TextSize = 11
+                TextSize = 11,
+                ZIndex = 102
             })
             if SelectedRarities[rarityName] then
                 RarityButton.BackgroundColor3 = Theme.Selected
@@ -966,6 +969,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ZoneFilterButton = CreateButton(Card1, "Zones ▼", function()
             ZoneFilterOpen = not ZoneFilterOpen
             EggFilterOpen = false
+            RarityFilterOpen = false
             UpdateFilterPanel()
         end)
         ZoneFilterButton.Position = UDim2.fromOffset(15, 44)
@@ -973,6 +977,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         EggFilterButton = CreateButton(Card1, "Eggs ▼", function()
             EggFilterOpen = not EggFilterOpen
             ZoneFilterOpen = false
+            RarityFilterOpen = false
             UpdateFilterPanel()
         end)
         EggFilterButton.Position = UDim2.new(0.5, 5, 0, 44)
@@ -1189,7 +1194,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = "",
                     BorderSizePixel = 0,
                     LayoutOrder = zoneIndex,
-                    AutoButtonColor = false
+                    AutoButtonColor = false,
+                    ZIndex = 101
                 })
                 AddCorner(ZoneButton, 5)
                 Create("TextLabel", {
@@ -1201,7 +1207,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     TextColor3 = Theme.Text,
                     Font = Enum.Font.Gotham,
                     TextSize = 9,
-                    TextXAlignment = Enum.TextXAlignment.Left
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 102
                 })
                 local Checkmark = Create("TextLabel", {
                     Parent = ZoneButton,
@@ -1211,7 +1218,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = selected and "✓" or "○",
                     TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
                     Font = Enum.Font.GothamBold,
-                    TextSize = 12
+                    TextSize = 12,
+                    ZIndex = 102
                 })
                 ZoneButton.MouseButton1Click:Connect(function()
                     SelectedZones[zoneName] = not SelectedZones[zoneName] or nil
@@ -1248,7 +1256,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = "",
                     BorderSizePixel = 0,
                     LayoutOrder = eggIndex,
-                    AutoButtonColor = false
+                    AutoButtonColor = false,
+                    ZIndex = 101
                 })
                 AddCorner(EggButton, 5)
                 Create("TextLabel", {
@@ -1260,7 +1269,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     TextColor3 = Theme.Text,
                     Font = Enum.Font.Gotham,
                     TextSize = 9,
-                    TextXAlignment = Enum.TextXAlignment.Left
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    ZIndex = 102
                 })
                 local Checkmark = Create("TextLabel", {
                     Parent = EggButton,
@@ -1270,7 +1280,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = selected and "✓" or "○",
                     TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
                     Font = Enum.Font.GothamBold,
-                    TextSize = 12
+                    TextSize = 12,
+                    ZIndex = 102
                 })
                 EggButton.MouseButton1Click:Connect(function()
                     if SelectedEggs[eggName] == false then
