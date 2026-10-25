@@ -2401,6 +2401,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             FlingRecoveryActive = true
+            local recoveryPickup = ActivePickup
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
@@ -2418,7 +2419,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
-            SetTrackerStatus(string.format("FLING RECOVERY: received location (%.1f, %.1f, %.1f); moving there before searching for StealPrompt.", flingPosition.X, flingPosition.Y, flingPosition.Z))
+            SetTrackerStatus(string.format("FLING RECOVERY: received location (%.1f, %.1f, %.1f); moving there before searching for StealPrompt.", recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z))
             task.spawn(function()
                 local recoveryMoveBindName
                 local function finishFlingRecovery()
@@ -2444,6 +2445,29 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
+                local recoveryPosition = flingPosition
+                local recoveryPositionSource = "CatchFlingRemote"
+                if recoveryPickup and recoveryPickup.Parent then
+                    local isInPickupFolder = false
+                    local pickupFolder = workspace:FindFirstChild("AnimalPickups")
+                    if pickupFolder and recoveryPickup:IsDescendantOf(pickupFolder) then
+                        isInPickupFolder = true
+                    end
+                    if isInPickupFolder then
+                        local okPosition, animalPosition = pcall(function()
+                            if recoveryPickup:IsA("Model") then return recoveryPickup:GetPivot().Position end
+                            if recoveryPickup:IsA("BasePart") then return recoveryPickup.Position end
+                        end)
+                        if okPosition and typeof(animalPosition) == "Vector3" then
+                            recoveryPosition = animalPosition
+                            recoveryPositionSource = "ActivePickup"
+                        end
+                    end
+                end
+                SetTrackerStatus(string.format(
+                    "FLING RECOVERY target source=%s | target=(%.1f, %.1f, %.1f).",
+                    recoveryPositionSource, recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z
+                ))
                 local RunService = game:GetService("RunService")
                 recoveryMoveBindName = "BASAEFlingRecovery_" .. tostring(flingToken)
                 RunService:BindToRenderStep(recoveryMoveBindName, Enum.RenderPriority.Character.Value + 1, function()
@@ -2452,7 +2476,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         humanoid:Move(Vector3.zero, false)
                         return
                     end
-                    local moveOffset = Vector3.new(flingPosition.X - root.Position.X, 0, flingPosition.Z - root.Position.Z)
+                    local moveOffset = Vector3.new(recoveryPosition.X - root.Position.X, 0, recoveryPosition.Z - root.Position.Z)
                     if moveOffset.Magnitude > 4 then
                         humanoid:Move(moveOffset.Unit, false)
                     else
@@ -2470,7 +2494,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         finishFlingRecovery()
                         return
                     end
-                    local offset = Vector3.new(flingPosition.X - root.Position.X, 0, flingPosition.Z - root.Position.Z)
+                    local offset = Vector3.new(recoveryPosition.X - root.Position.X, 0, recoveryPosition.Z - root.Position.Z)
                     local distance = offset.Magnitude
                     if distance <= 4 then break end
                     local now = os.clock()
@@ -2509,7 +2533,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     recoveryMoveBindName = nil
                 end
                 humanoid:Move(Vector3.zero, false)
-                local arrivalDistance = (Vector3.new(flingPosition.X, root.Position.Y, flingPosition.Z) - root.Position).Magnitude
+                local arrivalDistance = (Vector3.new(recoveryPosition.X, root.Position.Y, recoveryPosition.Z) - root.Position).Magnitude
                 if PickupGeneration ~= flingToken then return end
                 if not PickupRequested or humanoid.Health <= 0 or arrivalDistance > 5 then
                     PickupRequested = false
@@ -2560,11 +2584,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - flingPosition).Magnitude))
+                SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - recoveryPosition).Magnitude))
                 local moveStarted = os.clock()
                 while not Runtime.Stopped and PickupRequested and PickupGeneration == flingToken and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
                     promptPosition = positionOf(prompt) or promptPosition
-                    local locationError = (promptPosition - flingPosition).Magnitude
+                    local locationError = (promptPosition - recoveryPosition).Magnitude
                     if locationError > 14 then
                         humanoid:Move(Vector3.zero, false)
                         PickupRequested = false
@@ -2598,7 +2622,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 promptPosition = positionOf(prompt) or promptPosition
                 local finalPlayerDistance = (promptPosition - root.Position).Magnitude
-                local finalLocationError = (promptPosition - flingPosition).Magnitude
+                local finalLocationError = (promptPosition - recoveryPosition).Magnitude
                 if finalPlayerDistance > math.min(prompt.MaxActivationDistance, 5) or finalLocationError > 14 then
                     PickupRequested = false
                     SetTrackerStatus(string.format("FLING RECOVERY blocked by location verification: player=%.1f studs, fling mismatch=%.1f studs.", finalPlayerDistance, finalLocationError))
@@ -2612,7 +2636,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if LocalPlayer.Character ~= character or not character.Parent or humanoid.Health <= 0
                     or not prompt.Parent or not prompt.Enabled
                     or (promptPosition - root.Position).Magnitude > math.min(prompt.MaxActivationDistance, 5)
-                    or (promptPosition - flingPosition).Magnitude > 14 then
+                    or (promptPosition - recoveryPosition).Magnitude > 14 then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY blocked: prompt moved outside the verified pickup range.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
@@ -2649,7 +2673,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                 if animal:IsA("Model") then return animal:GetPivot().Position end
                                 if animal:IsA("BasePart") then return animal.Position end
                             end)
-                            if okPosition and animalPosition and (animalPosition - flingPosition).Magnitude <= 12 then
+                            if okPosition and animalPosition and (animalPosition - recoveryPosition).Magnitude <= 12 then
                                 foundAtEventLocation = true
                                 break
                             end
