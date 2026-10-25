@@ -2565,7 +2565,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
                                 local pos = positionOf(candidate)
                                 if pos then
-                                    local distance = (pos - flingPosition).Magnitude
+                                    local distance = (pos - recoveryPosition).Magnitude
                                     if distance < nearest and distance <= 12 then
                                         nearest, prompt, promptPosition = distance, candidate, pos
                                     end
