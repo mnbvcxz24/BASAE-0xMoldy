@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.147"
+local testver = "Test v1.148"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -788,9 +788,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local CompletedEggs = {}
         local AutoBreakToggleInitialized = false
         local AutoBreakEnabled = false
+        local AutoBreakGeneration = 0
         local RefreshTitanicPriority
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
             AutoBreakEnabled = enabled
+            AutoBreakGeneration += 1
             TouchAutomationProgress(enabled and "AUTO_BREAK_ON" or "AUTO_BREAK_OFF")
             if not AutoBreakToggleInitialized then
                 AutoBreakToggleInitialized = true
@@ -1410,6 +1412,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             WaitingForPickup = false
             ArrivedAtTarget = false
             CurrentTarget = nil
+            table.clear(PendingAnimalPickups)
+            table.clear(PendingAnimalPickupSet)
             TouchAutomationProgress("IDLE")
         end
         ShutdownAutomation = function()
@@ -1877,7 +1881,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return false, displayName
         end
         local function EvaluatePickup(pickup)
+            local evaluationGeneration = AutoBreakGeneration
+            local function evaluationCancelled()
+                return ScriptShuttingDown or evaluationGeneration ~= AutoBreakGeneration or not AutoPickupEnabled
+            end
             SetPickupTracking(pickup, "Checking")
+            if evaluationCancelled() then
+                SetPickupTracking(pickup, "Cancelled: automation toggled")
+                return
+            end
             if ReturningAfterPickup then
                 SetPickupTracking(pickup, "Skipped: returning to base")
                 SetTrackerStatus("Eligible pet " .. pickup.Name .. " ignored: already returning to base.")
@@ -1898,6 +1910,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local forceUnindexedPickup = false
             if UnindexedOnlyEnabled then
                 local isUnindexed, indexDisplay = EvaluateUnindexedStatus(pickup)
+                if evaluationCancelled() then
+                    SetPickupTracking(pickup, "Cancelled: automation toggled")
+                    return
+                end
                 if isUnindexed == nil then
                     SetPickupTracking(pickup, "Rejected: Index verification unavailable", tostring(indexDisplay))
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | Index verification failed: " .. tostring(indexDisplay))
@@ -1928,12 +1944,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not forceUnindexedPickup then
                 SetPickupTracking(pickup, "CPS scan 1/2: warming up")
                 local _, firstScanText = GetPetCPS(pickup)
-                if not pickup.Parent or not AutoPickupEnabled then
+                if evaluationCancelled() or not pickup.Parent then
                     SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
                     return
                 end
                 task.wait(0.15)
-                if not pickup.Parent or not AutoPickupEnabled then
+                if evaluationCancelled() or not pickup.Parent then
                     SetPickupTracking(pickup, "CPS verification cancelled", firstScanText)
                     return
                 end
@@ -1941,9 +1957,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 cps, cpsText = GetPetCPS(pickup)
                 if cps < 0 then
                     for attempt = 1, 8 do
-                        if not pickup.Parent or not AutoPickupEnabled then break end
+                        if evaluationCancelled() or not pickup.Parent then break end
                         SetPickupTracking(pickup, string.format("Waiting for valid second CPS scan (%d/8)", attempt), cpsText)
                         task.wait(0.25)
+                        if evaluationCancelled() or not pickup.Parent then return end
                         cps, cpsText = GetPetCPS(pickup)
                         if cps >= 0 then break end
                     end
@@ -1963,6 +1980,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         return
                     end
                 end
+            end
+            if evaluationCancelled() or not pickup.Parent then
+                SetPickupTracking(pickup, "Cancelled: automation toggled")
+                return
             end
             if PickupRequested then
                 if forceUnindexedPickup or (HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS) then
