@@ -795,7 +795,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoPickupToggle.Position = UDim2.new(1, -68, 0, 10)
         AutoPickupToggle.Size = UDim2.fromOffset(58, 26)
         local RarityFilterOpen = false
-        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno"}
+        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
         for _, rarityName in ipairs(RarityOptions) do
             SelectedRarities[rarityName] = true
@@ -2676,25 +2676,51 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             if (egg:IsA("Model") or egg:IsA("BasePart"))
                                 and egg.Name:lower():find("egg", 1, true)
                                 and IsEggAvailable(egg) then
-                                local weightKg = GetEggWeightKg(egg)
-                                if weightKg then
-                                    table.insert(weightCandidates, {egg = egg, weightKg = weightKg})
+                                local weightBracket = GetEggWeightBracket(egg)
+                                local hasWeightBracket = weightBracket ~= nil
+                                    and tostring(weightBracket):match("%S") ~= nil
+                                local weightKg = nil
+                                if not hasWeightBracket then
+                                    weightKg = GetEggWeightKg(egg)
+                                end
+                                if hasWeightBracket or weightKg then
+                                    table.insert(weightCandidates, {
+                                        egg = egg,
+                                        weightBracket = hasWeightBracket and tostring(weightBracket) or nil,
+                                        weightKg = weightKg,
+                                        hasWeightBracket = hasWeightBracket
+                                    })
                                 end
                             end
                         end
                     end
                 end
                 table.sort(weightCandidates, function(a, b)
-                    if a.weightKg ~= b.weightKg then return a.weightKg > b.weightKg end
+                    if a.hasWeightBracket ~= b.hasWeightBracket then
+                        return a.hasWeightBracket
+                    end
+                    if a.hasWeightBracket and b.hasWeightBracket then
+                        local aTitanic = a.weightBracket:lower():find("titanic", 1, true) ~= nil
+                        local bTitanic = b.weightBracket:lower():find("titanic", 1, true) ~= nil
+                        if aTitanic ~= bTitanic then return aTitanic end
+                        if a.weightBracket ~= b.weightBracket then
+                            return a.weightBracket < b.weightBracket
+                        end
+                    elseif a.weightKg ~= b.weightKg then
+                        return a.weightKg > b.weightKg
+                    end
                     return a.egg.Name < b.egg.Name
                 end)
                 if #weightCandidates > 0 then
-                    target = weightCandidates[1].egg
-                    SetTrackerStatus("TITANIC / HIGHEST KG PRIORITY: selected " .. target.Name
-                        .. " | WeightKg=" .. tostring(weightCandidates[1].weightKg)
-                        .. " before the normal egg route.")
+                    local selected = weightCandidates[1]
+                    target = selected.egg
+                    local detail = selected.hasWeightBracket
+                        and ("WeightBracket=" .. selected.weightBracket)
+                        or ("WeightBracket blank; WeightKg=" .. tostring(selected.weightKg))
+                    SetTrackerStatus("TITANIC PRIORITY: selected " .. target.Name
+                        .. " | " .. detail .. " before the normal egg route.")
                 else
-                    SetTrackerStatus("TITANIC / HIGHEST KG PRIORITY is ON, but no eligible egg with readable weightKg was found in the selected zones.")
+                    SetTrackerStatus("TITANIC PRIORITY is ON, but no eligible egg with WeightBracket or fallback weightKg was found in the selected zones.")
                 end
             end
             if not target and SortOrder == "Highest Luck" then
