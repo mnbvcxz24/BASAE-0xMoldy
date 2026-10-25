@@ -850,7 +850,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ZoneFilterOpen = false
             EggFilterOpen = false
             if RarityFilterOpen then
-                RarityList.Position = UDim2.fromOffset(RarityFilterButton.AbsolutePosition.X, RarityFilterButton.AbsolutePosition.Y + RarityFilterButton.AbsoluteSize.Y + 4)
+                RarityList.Position = UDim2.fromOffset(RarityFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, RarityFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + RarityFilterButton.AbsoluteSize.Y + 4)
                 RarityList.Size = UDim2.fromOffset(math.max(150, RarityFilterButton.AbsoluteSize.X), 155)
             end
             RarityFilterButton.Text = RarityFilterOpen and "Rarity Filter  ▲" or "Rarity Filter  ▼"
@@ -876,7 +876,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 28)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
-            Parent = ScreenGui,
+            Parent = Main,
             Position = UDim2.fromOffset(0, 0),
             Size = UDim2.fromOffset(160, 155),
             CanvasSize = UDim2.new(0, 0, 0, 0),
@@ -985,11 +985,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             RarityList.Visible = RarityFilterOpen
             SortFrame.Visible = true
             if ZoneFilterOpen then
-                ZoneList.Position = UDim2.fromOffset(ZoneFilterButton.AbsolutePosition.X, ZoneFilterButton.AbsolutePosition.Y + ZoneFilterButton.AbsoluteSize.Y + 4)
+                ZoneList.Position = UDim2.fromOffset(ZoneFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, ZoneFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + ZoneFilterButton.AbsoluteSize.Y + 4)
                 ZoneList.Size = UDim2.fromOffset(math.max(130, ZoneFilterButton.AbsoluteSize.X), 150)
             end
             if EggFilterOpen then
-                EggFilterList.Position = UDim2.fromOffset(EggFilterButton.AbsolutePosition.X, EggFilterButton.AbsolutePosition.Y + EggFilterButton.AbsoluteSize.Y + 4)
+                EggFilterList.Position = UDim2.fromOffset(EggFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, EggFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + EggFilterButton.AbsoluteSize.Y + 4)
                 EggFilterList.Size = UDim2.fromOffset(math.max(130, EggFilterButton.AbsoluteSize.X), 150)
             end
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
@@ -1014,7 +1014,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         EggFilterButton.Size = UDim2.new(0.5, -17, 0, 28)
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
-            Parent = ScreenGui,
+            Parent = Main,
             Position = UDim2.fromOffset(0, 0),
             Size = UDim2.fromOffset(140, 150),
             BackgroundColor3 = Theme.SurfaceInput,
@@ -1041,7 +1041,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         EggFilterList = Create("ScrollingFrame", {
             Name = "EggFilterList",
-            Parent = ScreenGui,
+            Parent = Main,
             Position = UDim2.fromOffset(0, 0),
             Size = UDim2.fromOffset(140, 150),
             BackgroundColor3 = Theme.SurfaceInput,
