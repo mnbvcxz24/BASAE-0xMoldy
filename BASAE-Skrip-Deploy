@@ -54,8 +54,7 @@ local UIConfig = {
         "Auto",
         "ESP",
         "Placed Animals",
-        "Animal Pickups",
-        "Debug Console"
+        "Animal Pickups"
     }
 }
 -- THEME
@@ -3222,7 +3221,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end)
         end
-    elseif index == 5 then
+    -- Debug Console intentionally hidden in deploy builds.
+    elseif index == 5 and false then
         local ConsoleCard = CreateCard(Page, "Debug Console", "")
         ConsoleCard.Size = UDim2.new(1, 0, 0, 190)
         local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
