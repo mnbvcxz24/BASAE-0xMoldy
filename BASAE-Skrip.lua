@@ -1918,7 +1918,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             FlingTargetDespawnAt = nil
             task.spawn(function()
                 local identityDeadline = os.clock() + 12
-                while not Runtime.Stopped and PickupRequested and PickupGeneration == pickupToken
+                while not Runtime.Stopped and PickupGeneration == pickupToken
                     and ActivePickup == pickup and FlingTargetDespawnAt == nil
                     and os.clock() < identityDeadline do
                     local identityFolder = workspace:FindFirstChild("AnimalPickups")
