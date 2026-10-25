@@ -48,7 +48,7 @@ local UIConfig = {
     Title = "SKRIP NI BAI",
     Subtitle = "BASAE v1.151",
     Width = 480,
-    Height = 400,
+    Height = 420,
     SidebarWidth = 108,
     SidebarNames = {
         "Auto",
@@ -3753,16 +3753,22 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             "Forest Night + Lime"
         }
         local ThemeRows = {}
-        local RowHeight = 31
-        ThemeCard.Size = UDim2.new(1, 0, 0, 52 + (#ThemeOptions * RowHeight) + 8)
+        local RowHeight = 34
+        local ColumnGap = 8
+        local ThemeRowCount = math.ceil(#ThemeOptions / 2)
+        ThemeCard.Size = UDim2.new(1, 0, 0, 48 + (ThemeRowCount * RowHeight) + 8)
 
         for i, themeName in ipairs(ThemeOptions) do
             local palette = ThemePresets[themeName]
+            local column = i > ThemeRowCount and 2 or 1
+            local rowIndex = column == 1 and i or (i - ThemeRowCount)
+            local rowWidth = (1 - 0.0) / 2
+            local rowXScale = column == 1 and 0 or 0.5
             local Row = Create("TextButton", {
                 Name = "ThemeOption_" .. tostring(i),
                 Parent = ThemeCard,
-                Position = UDim2.fromOffset(10, 42 + ((i - 1) * RowHeight)),
-                Size = UDim2.new(1, -20, 0, 27),
+                Position = UDim2.new(rowXScale, column == 1 and 10 or 4, 0, 42 + ((rowIndex - 1) * RowHeight)),
+                Size = UDim2.new(0.5, column == 1 and -14 or -14, 0, 30),
                 BackgroundColor3 = Theme.SurfaceInput,
                 BorderSizePixel = 0,
                 AutoButtonColor = false,
@@ -3774,8 +3780,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
             local RadioOuter = Create("Frame", {
                 Parent = Row,
-                Position = UDim2.fromOffset(8, 6),
-                Size = UDim2.fromOffset(15, 15),
+                Position = UDim2.fromOffset(6, 7),
+                Size = UDim2.fromOffset(13, 13),
                 BackgroundColor3 = Theme.SurfaceInput,
                 BorderSizePixel = 0,
                 ZIndex = 3
@@ -3785,7 +3791,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
             local RadioInner = Create("Frame", {
                 Parent = RadioOuter,
-                Position = UDim2.fromOffset(4, 4),
+                Position = UDim2.fromOffset(3, 3),
                 Size = UDim2.fromOffset(7, 7),
                 BackgroundColor3 = palette.Accent,
                 BorderSizePixel = 0,
@@ -3796,8 +3802,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
             local Swatch = Create("Frame", {
                 Parent = Row,
-                Position = UDim2.fromOffset(31, 5),
-                Size = UDim2.fromOffset(48, 17),
+                Position = UDim2.fromOffset(24, 7),
+                Size = UDim2.fromOffset(30, 16),
                 BackgroundColor3 = palette.Background,
                 BorderSizePixel = 0,
                 ZIndex = 3
@@ -3807,24 +3813,24 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
             Create("Frame", {
                 Parent = Swatch,
-                Position = UDim2.fromOffset(4, 4),
-                Size = UDim2.fromOffset(12, 9),
+                Position = UDim2.fromOffset(3, 4),
+                Size = UDim2.fromOffset(7, 8),
                 BackgroundColor3 = palette.Card,
                 BorderSizePixel = 0,
                 ZIndex = 4
             })
             Create("Frame", {
                 Parent = Swatch,
-                Position = UDim2.fromOffset(20, 4),
-                Size = UDim2.fromOffset(12, 9),
+                Position = UDim2.fromOffset(12, 4),
+                Size = UDim2.fromOffset(7, 8),
                 BackgroundColor3 = palette.Accent,
                 BorderSizePixel = 0,
                 ZIndex = 4
             })
             Create("Frame", {
                 Parent = Swatch,
-                Position = UDim2.fromOffset(36, 4),
-                Size = UDim2.fromOffset(8, 9),
+                Position = UDim2.fromOffset(21, 4),
+                Size = UDim2.fromOffset(6, 8),
                 BackgroundColor3 = palette.Selected,
                 BorderSizePixel = 0,
                 ZIndex = 4
@@ -3832,14 +3838,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
             Create("TextLabel", {
                 Parent = Row,
-                Position = UDim2.fromOffset(88, 0),
-                Size = UDim2.new(1, -96, 1, 0),
+                Position = UDim2.fromOffset(59, 1),
+                Size = UDim2.new(1, -64, 1, -2),
                 BackgroundTransparency = 1,
                 Text = themeName,
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.Gotham,
-                TextSize = 9,
+                TextSize = 8,
+                TextWrapped = true,
                 TextXAlignment = Enum.TextXAlignment.Left,
+                TextYAlignment = Enum.TextYAlignment.Center,
                 ZIndex = 3
             })
 
