@@ -789,7 +789,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         local Card1 = CreateCard(AutoRow, "⚡  Auto Break", "")
         Card1.Position = UDim2.new(0, 0, 0, 0)
-        Card1.Size = UDim2.new(0.5, -6, 1, 0)
+        Card1.Size = UDim2.new(0.5, -6, 0, 190)
         local StartAutoBreak
         local StopAutoBreak
         local StopPickupAutomation
@@ -822,7 +822,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoBreakToggle.Size = UDim2.fromOffset(48, 24)
         local AutoPickupCard = CreateCard(AutoRow, "✦  Auto Pickup", "")
         AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 1, 0)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
@@ -841,8 +841,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local RarityFilterButton
         RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
-            AutoPickupCard.Size = UDim2.new(0.5, -6, 0, RarityFilterOpen and 300 or 190)
-            AutoRow.Size = UDim2.new(1, 0, 0, RarityFilterOpen and 300 or 190)
+            local cardHeight = RarityFilterOpen and 300 or ((EggFilterOpen or ZoneFilterOpen) and 270 or 190)
+            AutoPickupCard.Size = UDim2.new(0.5, -6, 0, cardHeight)
+            Card1.Size = UDim2.new(0.5, -6, 0, cardHeight)
+            AutoRow.Size = UDim2.new(1, 0, 0, cardHeight)
             RarityFilterButton.Text = RarityFilterOpen and "Filter for Rarity  ▲" or "Filter for Rarity  ▼"
             RarityList.Visible = RarityFilterOpen
         end)
@@ -952,7 +954,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
             SortFrame.Visible = true
-            Card1.Size = UDim2.new(0.5, -6, 0, (EggFilterOpen or ZoneFilterOpen) and 270 or 158)
+            local cardHeight = (EggFilterOpen or ZoneFilterOpen) and 270 or 190
+            Card1.Size = UDim2.new(0.5, -6, 0, cardHeight)
+            AutoPickupCard.Size = UDim2.new(0.5, -6, 0, math.max(cardHeight, RarityFilterOpen and 300 or 190))
+            AutoRow.Size = UDim2.new(1, 0, 0, math.max(cardHeight, RarityFilterOpen and 300 or 190))
             SortFrame.Position = UDim2.fromOffset(15, 78)
             SortFrame.Size = UDim2.new(1, -30, 0, 28)
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
@@ -1288,12 +1293,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
         TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
-        Card1.Size = UDim2.new(0.5, -6, 0, 158)
+        Card1.Size = UDim2.new(0.5, -6, 0, 190)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
+        AutoRow.Size = UDim2.new(1, 0, 0, 190)
         local function UpdateFilterPanelWithTitanic()
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
             SortFrame.Visible = true
-            Card1.Size = UDim2.new(1, 0, 0, (EggFilterOpen or ZoneFilterOpen) and 270 or 158)
+            local cardHeight = (EggFilterOpen or ZoneFilterOpen) and 270 or 190
+            Card1.Size = UDim2.new(0.5, -6, 0, cardHeight)
+            AutoPickupCard.Size = UDim2.new(0.5, -6, 0, math.max(cardHeight, RarityFilterOpen and 300 or 190))
+            AutoRow.Size = UDim2.new(1, 0, 0, math.max(cardHeight, RarityFilterOpen and 300 or 190))
             SortFrame.Position = UDim2.fromOffset(15, 78)
             SortFrame.Size = UDim2.new(1, -30, 0, 28)
             HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
