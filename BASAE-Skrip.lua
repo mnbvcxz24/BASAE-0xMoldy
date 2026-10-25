@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.122"
+local testver = "Test v1.123"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1345,20 +1345,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
             local function FindHotbarOneTool()
                 local tools = {}
-                for _, item in ipairs(backpack:GetChildren()) do
-                    if item:IsA("Tool") then
-                        table.insert(tools, item)
+                for _, container in ipairs({backpack, character}) do
+                    for _, item in ipairs(container:GetChildren()) do
+                        if item:IsA("Tool") then
+                            if item.Name:lower():find("pickaxe", 1, true) then
+                                return item
+                            end
+                            if container == backpack then
+                                table.insert(tools, item)
+                            end
+                        end
                     end
                 end
-                if #tools > 0 then
-                    return tools[1]
-                end
-                for _, item in ipairs(character:GetChildren()) do
-                    if item:IsA("Tool") then
-                        return item
-                    end
-                end
-                return nil
+                return tools[1]
             end
 
             for attempt = 1, 5 do
