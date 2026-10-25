@@ -178,6 +178,96 @@ local ThemePresets = {
         SelectedText = Color3.fromRGB(245, 250, 255),
         Accent = Color3.fromRGB(45, 135, 255),
         AccentText = Color3.fromRGB(7, 17, 35)
+    },
+    ["OLED Black + Amber"] = {
+        Background = Color3.fromRGB(5, 5, 7),
+        Sidebar = Color3.fromRGB(10, 10, 12),
+        Card = Color3.fromRGB(17, 17, 19),
+        Border = Color3.fromRGB(48, 39, 25),
+        Text = Color3.fromRGB(250, 247, 239),
+        DarkGray = Color3.fromRGB(208, 201, 187),
+        Gray = Color3.fromRGB(153, 146, 132),
+        LightGray = Color3.fromRGB(28, 27, 24),
+        SurfaceInput = Color3.fromRGB(22, 21, 18),
+        Selected = Color3.fromRGB(70, 47, 18),
+        SelectedText = Color3.fromRGB(255, 248, 230),
+        Accent = Color3.fromRGB(255, 181, 55),
+        AccentText = Color3.fromRGB(35, 21, 3)
+    },
+    ["Obsidian + Crimson"] = {
+        Background = Color3.fromRGB(8, 7, 10),
+        Sidebar = Color3.fromRGB(14, 11, 15),
+        Card = Color3.fromRGB(22, 17, 22),
+        Border = Color3.fromRGB(66, 32, 42),
+        Text = Color3.fromRGB(255, 243, 246),
+        DarkGray = Color3.fromRGB(218, 197, 203),
+        Gray = Color3.fromRGB(165, 137, 146),
+        LightGray = Color3.fromRGB(34, 25, 30),
+        SurfaceInput = Color3.fromRGB(28, 20, 25),
+        Selected = Color3.fromRGB(82, 25, 42),
+        SelectedText = Color3.fromRGB(255, 246, 248),
+        Accent = Color3.fromRGB(255, 65, 95),
+        AccentText = Color3.fromRGB(38, 4, 12)
+    },
+    ["Deep Ocean + Teal"] = {
+        Background = Color3.fromRGB(5, 13, 17),
+        Sidebar = Color3.fromRGB(8, 19, 24),
+        Card = Color3.fromRGB(13, 27, 33),
+        Border = Color3.fromRGB(24, 57, 63),
+        Text = Color3.fromRGB(237, 252, 251),
+        DarkGray = Color3.fromRGB(190, 215, 214),
+        Gray = Color3.fromRGB(129, 166, 166),
+        LightGray = Color3.fromRGB(20, 38, 42),
+        SurfaceInput = Color3.fromRGB(16, 33, 38),
+        Selected = Color3.fromRGB(15, 68, 69),
+        SelectedText = Color3.fromRGB(238, 255, 252),
+        Accent = Color3.fromRGB(45, 226, 199),
+        AccentText = Color3.fromRGB(3, 31, 29)
+    },
+    ["Graphite + Orange"] = {
+        Background = Color3.fromRGB(12, 12, 13),
+        Sidebar = Color3.fromRGB(18, 18, 19),
+        Card = Color3.fromRGB(27, 27, 28),
+        Border = Color3.fromRGB(60, 45, 32),
+        Text = Color3.fromRGB(250, 247, 243),
+        DarkGray = Color3.fromRGB(211, 203, 194),
+        Gray = Color3.fromRGB(160, 151, 141),
+        LightGray = Color3.fromRGB(37, 35, 32),
+        SurfaceInput = Color3.fromRGB(31, 29, 26),
+        Selected = Color3.fromRGB(77, 43, 19),
+        SelectedText = Color3.fromRGB(255, 249, 241),
+        Accent = Color3.fromRGB(255, 139, 54),
+        AccentText = Color3.fromRGB(38, 18, 4)
+    },
+    ["Dark Plum + Rose"] = {
+        Background = Color3.fromRGB(12, 8, 15),
+        Sidebar = Color3.fromRGB(19, 12, 23),
+        Card = Color3.fromRGB(28, 18, 33),
+        Border = Color3.fromRGB(61, 37, 66),
+        Text = Color3.fromRGB(255, 244, 252),
+        DarkGray = Color3.fromRGB(218, 199, 215),
+        Gray = Color3.fromRGB(165, 139, 162),
+        LightGray = Color3.fromRGB(37, 25, 42),
+        SurfaceInput = Color3.fromRGB(32, 21, 37),
+        Selected = Color3.fromRGB(76, 34, 67),
+        SelectedText = Color3.fromRGB(255, 246, 252),
+        Accent = Color3.fromRGB(255, 105, 180),
+        AccentText = Color3.fromRGB(40, 8, 27)
+    },
+    ["Forest Night + Lime"] = {
+        Background = Color3.fromRGB(6, 12, 9),
+        Sidebar = Color3.fromRGB(11, 19, 14),
+        Card = Color3.fromRGB(17, 28, 21),
+        Border = Color3.fromRGB(37, 58, 42),
+        Text = Color3.fromRGB(244, 252, 242),
+        DarkGray = Color3.fromRGB(202, 216, 199),
+        Gray = Color3.fromRGB(145, 169, 141),
+        LightGray = Color3.fromRGB(25, 39, 28),
+        SurfaceInput = Color3.fromRGB(21, 34, 24),
+        Selected = Color3.fromRGB(36, 72, 36),
+        SelectedText = Color3.fromRGB(248, 255, 240),
+        Accent = Color3.fromRGB(174, 255, 74),
+        AccentText = Color3.fromRGB(19, 35, 4)
     }
 }
 local ActiveThemeName = "Midnight Blue + Cyan"
@@ -3655,7 +3745,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             "Midnight Blue + Cyan",
             "Black + Purple",
             "Dark Gray + Green",
-            "Black + Electric Blue"
+            "Black + Electric Blue",
+            "OLED Black + Amber",
+            "Obsidian + Crimson",
+            "Deep Ocean + Teal",
+            "Graphite + Orange",
+            "Dark Plum + Rose",
+            "Forest Night + Lime"
         }
         CreateDropdown(ThemeCard, "Color Theme", ThemeOptions, function(selection)
             ApplyTheme(selection)
