@@ -23,7 +23,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.124"
+local testver = "Test v1.125"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "BASAE-Skrip",
@@ -1891,7 +1891,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 PickupMovementConnection:Disconnect()
                 PickupMovementConnection = nil
             end
-            local animalMoveConnection = RunService.RenderStepped:Connect(function()
+            local animalMoveBindName = "BASAE_PickupAnimal_" .. tostring(pickupToken)
+            RunService:BindToRenderStep(animalMoveBindName, Enum.RenderPriority.Character.Value + 1, function()
                 if not PickupRequested or PickupGeneration ~= pickupToken or not pickup.Parent
                     or LocalPlayer.Character ~= moveCharacter or not moveRoot.Parent
                     or moveHumanoid.Health <= 0 then
@@ -1911,6 +1912,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end
             end)
+            local animalMoveConnection = {
+                Disconnect = function()
+                    pcall(function() RunService:UnbindFromRenderStep(animalMoveBindName) end)
+                end
+            }
             PickupMovementConnection = animalMoveConnection
             while not Runtime.Stopped and PickupRequested and PickupGeneration == pickupToken and pickup.Parent and moveHumanoid.Health > 0 do
                 if LocalPlayer.Character ~= moveCharacter or not moveCharacter.Parent or not moveRoot.Parent then
@@ -1947,7 +1953,27 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 elseif now - lastAnimalProgressAt >= 2.5 then
                     lastAnimalProgressAt = now
                     bestAnimalDistance = animalDistance
-                    SetTrackerStatus(string.format("PICKUP MOVEMENT: no progress toward %s; retrying Move (%.1f studs).", pickup.Name, animalDistance))
+                    moveHumanoid:Move(Vector3.zero, false)
+                    task.wait(0.05)
+                    if PickupRequested and PickupGeneration == pickupToken and pickup.Parent
+                        and LocalPlayer.Character == moveCharacter and moveRoot.Parent and moveHumanoid.Health > 0 then
+                        local refreshedPosition
+                        local refreshedOk, refreshed = pcall(function()
+                            if pickup:IsA("Model") then return pickup:GetPivot().Position end
+                            if pickup:IsA("BasePart") then return pickup.Position end
+                        end)
+                        if refreshedOk then refreshedPosition = refreshed end
+                        if refreshedPosition then
+                            local refreshedDirection = Vector3.new(
+                                refreshedPosition.X - moveRoot.Position.X, 0,
+                                refreshedPosition.Z - moveRoot.Position.Z
+                            )
+                            if refreshedDirection.Magnitude > 4 then
+                                moveHumanoid:Move(refreshedDirection.Unit, false)
+                            end
+                        end
+                    end
+                    SetTrackerStatus(string.format("PICKUP MOVEMENT: reset and reinitialized movement toward %s (%.1f studs).", pickup.Name, animalDistance))
                 end
                 task.wait(0.05)
             end
@@ -2057,7 +2083,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupMovementConnection:Disconnect()
                     PickupMovementConnection = nil
                 end
-                local promptMoveConnection = RunService.Heartbeat:Connect(function()
+                local promptMoveBindName = "BASAE_PickupPrompt_" .. tostring(pickupToken)
+                RunService:BindToRenderStep(promptMoveBindName, Enum.RenderPriority.Character.Value + 1, function()
                     if not PickupRequested or PickupGeneration ~= pickupToken or not pickup.Parent or not prompt.Parent
                         or LocalPlayer.Character ~= character or not root.Parent or humanoid.Health <= 0 then
                         humanoid:Move(Vector3.zero, false)
@@ -2078,6 +2105,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         humanoid:Move(Vector3.zero, false)
                     end
                 end)
+                local promptMoveConnection = {
+                    Disconnect = function()
+                        pcall(function() RunService:UnbindFromRenderStep(promptMoveBindName) end)
+                    end
+                }
                 PickupMovementConnection = promptMoveConnection
                 while not Runtime.Stopped and PickupRequested and PickupGeneration == pickupToken and pickup.Parent and prompt.Parent and humanoid.Health > 0 do
                     if LocalPlayer.Character ~= character or not character.Parent or not root.Parent then
@@ -2116,7 +2148,26 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     elseif now - lastPromptProgressAt >= 2.5 then
                         lastPromptProgressAt = now
                         bestPromptDistance = promptDistance
-                        SetTrackerStatus(string.format("PICKUP MOVEMENT: no progress toward StealPrompt; continuing Move (%.1f studs).", promptDistance))
+                        humanoid:Move(Vector3.zero, false)
+                        task.wait(0.05)
+                        if PickupRequested and PickupGeneration == pickupToken and pickup.Parent and prompt.Parent
+                            and LocalPlayer.Character == character and root.Parent and humanoid.Health > 0 then
+                            local refreshedPromptPosition = getPromptPosition(prompt)
+                            if refreshedPromptPosition then promptPosition = refreshedPromptPosition end
+                            local refreshedOffset = Vector3.new(
+                                promptPosition.X - root.Position.X, 0,
+                                promptPosition.Z - root.Position.Z
+                            )
+                            local refreshedVerticalOffset = math.abs(promptPosition.Y - root.Position.Y)
+                            local refreshedRange = math.max(0, prompt.MaxActivationDistance)
+                            local refreshedReach = refreshedVerticalOffset < refreshedRange
+                                and math.sqrt(math.max(0, refreshedRange * refreshedRange - refreshedVerticalOffset * refreshedVerticalOffset)) - 0.5
+                                or 0
+                            if refreshedOffset.Magnitude > math.max(1, refreshedReach) then
+                                humanoid:Move(refreshedOffset.Unit, false)
+                            end
+                        end
+                        SetTrackerStatus(string.format("PICKUP MOVEMENT: reset and reinitialized movement toward StealPrompt (%.1f studs).", promptDistance))
                     end
                     task.wait(0.05)
                 end
