@@ -839,6 +839,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local RarityList
         local RarityFilterButton
+        local ZoneFilterOpen = false
+        local EggFilterOpen = false
+        local ZoneList
+        local EggFilterList
         RarityFilterButton = CreateButton(AutoPickupCard, "Filter for Rarity  ▼", function()
             RarityFilterOpen = not RarityFilterOpen
             local cardHeight = RarityFilterOpen and 300 or ((EggFilterOpen or ZoneFilterOpen) and 270 or 190)
@@ -942,11 +946,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local SelectedZones = {}
         local SelectedEggs = {}
         local PreferredZoneName = nil
-        local ZoneFilterOpen = false
-        local EggFilterOpen = false
         local SortOrder = "Largest"
-        local ZoneList
-        local EggFilterList
         local SortFrame
         local ZoneFilterButton
         local EggFilterButton
