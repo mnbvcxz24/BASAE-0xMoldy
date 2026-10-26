@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.152 -- 0xMoldy"
+local testver = "Test v1.153 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -1105,21 +1105,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local inputs = tradeIn and tradeIn:FindFirstChild("SacrificeInputs")
             local input = inputs and inputs:FindFirstChild("Input" .. slot)
             local empty = input and input:FindFirstChild("Empty")
-            local nameObject = empty and empty:FindFirstChild("Name")
-            if not nameObject or not nameObject:IsA("TextLabel") then return nil end
-            local attributes = nameObject:GetAttributes()
-            local animalName = attributes.ContentText or attributes.contentText or attributes.Text or attributes.text
-            if typeof(animalName) ~= "string" or animalName == "" then
-                for attributeName, attributeValue in pairs(attributes) do
-                    if string.find(string.lower(attributeName), "text", 1, true)
-                        and typeof(attributeValue) == "string"
-                        and attributeValue ~= "" then
-                        animalName = attributeValue
-                        break
-                    end
-                end
-            end
-            if typeof(animalName) ~= "string" then return nil end
+            local nameLabel = empty and empty:FindFirstChild("Name")
+            if not nameLabel or not nameLabel:IsA("TextLabel") then return nil end
+            local animalName = nameLabel.Text
             animalName = animalName:match("^%s*(.-)%s*$")
             if animalName == "" then return nil end
             return animalName
