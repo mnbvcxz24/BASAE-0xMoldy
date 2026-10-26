@@ -1016,7 +1016,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
-        local AntiPaloCard = CreateCard(Page, "🛡  Anti Palo", "Rename the fling remote while testing.")
+        local AntiPaloCard = CreateCard(Page, "🛡  Anti Palo", "")
         AntiPaloCard.LayoutOrder = 2
         AntiPaloCard.Size = UDim2.new(1, 0, 0, 110)
         local AntiPaloBusy = false
@@ -1024,7 +1024,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AntiPaloRemote
         local AntiPaloStatus = Create("TextLabel", {
             Parent = AntiPaloCard,
-            Position = UDim2.fromOffset(11, 88),
+            Position = UDim2.fromOffset(11, 78),
             Size = UDim2.new(1, -22, 0, 14),
             BackgroundTransparency = 1,
             Text = "Status: OFF",
@@ -1081,7 +1081,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AntiPaloBusy = false
             end)
         end)
-        AntiPaloToggle.Position = UDim2.new(1, -58, 0, 52)
+        AntiPaloToggle.Position = UDim2.new(1, -58, 0, 43)
         AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
