@@ -42,11 +42,11 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "BASAE v1.154"
+local testver = "BASAE v1.155"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIP NI BAI",
-    Subtitle = "BASAE v1.154",
+    Subtitle = "BASAE v1.155",
     Width = 480,
     Height = 350,
     SidebarWidth = 108,
@@ -3456,6 +3456,505 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 ReturnToPickup("Fling recovery pickup confirmed. Returning to saved base position.")
             end)
         end
+        local function HandleAntiPaloRecovery(action, flingPosition, duration, strength)
+            if not AntiPaloEnabled or tostring(action):lower() ~= "fling" then return end
+            local flingAnimal = ActivePickup or FlingAnimalTarget
+            local targetAnimalName = (flingAnimal and flingAnimal.Name) or FlingTargetAnimalName
+            local targetWeightKg = FlingTargetWeightKg
+            local function findTrackedAnimal()
+                local folder = workspace:FindFirstChild("AnimalPickups")
+                if not folder or targetAnimalName == nil or targetWeightKg == nil then return nil end
+                if flingAnimal and flingAnimal.Parent == folder
+                    and flingAnimal.Name == targetAnimalName
+                    and GetAnimalWeightKg(flingAnimal) == targetWeightKg then
+                    return flingAnimal
+                end
+                local match
+                for _, candidate in ipairs(folder:GetChildren()) do
+                    if candidate.Name == targetAnimalName
+                        and GetAnimalWeightKg(candidate) == targetWeightKg then
+                        if match then return nil end
+                        match = candidate
+                    end
+                end
+                if match then flingAnimal = match end
+                return match
+            end
+            local function getTrackedAnimalPosition()
+                local animal = findTrackedAnimal()
+                if not animal then return nil end
+                local ok, position = pcall(function()
+                    if animal:IsA("Model") then return animal:GetPivot().Position end
+                    if animal:IsA("BasePart") then return animal.Position end
+                end)
+                return ok and position or nil
+            end
+
+            if ReturnMovementConnection then
+                ReturnMovementConnection:Disconnect()
+                ReturnMovementConnection = nil
+            end
+            if PickupMovementConnection then
+                PickupMovementConnection:Disconnect()
+                PickupMovementConnection = nil
+            end
+            if MovementConnection then
+                MovementConnection:Disconnect()
+                MovementConnection = nil
+            end
+            ReturningAfterPickup = false
+            local interruptedCharacter = LocalPlayer.Character
+            local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
+            if interruptedHumanoid then interruptedHumanoid:Move(Vector3.zero, false) end
+
+            if not AutoPickupEnabled or not AutoBreakEnabled then
+                SetTrackerStatus("Fling detected: recovery cancelled because Auto Break or Auto Pickup is OFF.")
+                return
+            end
+            if FlingRecoveryActive then
+                SetTrackerStatus("Anti Palo recovery event received while recovery is active; base-return movement cancelled.")
+                return
+            end
+            FlingRecoveryActive = true
+            local recoverySearchToken = PickupGeneration
+            TouchAutomationProgress("FLING_RECOVERY:WAITING_FOR_IDENTITY")
+
+            if targetWeightKg == nil then
+                SetTrackerStatus("ANTI PALO RECOVERY waiting for WeightKg on " .. tostring(targetAnimalName) .. "...")
+                local identityDeadline = os.clock() + 10
+                local identityAttempts = 0
+                local lastIdentityLog = 0
+                while not Runtime.Stopped and FlingRecoveryActive and PickupGeneration == recoverySearchToken
+                    and os.clock() < identityDeadline and targetWeightKg == nil do
+                    identityAttempts += 1
+                    local identityFolder = workspace:FindFirstChild("AnimalPickups")
+                    if identityFolder then
+                        for _, candidate in ipairs(identityFolder:GetChildren()) do
+                            if candidate == flingAnimal and candidate.Name == targetAnimalName then
+                                local identity = GetAnimalWeightKg(candidate)
+                                if identity ~= nil then
+                                    targetWeightKg = identity
+                                    FlingTargetWeightKg = identity
+                                    SetTrackerStatus("Anti Palo recovery captured identity: " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
+                                    break
+                                end
+                            end
+                        end
+                    end
+                    local now = os.clock()
+                    if targetWeightKg == nil and now - lastIdentityLog >= 1 then
+                        lastIdentityLog = now
+                        SetTrackerStatus("ANTI PALO RECOVERY searching AnimalPickups | animal=" .. tostring(targetAnimalName) .. " | WeightKg=waiting | attempts=" .. tostring(identityAttempts))
+                    end
+                    if targetWeightKg == nil then task.wait(0.25) end
+                end
+            end
+            if not FlingRecoveryActive or PickupGeneration ~= recoverySearchToken then
+                return
+            end
+            if targetWeightKg == nil then
+                FlingRecoveryActive = false
+                PickupRequested = false
+                ActivePickup = nil
+                TouchAutomationProgress("IDLE")
+                SetTrackerStatus("ANTI PALO RECOVERY stopped: WeightKg still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
+                if AutoBreakEnabled and StartAutoBreak then task.delay(0.2, function() if AutoBreakEnabled then StartAutoBreak(true) end end) end
+                return
+            end
+            if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
+            if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+            if ReturnMovementConnection then ReturnMovementConnection:Disconnect(); ReturnMovementConnection = nil end
+            ReturningAfterPickup = false
+            PickupGeneration += 1
+            local antiPaloToken = PickupGeneration
+            ActivePickup = nil
+            ActivePickupCPS = -1
+            PickupRequested = true
+            if CurrentTarget then CompletedEggs[CurrentTarget] = true end
+            if StopAutoBreak then StopAutoBreak() end
+            if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
+            SetTrackerStatus("Base return paused. ANTI PALO RECOVERY searching AnimalPickups for " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(targetWeightKg) .. ".")
+            task.spawn(function()
+                local antiPaloMoveBindName
+                local recoveryHumanoid
+                local originalAutoRotate
+                local function cleanupFlingRecovery()
+                    if recoveryHumanoid and recoveryHumanoid.Parent and originalAutoRotate ~= nil then
+                        recoveryHumanoid.AutoRotate = originalAutoRotate
+                        originalAutoRotate = nil
+                    end
+                    if antiPaloMoveBindName then
+                        pcall(function()
+                            game:GetService("RunService"):UnbindFromRenderStep(antiPaloMoveBindName)
+                        end)
+                        antiPaloMoveBindName = nil
+                    end
+                    FlingRecoveryActive = false
+                    if CancelFlingRecovery == cleanupFlingRecovery then
+                        CancelFlingRecovery = nil
+                    end
+                end
+                CancelFlingRecovery = cleanupFlingRecovery
+                local function finishFlingRecovery()
+                    cleanupFlingRecovery()
+                    if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup and StartAutoBreak then
+                        task.delay(0.25, function()
+                            if not FlingRecoveryActive and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then
+                                StartAutoBreak()
+                            end
+                        end)
+                    end
+                end
+                if PickupGeneration ~= antiPaloToken or not FlingRecoveryActive then
+                    finishFlingRecovery()
+                    return
+                end
+                local character, humanoid, root = WaitForCharacterAndParts(10, function()
+                    return PickupGeneration == antiPaloToken and PickupRequested and FlingRecoveryActive
+                end)
+                if not character then
+                    if PickupGeneration ~= antiPaloToken or not FlingRecoveryActive then
+                        cleanupFlingRecovery()
+                        return
+                    end
+                    PickupRequested = false
+                    SetTrackerStatus("ANTI PALO RECOVERY cancelled: character parts unavailable.")
+                    finishFlingRecovery()
+                    return
+                end
+                recoveryHumanoid = humanoid
+                originalAutoRotate = humanoid.AutoRotate
+                humanoid.AutoRotate = false
+                if PickupGeneration ~= antiPaloToken or not PickupRequested or not AutoPickupEnabled then
+                    finishFlingRecovery()
+                    return
+                end
+                local recoveryPosition = getTrackedAnimalPosition()
+                if not recoveryPosition then
+                    PickupRequested = false
+                    SetTrackerStatus("ANTI PALO RECOVERY cancelled: no unique AnimalPickups match for " .. tostring(targetAnimalName) .. " + WeightKg=" .. tostring(targetWeightKg) .. ".")
+                    finishFlingRecovery()
+                    return
+                end
+                SetTrackerStatus(string.format(
+                    "ANTI PALO RECOVERY matched %s by name + WeightKg=%s at (%.3f, %.3f, %.3f).",
+                    tostring(flingAnimal and flingAnimal.Name or targetAnimalName or "animal"), tostring(targetWeightKg),
+                    recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z
+                ))
+                local RunService = game:GetService("RunService")
+                antiPaloMoveBindName = "BASAEFlingRecovery_" .. tostring(antiPaloToken)
+                RunService:BindToRenderStep(antiPaloMoveBindName, Enum.RenderPriority.Character.Value + 1, function()
+                    if Runtime.Stopped or not PickupRequested or PickupGeneration ~= antiPaloToken
+                        or LocalPlayer.Character ~= character or not root.Parent or humanoid.Health <= 0 then
+                        humanoid:Move(Vector3.zero, false)
+                        return
+                    end
+                    local livePosition = getTrackedAnimalPosition()
+                    if livePosition then recoveryPosition = livePosition end
+                    local moveOffset = Vector3.new(recoveryPosition.X - root.Position.X, 0, recoveryPosition.Z - root.Position.Z)
+                    if moveOffset.Magnitude > 4 then
+                        humanoid:Move(moveOffset.Unit, false)
+                    else
+                        humanoid:Move(Vector3.zero, false)
+                    end
+                end)
+                local moveStarted = os.clock()
+                local lastProgressAt = os.clock()
+                local bestDistance = math.huge
+                TouchAutomationProgress("FLING_RECOVERY:ANIMAL_APPROACH")
+                while not Runtime.Stopped and PickupRequested and PickupGeneration == antiPaloToken and humanoid.Health > 0 do
+                    if LocalPlayer.Character ~= character or not character.Parent or not root.Parent then
+                        PickupRequested = false
+                        SetTrackerStatus("ANTI PALO RECOVERY cancelled: character changed or root became unavailable.")
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        finishFlingRecovery()
+                        return
+                    end
+                    local livePosition = getTrackedAnimalPosition()
+                    if livePosition then recoveryPosition = livePosition end
+                    local offset = Vector3.new(recoveryPosition.X - root.Position.X, 0, recoveryPosition.Z - root.Position.Z)
+                    local distance = offset.Magnitude
+                    if distance <= 4 then break end
+                    local now = os.clock()
+                    if now - moveStarted >= 45 then
+                        humanoid:Move(Vector3.zero, false)
+                        PickupRequested = false
+                        SetTrackerStatus(string.format("ANTI PALO RECOVERY cancelled: timed out reaching reported animal location (%.1f studs away).", distance))
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        finishFlingRecovery()
+                        return
+                    end
+                    if distance < bestDistance - 0.75 then
+                        bestDistance = distance
+                        lastProgressAt = now
+                        TouchAutomationProgress()
+                    elseif now - lastProgressAt >= 2.5 then
+                        local state = humanoid:GetState()
+                        if state == Enum.HumanoidStateType.FallingDown
+                            or state == Enum.HumanoidStateType.Ragdoll
+                            or state == Enum.HumanoidStateType.Physics
+                            or state == Enum.HumanoidStateType.PlatformStanding then
+                            humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                        end
+                        lastProgressAt = now
+                        bestDistance = distance
+                        if humanoid.PlatformStand then humanoid.PlatformStand = false end
+                        if root.Anchored then
+                            SetTrackerStatus(string.format("ANTI PALO RECOVERY blocked: HumanoidRootPart is anchored (%.1f studs away).", distance))
+                        else
+                            SetTrackerStatus(string.format("ANTI PALO RECOVERY: movement input refreshed every frame; no progress yet (%.1f studs away, state=%s).", distance, tostring(state)))
+                        end
+                    end
+                    task.wait(0.1)
+                end
+                if antiPaloMoveBindName then
+                    pcall(function() RunService:UnbindFromRenderStep(antiPaloMoveBindName) end)
+                    antiPaloMoveBindName = nil
+                end
+                humanoid:Move(Vector3.zero, false)
+                local arrivalDistance = (Vector3.new(recoveryPosition.X, root.Position.Y, recoveryPosition.Z) - root.Position).Magnitude
+                if PickupGeneration ~= antiPaloToken then
+                    finishFlingRecovery()
+                    return
+                end
+                if not PickupRequested or humanoid.Health <= 0 or arrivalDistance > 5 then
+                    PickupRequested = false
+                    SetTrackerStatus(string.format("ANTI PALO RECOVERY cancelled: arrival verification failed (%.1f studs).", arrivalDistance))
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
+                    return
+                end
+                SetTrackerStatus(string.format("ANTI PALO RECOVERY location verified (%.1f studs); searching nearest PromptAnchor StealPrompt.", arrivalDistance))
+                local anchor = workspace:FindFirstChild("PromptAnchor")
+                local prompt, promptPosition
+                local searchDeadline = os.clock() + 8
+                local function positionOf(candidate)
+                    local parent = candidate and candidate.Parent
+                    while parent and parent ~= workspace do
+                        if parent:IsA("Attachment") then return parent.WorldPosition end
+                        if parent:IsA("BasePart") then return parent.Position end
+                        if parent:IsA("Model") then return parent:GetPivot().Position end
+                        parent = parent.Parent
+                    end
+                    return nil
+                end
+                repeat
+                    local livePosition = getTrackedAnimalPosition()
+                    if livePosition then recoveryPosition = livePosition end
+                    anchor = workspace:FindFirstChild("PromptAnchor")
+                    local nearest = math.huge
+                    prompt, promptPosition = nil, nil
+                    if anchor then
+                        for _, candidate in ipairs(anchor:GetDescendants()) do
+                            if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
+                                local pos = positionOf(candidate)
+                                if pos then
+                                    local distance = (pos - recoveryPosition).Magnitude
+                                    if distance < nearest and distance <= 12 then
+                                        nearest, prompt, promptPosition = distance, candidate, pos
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    if prompt then break end
+                    task.wait(0.2)
+                until os.clock() >= searchDeadline or PickupGeneration ~= antiPaloToken
+                if PickupGeneration ~= antiPaloToken then
+                    finishFlingRecovery()
+                    return
+                end
+                if not prompt or not prompt.Parent or not prompt.Enabled or not promptPosition then
+                    PickupRequested = false
+                    SetTrackerStatus("ANTI PALO RECOVERY failed: no enabled StealPrompt within 12 studs of reported fling location.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
+                    return
+                end
+                SetTrackerStatus(string.format("ANTI PALO RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - recoveryPosition).Magnitude))
+                local moveStarted = os.clock()
+                local bestPromptDistance = math.huge
+                TouchAutomationProgress("FLING_RECOVERY:PROMPT_APPROACH")
+                while not Runtime.Stopped and PickupRequested and PickupGeneration == antiPaloToken and prompt.Parent and prompt.Enabled and humanoid.Health > 0 do
+                    promptPosition = positionOf(prompt) or promptPosition
+                    local locationError = (promptPosition - recoveryPosition).Magnitude
+                    if locationError > 14 then
+                        humanoid:Move(Vector3.zero, false)
+                        PickupRequested = false
+                        SetTrackerStatus(string.format("ANTI PALO RECOVERY cancelled: prompt moved %.1f studs from reported location.", locationError))
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        finishFlingRecovery()
+                        return
+                    end
+                    local offset = Vector3.new(promptPosition.X - root.Position.X, 0, promptPosition.Z - root.Position.Z)
+                    local distanceToPrompt = (promptPosition - root.Position).Magnitude
+                    if distanceToPrompt < bestPromptDistance - 0.75 then
+                        bestPromptDistance = distanceToPrompt
+                        TouchAutomationProgress()
+                    end
+                    if distanceToPrompt <= math.min(prompt.MaxActivationDistance, 5) then break end
+                    if os.clock() - moveStarted >= 25 then
+                        humanoid:Move(Vector3.zero, false)
+                        PickupRequested = false
+                        SetTrackerStatus("ANTI PALO RECOVERY cancelled: timed out reaching the verified prompt.")
+                        if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                        finishFlingRecovery()
+                        return
+                    end
+                    humanoid:Move(offset.Magnitude > 0 and offset.Unit or Vector3.zero, false)
+                    task.wait(0.05)
+                end
+                humanoid:Move(Vector3.zero, false)
+                if PickupGeneration ~= antiPaloToken then
+                    finishFlingRecovery()
+                    return
+                end
+                if not PickupRequested or not prompt.Parent or not prompt.Enabled or humanoid.Health <= 0 then
+                    PickupRequested = false
+                    SetTrackerStatus("ANTI PALO RECOVERY cancelled: prompt or character became unavailable.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
+                    return
+                end
+                promptPosition = positionOf(prompt) or promptPosition
+                local finalPlayerDistance = (promptPosition - root.Position).Magnitude
+                local finalLocationError = (promptPosition - recoveryPosition).Magnitude
+                if finalPlayerDistance > math.min(prompt.MaxActivationDistance, 5) or finalLocationError > 14 then
+                    PickupRequested = false
+                    SetTrackerStatus(string.format("ANTI PALO RECOVERY blocked by location verification: player=%.1f studs, fling mismatch=%.1f studs.", finalPlayerDistance, finalLocationError))
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
+                    return
+                end
+                task.wait(0.15)
+                if PickupGeneration ~= antiPaloToken then
+                    finishFlingRecovery()
+                    return
+                end
+                promptPosition = positionOf(prompt) or promptPosition
+                if LocalPlayer.Character ~= character or not character.Parent or humanoid.Health <= 0
+                    or not prompt.Parent or not prompt.Enabled
+                    or (promptPosition - root.Position).Magnitude > math.min(prompt.MaxActivationDistance, 5)
+                    or (promptPosition - recoveryPosition).Magnitude > 14 then
+                    PickupRequested = false
+                    SetTrackerStatus("ANTI PALO RECOVERY blocked: prompt moved outside the verified pickup range.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
+                    return
+                end
+                local ok, err = pcall(function()
+                    if typeof(fireproximityprompt) == "function" then
+                        fireproximityprompt(prompt)
+                    else
+                        prompt:InputHoldBegin()
+                        task.wait(prompt.HoldDuration + 0.1)
+                        prompt:InputHoldEnd()
+                    end
+                end)
+                if PickupGeneration ~= antiPaloToken then
+                    finishFlingRecovery()
+                    return
+                end
+                if not ok then
+                    pcall(function() prompt:InputHoldEnd() end)
+                    PickupRequested = false
+                    SetTrackerStatus("ANTI PALO RECOVERY pickup failed: " .. tostring(err))
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
+                    return
+                end
+                SetTrackerStatus("ANTI PALO RECOVERY prompt activated; confirming animal collection.")
+                local confirmed = false
+                local confirmDeadline = os.clock() + 4
+                while not Runtime.Stopped and os.clock() < confirmDeadline and PickupGeneration == antiPaloToken and PickupRequested do
+                    local folder = workspace:FindFirstChild("AnimalPickups")
+                    local targetStillExists = false
+                    if folder then
+                        for _, animal in ipairs(folder:GetChildren()) do
+                            if animal.Name == targetAnimalName and GetAnimalWeightKg(animal) == targetWeightKg then
+                                targetStillExists = true
+                                break
+                            end
+                        end
+                        if not targetStillExists then confirmed = true; break end
+                    end
+                    task.wait(0.1)
+                end
+                if PickupGeneration ~= antiPaloToken then
+                    finishFlingRecovery()
+                    return
+                end
+                if not confirmed then
+                    PickupRequested = false
+                    SetTrackerStatus("ANTI PALO RECOVERY: prompt activated but collection was not confirmed; staying in place.")
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    finishFlingRecovery()
+                    return
+                end
+                SetTrackerStatus("ANTI PALO RECOVERY collection confirmed; resuming base return to the saved base position.")
+                finishFlingRecovery()
+                ReturnToPickup("Anti Palo recovery pickup confirmed. Returning to saved base position.")
+            end)
+        end
+
+        local AntiPaloWatchdogStarted = false
+        local function StartAntiPaloMovementWatchdog()
+            if AntiPaloWatchdogStarted then return end
+            AntiPaloWatchdogStarted = true
+            task.spawn(function()
+                local lastPosition
+                local lastProgressAt = os.clock()
+                local lastLogAt = 0
+                while not Runtime.Stopped and not ScriptShuttingDown do
+                    task.wait(0.5)
+                    if not AntiPaloEnabled or not AutoBreakEnabled or not AutoPickupEnabled
+                        or FlingRecoveryActive or PickupPhase == "IDLE"
+                        or not (PickupRequested or ReturningAfterPickup or MovementConnection or PickupMovementConnection or ReturnMovementConnection) then
+                        lastPosition = nil
+                        lastProgressAt = os.clock()
+                        continue
+                    end
+                    local character = LocalPlayer.Character
+                    local root = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                    if not root or not humanoid or humanoid.Health <= 0 then
+                        lastPosition = nil
+                        lastProgressAt = os.clock()
+                        continue
+                    end
+                    if not lastPosition then
+                        lastPosition = root.Position
+                        lastProgressAt = os.clock()
+                        continue
+                    end
+                    local moved = (root.Position - lastPosition).Magnitude
+                    if moved >= 1 then
+                        lastProgressAt = os.clock()
+                        lastPosition = root.Position
+                    elseif os.clock() - lastProgressAt >= 2.5 then
+                        if os.clock() - lastLogAt >= 3 then
+                            lastLogAt = os.clock()
+                            local tracked = ActivePickup or FlingAnimalTarget
+                            AddDebugLog("[Anti Palo Watchdog] Movement stalled for " .. string.format("%.1f", os.clock() - lastProgressAt) .. "s; stage=" .. tostring(AutomationProgressStage) .. "; target=" .. tostring((tracked and tracked.Name) or FlingTargetAnimalName or "unknown"))
+                        end
+                        local tracked = ActivePickup or FlingAnimalTarget
+                        if FlingTargetAnimalName and FlingTargetWeightKg ~= nil and tracked then
+                            AddDebugLog("[Anti Palo Watchdog] Starting separate identity-based recovery.")
+                            HandleAntiPaloRecovery("fling", root.Position, 1.5, 1)
+                            lastPosition = nil
+                            lastProgressAt = os.clock()
+                        else
+                            SetTrackerStatus("Anti Palo watchdog detected stalled movement, but target identity is incomplete; waiting safely.")
+                            lastPosition = root.Position
+                            lastProgressAt = os.clock()
+                        end
+                    else
+                        lastPosition = root.Position
+                    end
+                end
+            end)
+        end
+        StartAntiPaloMovementWatchdog()
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):FindFirstChild("CatchFlingRemote")
         if CatchFlingRemote and CatchFlingRemote:IsA("RemoteEvent") then
             FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(HandleFlingRecovery)
