@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.155 -- 0xMoldy"
+local testver = "Test v1.156 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -4230,8 +4230,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ESPCard.Size = UDim2.new(1, 0, 0, 125)
 
     elseif index == 3 then
-        local AntiPaloCard = CreateCard(Page, "🛡️  Anti Palo", "Immortal si Bai")
-        AntiPaloCard.Size = UDim2.new(1, 0, 0, 100)
+        local MiscFeatureRow = Create("Frame", {
+            Name = "MiscFeatureCardsRow",
+            Parent = Page,
+            Size = UDim2.new(1, 0, 0, 110),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            LayoutOrder = 1
+        })
+        local AntiPaloCard = CreateCard(MiscFeatureRow, "🛡️  Anti Palo", "Immortal si Bai")
+        AntiPaloCard.Position = UDim2.new(0, 0, 0, 0)
+        AntiPaloCard.Size = UDim2.new(0.5, -5, 0, 100)
         AntiPaloCard.LayoutOrder = 1
         local AntiPaloBusy = false
         local AntiPaloStatus = Create("TextLabel", {
@@ -4264,8 +4273,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
         AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
 
-        local AuraCard = CreateCard(Page, "⚔️  Aura ni Bai", "Auto parry")
-        AuraCard.Size = UDim2.new(1, 0, 0, 100)
+        local AuraCard = CreateCard(MiscFeatureRow, "⚔️  Aura ni Bai", "Auto parry")
+        AuraCard.Position = UDim2.new(0.5, 5, 0, 0)
+        AuraCard.Size = UDim2.new(0.5, -5, 0, 100)
         AuraCard.LayoutOrder = 2
         local AuraStatus = Create("TextLabel", {
             Parent = AuraCard,
