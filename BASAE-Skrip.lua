@@ -4291,6 +4291,59 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             TextYAlignment = Enum.TextYAlignment.Top
         })
         local AuraEnabled = false
+        local AuraBusy = false
+        local AuraLastTrigger = 0
+        local AuraTriggerCooldown = 1
+        local function RunAuraStudioTest()
+            if not RunService:IsStudio() then
+                AuraStatus.Text = "Test trigger is Studio-only"
+                AuraStatus.TextColor3 = Theme.Gray
+                return
+            end
+            if AuraBusy or os.clock() - AuraLastTrigger < AuraTriggerCooldown then return end
+            AuraBusy = true
+            AuraLastTrigger = os.clock()
+            task.spawn(function()
+                local ok, err = pcall(function()
+                    local character = LocalPlayer.Character
+                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+                    if not character or not humanoid or not backpack or humanoid.Health <= 0 then
+                        AuraStatus.Text = "Test skipped: character not ready"
+                        return
+                    end
+                    local tools = {}
+                    for _, item in ipairs(backpack:GetChildren()) do
+                        if item:IsA("Tool") then table.insert(tools, item) end
+                    end
+                    for _, item in ipairs(character:GetChildren()) do
+                        if item:IsA("Tool") then table.insert(tools, 1, item) end
+                    end
+                    local slotOneTool = tools[1]
+                    local slotTwoTool = tools[2]
+                    local hitRemote = game:GetService("ReplicatedStorage"):FindFirstChild("BatHitRequest", true)
+                    if not hitRemote or not hitRemote:IsA("RemoteEvent") then
+                        AuraStatus.Text = "Studio test: BatHitRequest not found"
+                        return
+                    end
+                    if slotTwoTool then
+                        humanoid:EquipTool(slotTwoTool)
+                        task.wait(0.15)
+                    end
+                    hitRemote:FireServer()
+                    if slotOneTool and slotOneTool ~= slotTwoTool then
+                        task.wait(0.15)
+                        humanoid:EquipTool(slotOneTool)
+                    end
+                    AuraStatus.Text = "Studio test trigger fired"
+                end)
+                if not ok then
+                    AuraStatus.Text = "Studio test error: " .. tostring(err)
+                    AddDebugLog("[Aura ni Bai] Studio test error: " .. tostring(err))
+                end
+                AuraBusy = false
+            end)
+        end
         local function GetNearbyPlayers()
             local nearby = {}
             local myCharacter = LocalPlayer.Character
@@ -4339,9 +4392,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AddDebugLog("[Aura ni Bai] Proximity tracking enabled (15 studs).")
             task.spawn(function()
                 while AuraEnabled and not Runtime.Stopped and ScreenGui.Parent do
-                    local _, nearbyText = GetNearbyPlayers()
-                    AuraStatus.Text = nearbyText
-                    AuraStatus.TextColor3 = Theme.Accent
+                    local nearby, nearbyText = GetNearbyPlayers()
+                    if #nearby > 0 then
+                        if RunService:IsStudio() then
+                            RunAuraStudioTest()
+                        else
+                            AuraStatus.Text = "Nearby detected (Studio test only)"
+                            AuraStatus.TextColor3 = Theme.Gray
+                        end
+                    else
+                        AuraStatus.Text = nearbyText
+                        AuraStatus.TextColor3 = Theme.Accent
+                    end
                     task.wait(0.25)
                 end
             end)
