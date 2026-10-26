@@ -4330,6 +4330,74 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nearby, "Nearby: " .. table.concat(names, ", ")
         end
+        local function FindAuraHotbarTool(slot)
+            local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+            local character = LocalPlayer.Character
+            local tools = {}
+            if backpack then
+                for _, item in ipairs(backpack:GetChildren()) do
+                    if item:IsA("Tool") then
+                        table.insert(tools, item)
+                    end
+                end
+            end
+            if character then
+                for _, item in ipairs(character:GetChildren()) do
+                    if item:IsA("Tool") and not table.find(tools, item) then
+                        table.insert(tools, item)
+                    end
+                end
+            end
+            return tools[slot]
+        end
+        local function RunAuraPrank(targetName)
+            local character = LocalPlayer.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+            if not humanoid or humanoid.Health <= 0 then
+                AddDebugLog("[Aura ni Bai] Cannot prank: character or humanoid is unavailable.")
+                return
+            end
+            local remote = game:GetService("ReplicatedStorage"):FindFirstChild("YouGotPrank", true)
+            if not remote or not remote:IsA("RemoteEvent") then
+                AddDebugLog("[Aura ni Bai] YouGotPrank RemoteEvent not found.")
+                return
+            end
+            local hotbarTwo = FindAuraHotbarTool(2)
+            if hotbarTwo then
+                local ok, err = pcall(function()
+                    humanoid:EquipTool(hotbarTwo)
+                end)
+                if ok then
+                    task.wait(0.15)
+                else
+                    AddDebugLog("[Aura ni Bai] Hotbar 2 equip failed: " .. tostring(err))
+                end
+            else
+                AddDebugLog("[Aura ni Bai] Hotbar 2 tool not found; firing prank remote without switching tools.")
+            end
+            local fired, fireError = pcall(function()
+                remote:FireServer()
+            end)
+            if fired then
+                AddDebugLog("[Aura ni Bai] YouGotPrank:FireServer() called for " .. targetName .. ".")
+            else
+                AddDebugLog("[Aura ni Bai] YouGotPrank call failed: " .. tostring(fireError))
+            end
+            task.wait(0.15)
+            local hotbarOne = FindAuraHotbarTool(1)
+            if hotbarOne and LocalPlayer.Character == character then
+                local ok, err = pcall(function()
+                    humanoid:EquipTool(hotbarOne)
+                end)
+                if ok then
+                    AddDebugLog("[Aura ni Bai] Returned to hotbar 1: " .. hotbarOne.Name)
+                else
+                    AddDebugLog("[Aura ni Bai] Hotbar 1 equip failed: " .. tostring(err))
+                end
+            else
+                AddDebugLog("[Aura ni Bai] Hotbar 1 tool not found after prank.")
+            end
+        end
         local function ShowAuraPrankNotice(targetName)
             if os.clock() - AuraLastPrank < AuraPrankCooldown then return end
             AuraLastPrank = os.clock()
@@ -4386,6 +4454,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         if not AuraWasNearby then
                             AddDebugLog("[Aura ni Bai] Detected " .. nearby[1].Name .. " within 15 studs (" .. string.format("%.1f", nearby[1].Distance) .. " studs).")
                             ShowAuraPrankNotice(nearby[1].Name)
+                            task.spawn(RunAuraPrank, nearby[1].Name)
                         end
                         AuraWasNearby = true
                     else
