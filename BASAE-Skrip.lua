@@ -1016,9 +1016,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
-        local AntiPaloCard = CreateCard(Page, "🛡  Anti Palo", "Test remote rename behavior.")
-        AntiPaloCard.LayoutOrder = 2
-        AntiPaloCard.Size = UDim2.new(1, 0, 0, 124)
+        local AntiPaloRow = Create("Frame", {
+            Name = "AntiPaloRow",
+            Parent = Page,
+            Size = UDim2.new(1, 0, 0, 124),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            LayoutOrder = 2
+        })
+        local AntiPaloCard = CreateCard(AntiPaloRow, "🛡  Anti Palo", "")
+        AntiPaloCard.Position = UDim2.new(0, 0, 0, 0)
+        AntiPaloCard.Size = UDim2.new(0.5, -6, 0, 124)
         local AntiPaloBusy = false
         local AntiPaloEnabled = false
         local AntiPaloRemote
@@ -1027,7 +1035,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Position = UDim2.fromOffset(11, 104),
             Size = UDim2.new(1, -22, 0, 14),
             BackgroundTransparency = 1,
-            Text = "Status: OFF",
+            Text = "OFF",
             TextColor3 = Theme.Gray,
             Font = Enum.Font.Gotham,
             TextSize = 9,
@@ -1075,7 +1083,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     AntiPaloStatus.TextColor3 = Color3.fromRGB(255, 130, 130)
                     AddDebugLog("[Anti Palo] " .. tostring(err))
                 else
-                    AntiPaloStatus.Text = AntiPaloEnabled and "Status: ON • BaiNaBai" or "Status: OFF • CatchFlingRemote"
+                    AntiPaloStatus.Text = AntiPaloEnabled and "ON • BaiNaBai" or "OFF • CatchFlingRemote"
                     AntiPaloStatus.TextColor3 = AntiPaloEnabled and Theme.Accent or Theme.Gray
                 end
                 task.wait(0.25)
