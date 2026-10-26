@@ -4273,27 +4273,78 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
         AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
 
-        local AuraCard = CreateCard(MiscFeatureRow, "⚔️  Aura ni Bai", "Auto parry")
+        local AuraCard = CreateCard(MiscFeatureRow, "⚔️  Aura ni Bai", "Auto boink")
         AuraCard.Position = UDim2.new(0.5, 5, 0, 0)
         AuraCard.Size = UDim2.new(0.5, -5, 0, 100)
         AuraCard.LayoutOrder = 2
         local AuraStatus = Create("TextLabel", {
             Parent = AuraCard,
             Position = UDim2.fromOffset(11, 60),
-            Size = UDim2.new(1, -22, 0, 14),
+            Size = UDim2.new(1, -22, 0, 27),
             BackgroundTransparency = 1,
             Text = "Status: OFF",
             TextColor3 = Theme.Gray,
             Font = Enum.Font.Gotham,
             TextSize = 9,
-            TextXAlignment = Enum.TextXAlignment.Left
+            TextWrapped = true,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top
         })
         local AuraEnabled = false
+        local function GetNearbyPlayers()
+            local nearby = {}
+            local myCharacter = LocalPlayer.Character
+            local myRoot = myCharacter and myCharacter:FindFirstChild("HumanoidRootPart")
+            if not myRoot then
+                return nearby, "Waiting for your character..."
+            end
+            for _, targetPlayer in ipairs(Players:GetPlayers()) do
+                if targetPlayer ~= LocalPlayer then
+                    local character = workspace:FindFirstChild(targetPlayer.Name)
+                    local root = character and character:FindFirstChild("HumanoidRootPart")
+                    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                    if root and root:IsA("BasePart") and humanoid and humanoid.Health > 0 then
+                        local distance = (root.Position - myRoot.Position).Magnitude
+                        if distance <= 15 then
+                            table.insert(nearby, {Name = targetPlayer.Name, Distance = distance})
+                        end
+                    end
+                end
+            end
+            table.sort(nearby, function(a, b)
+                return a.Distance < b.Distance
+            end)
+            if #nearby == 0 then
+                return nearby, "No players within 15 studs"
+            end
+            local names = {}
+            for i = 1, math.min(#nearby, 2) do
+                table.insert(names, nearby[i].Name .. " (" .. string.format("%.1f", nearby[i].Distance) .. ")")
+            end
+            if #nearby > 2 then
+                table.insert(names, "+" .. tostring(#nearby - 2) .. " more")
+            end
+            return nearby, "Nearby: " .. table.concat(names, ", ")
+        end
         local AuraToggle = CreateToggle(AuraCard, "", false, function(enabled)
             AuraEnabled = enabled
-            AuraStatus.Text = enabled and "Status: ON" or "Status: OFF"
-            AuraStatus.TextColor3 = enabled and Theme.Accent or Theme.Gray
-            AddDebugLog("[Aura ni Bai] Toggle " .. (enabled and "ON" or "OFF") .. ".")
+            if not enabled then
+                AuraStatus.Text = "Status: OFF"
+                AuraStatus.TextColor3 = Theme.Gray
+                AddDebugLog("[Aura ni Bai] Proximity tracking disabled.")
+                return
+            end
+            AuraStatus.Text = "Tracking players within 15 studs..."
+            AuraStatus.TextColor3 = Theme.Accent
+            AddDebugLog("[Aura ni Bai] Proximity tracking enabled (15 studs).")
+            task.spawn(function()
+                while AuraEnabled and not Runtime.Stopped and ScreenGui.Parent do
+                    local _, nearbyText = GetNearbyPlayers()
+                    AuraStatus.Text = nearbyText
+                    AuraStatus.TextColor3 = Theme.Accent
+                    task.wait(0.25)
+                end
+            end)
         end)
         AuraToggle.Position = UDim2.new(1, -58, 0, 7)
         AuraToggle.Size = UDim2.fromOffset(48, 24)
