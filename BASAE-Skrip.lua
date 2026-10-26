@@ -4323,7 +4323,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AddDebugLog("[Aura ni Bai] Could not select hotbar slot 2: " .. tostring(selectTwoError))
             end
             local fired, fireError = pcall(function()
-                remote:FireServer(targetName)
+                remote:FireServer(game:GetService("Players"):FindFirstChild(targetName))
             end)
             if fired then
                 AddDebugLog("[Aura ni Bai] BatHitRequest:FireServer() called for " .. targetName .. ".")
