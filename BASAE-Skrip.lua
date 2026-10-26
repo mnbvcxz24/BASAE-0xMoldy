@@ -1106,18 +1106,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local input = inputs and inputs:FindFirstChild("Input" .. slot)
             local empty = input and input:FindFirstChild("Empty")
             if not empty then return nil end
-            local name = empty.Name
-            if not name or name == "" or name == "Empty" then
-                name = empty:IsA("TextLabel") and empty.Text or nil
-            end
-            if (not name or name == "" or name == "Empty") and input then
-                local label = input:FindFirstChildWhichIsA("TextLabel", true)
-                name = label and label.Text or nil
-            end
-            if not name or name == "" or name == "Empty" or name == " " then
+            local animalName = empty.Name
+            if not animalName or animalName == "" then
                 return nil
             end
-            return name
+            return animalName
         end
         local function RefreshAutoFuseRequirements()
             local requirements = {}
