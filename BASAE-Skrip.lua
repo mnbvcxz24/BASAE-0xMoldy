@@ -3471,6 +3471,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local humanoid = character and character:FindFirstChildOfClass("Humanoid")
                 local root = character and character:FindFirstChild("HumanoidRootPart")
                 local expectedToMove = AutoBreakEnabled and AutoPickupEnabled and PickupRequested
+                    and (MovementConnection ~= nil or PickupMovementConnection ~= nil)
                     and not FlingRecoveryActive and not ReturningAfterPickup
                 if not character or not humanoid or not root or not expectedToMove or humanoid.Health <= 0 then
                     lastPosition = root and root.Position or nil
