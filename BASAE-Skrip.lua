@@ -1105,11 +1105,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local inputs = tradeIn and tradeIn:FindFirstChild("SacrificeInputs")
             local input = inputs and inputs:FindFirstChild("Input" .. slot)
             local empty = input and input:FindFirstChild("Empty")
-            if not empty then return nil end
-            local contentText = empty:FindFirstChild("ContentText", true)
-            if not contentText then return nil end
-            local animalName = contentText.Name
-            if not animalName or animalName == "" or animalName == "ContentText" then
+            local nameObject = empty and empty:FindFirstChild("Name", true)
+            if not nameObject then return nil end
+            local animalName = nameObject:GetAttribute("ContentText")
+            if typeof(animalName) ~= "string" or animalName == "" then
                 return nil
             end
             return animalName
