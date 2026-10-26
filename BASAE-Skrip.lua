@@ -45,7 +45,7 @@ end
 local testver = "Test v1.151 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
-    Title = "BASAE-Skrip",
+    Title = "SKRIPNIBAI",
     Subtitle = testver,
     Width = 480,
     Height = 350,
@@ -307,6 +307,10 @@ local function ApplyTheme(themeName)
             end
         end
     end
+    local titleLabel = ScreenGui:FindFirstChild("Title", true)
+    if titleLabel and titleLabel:IsA("TextLabel") then
+        titleLabel.Text = '<font color="#' .. selectedTheme.Accent:ToHex() .. '">SKRIP</font>NIBAI'
+    end
 end
 -- MAIN WINDOW
 local Main = Create("Frame", {
@@ -353,7 +357,8 @@ local Title = Create("TextLabel", {
     Position = UDim2.fromOffset(14, 5),
     Size = UDim2.fromOffset(220, 22),
     BackgroundTransparency = 1,
-    Text = UIConfig.Title,
+    Text = '<font color="#' .. Theme.Accent:ToHex() .. '">SKRIP</font>NIBAI',
+    RichText = true,
     TextColor3 = Theme.Text,
     Font = Enum.Font.GothamBold,
     TextSize = 14,
