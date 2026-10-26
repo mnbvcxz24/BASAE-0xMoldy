@@ -42,11 +42,11 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "BASAE v1.156"
+local testver = "Test v1.151 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
-    Title = "SKRIP NI BAI",
-    Subtitle = "BASAE v1.156",
+    Title = "BASAE-Skrip",
+    Subtitle = testver,
     Width = 480,
     Height = 350,
     SidebarWidth = 108,
@@ -1016,38 +1016,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
-        local AntiPaloRow = Create("Frame", {
-            Name = "AntiPaloRow",
-            Parent = Page,
-            Size = UDim2.new(1, 0, 0, 124),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            LayoutOrder = 2
-        })
-        local AntiPaloCard = CreateCard(AntiPaloRow, "🛡  Anti Palo", "")
-        AntiPaloCard.Position = UDim2.new(0, 0, 0, 0)
-        AntiPaloCard.Size = UDim2.new(0.5, -6, 0, 124)
-        local AntiPaloEnabled = false
-        local AntiPaloStatus = Create("TextLabel", {
-            Parent = AntiPaloCard,
-            Position = UDim2.fromOffset(11, 104),
-            Size = UDim2.new(1, -22, 0, 14),
-            BackgroundTransparency = 1,
-            Text = "OFF",
-            TextColor3 = Theme.Gray,
-            Font = Enum.Font.Gotham,
-            TextSize = 9,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
-        local AntiPaloToggle
-        AntiPaloToggle = CreateToggle(AntiPaloCard, "Immortal si Bai", false, function(enabled)
-            AntiPaloEnabled = enabled
-            AntiPaloStatus.Text = enabled and "ON • Release response active" or "OFF"
-            AntiPaloStatus.TextColor3 = enabled and Theme.Accent or Theme.Gray
-            AddDebugLog("[Anti Palo] " .. (enabled and "Release response ON." or "Release response OFF."))
-        end)
-        AntiPaloToggle.Position = UDim2.fromOffset(11, 58)
-        AntiPaloToggle.Size = UDim2.new(1, -22, 0, 28)
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
@@ -2877,9 +2845,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not pickup or not pickup.Parent or PendingAnimalPickupSet[pickup] then return end
             PendingAnimalPickupSet[pickup] = true
             table.insert(PendingAnimalPickups, pickup)
-            local queueMessage = "NEW ANIMAL queued: " .. pickup.Name .. " | current pickup/return lock is active; will evaluate when movement is released."
-            SetTrackerStatus(queueMessage)
-            AddDebugLog("[Movement Release] " .. queueMessage)
+            SetTrackerStatus("NEW ANIMAL queued: " .. pickup.Name .. " | current pickup/return lock is active; will evaluate when movement is released.")
             if PendingAnimalPickupWorker then return end
             PendingAnimalPickupWorker = true
             task.spawn(function()
@@ -2959,7 +2925,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if AnimalPickups then
             BindAnimalPickups(AnimalPickups)
         end
-        local function HandleFlingRecovery(action, flingPosition, duration, strength)
+        local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
+        FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
             if tostring(action):lower() ~= "fling" then return end
             local flingAnimal = ActivePickup or FlingAnimalTarget
             local targetAnimalName = (flingAnimal and flingAnimal.Name) or FlingTargetAnimalName
@@ -3230,7 +3197,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); searching nearest PromptAnchor StealPrompt.", arrivalDistance))
                 local anchor = workspace:FindFirstChild("PromptAnchor")
                 local prompt, promptPosition
-                local searchDeadline = os.clock() + 5
+                local searchDeadline = os.clock() + 8
                 local function positionOf(candidate)
                     local parent = candidate and candidate.Parent
                     while parent and parent ~= workspace do
@@ -3261,7 +3228,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         end
                     end
                     if prompt then break end
-                    task.wait(0.05)
+                    task.wait(0.2)
                 until os.clock() >= searchDeadline or PickupGeneration ~= flingToken
                 if PickupGeneration ~= flingToken then
                     finishFlingRecovery()
@@ -3329,6 +3296,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
+                task.wait(0.15)
                 if PickupGeneration ~= flingToken then
                     finishFlingRecovery()
                     return
@@ -3380,7 +3348,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         end
                         if not targetStillExists then confirmed = true; break end
                     end
-                    task.wait(0.05)
+                    task.wait(0.1)
                 end
                 if PickupGeneration ~= flingToken then
                     finishFlingRecovery()
@@ -3397,31 +3365,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 finishFlingRecovery()
                 ReturnToPickup("Fling recovery pickup confirmed. Returning to saved base position.")
             end)
-        end
-        local function HandleAntiPaloRelease(action)
-            if not AntiPaloEnabled or tostring(action):lower() ~= "fling" then return end
-            local remote = game:GetService("ReplicatedStorage"):FindFirstChild("CatchFlingRemote")
-            if not remote or not remote:IsA("RemoteEvent") then
-                AddDebugLog("[Anti Palo] Release skipped: CatchFlingRemote is unavailable.")
-                return
-            end
-            local ok, err = pcall(function()
-                remote:FireServer("release")
-            end)
-            if ok then
-                SetTrackerStatus("Anti Palo sent release response to fling event.")
-            else
-                AddDebugLog("[Anti Palo] Release response failed: " .. tostring(err))
-            end
-        end
-
-        local CatchFlingRemote = game:GetService("ReplicatedStorage"):FindFirstChild("CatchFlingRemote")
-        if CatchFlingRemote and CatchFlingRemote:IsA("RemoteEvent") then
-            FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
-                HandleAntiPaloRelease(action)
-                HandleFlingRecovery(action, flingPosition, duration, strength)
-            end)
-        end
+        end)
         AnimalFolderConnection = workspace.ChildAdded:Connect(function(child)
             if child.Name == "AnimalPickups" and not AnimalPickups then
                 BindAnimalPickups(child)
