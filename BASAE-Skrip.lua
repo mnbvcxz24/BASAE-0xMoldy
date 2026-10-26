@@ -3014,8 +3014,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if AnimalPickups then
             BindAnimalPickups(AnimalPickups)
         end
-        local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
-        FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
+        local function HandleFlingRecovery(action, flingPosition, duration, strength)
             if tostring(action):lower() ~= "fling" then return end
             local flingAnimal = ActivePickup or FlingAnimalTarget
             local targetAnimalName = (flingAnimal and flingAnimal.Name) or FlingTargetAnimalName
@@ -3454,6 +3453,63 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 finishFlingRecovery()
                 ReturnToPickup("Fling recovery pickup confirmed. Returning to saved base position.")
             end)
+        end
+        local CatchFlingRemote = game:GetService("ReplicatedStorage"):FindFirstChild("CatchFlingRemote")
+        if CatchFlingRemote and CatchFlingRemote:IsA("RemoteEvent") then
+            FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(HandleFlingRecovery)
+        end
+        local MovementStallWatchdogBusy = false
+        local MovementStallThreshold = 1.5
+        local MovementStallMinDistance = 1.25
+        task.spawn(function()
+            local lastPosition
+            local lastMovedAt = os.clock()
+            local lastCharacter
+            while not Runtime.Stopped and not ScriptShuttingDown do
+                task.wait(0.25)
+                local character = LocalPlayer.Character
+                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                local expectedToMove = AutoBreakEnabled and AutoPickupEnabled and PickupRequested
+                    and not FlingRecoveryActive and not ReturningAfterPickup
+                if not character or not humanoid or not root or not expectedToMove or humanoid.Health <= 0 then
+                    lastPosition = root and root.Position or nil
+                    lastCharacter = character
+                    lastMovedAt = os.clock()
+                    continue
+                end
+                if character ~= lastCharacter or not lastPosition then
+                    lastCharacter = character
+                    lastPosition = root.Position
+                    lastMovedAt = os.clock()
+                    continue
+                end
+                local position = root.Position
+                if (position - lastPosition).Magnitude >= MovementStallMinDistance then
+                    lastPosition = position
+                    lastMovedAt = os.clock()
+                elseif os.clock() - lastMovedAt >= MovementStallThreshold and not MovementStallWatchdogBusy then
+                    MovementStallWatchdogBusy = true
+                    lastMovedAt = os.clock()
+                    local state = humanoid:GetState()
+                    local stalled = humanoid.Health > 0 and root.Parent == character
+                        and state ~= Enum.HumanoidStateType.Dead
+                    if stalled and not FlingRecoveryActive and PickupRequested and AutoBreakEnabled and AutoPickupEnabled then
+                        SetTrackerStatus("Movement watchdog: character stalled; attempting fling recovery.")
+                        task.spawn(function()
+                            local ok, err = pcall(HandleFlingRecovery, "fling", root.Position, 1.5, 1)
+                            if not ok then
+                                warn("[BASAE-Skrip] Movement stall recovery failed: " .. tostring(err))
+                                SetTrackerStatus("Movement watchdog recovery failed: " .. tostring(err):gsub("[%r\\n]+", " "):sub(1, 180))
+                            end
+                            task.wait(1)
+                            MovementStallWatchdogBusy = false
+                        end)
+                    else
+                        MovementStallWatchdogBusy = false
+                    end
+                end
+            end
         end)
         AnimalFolderConnection = workspace.ChildAdded:Connect(function(child)
             if child.Name == "AnimalPickups" and not AnimalPickups then
