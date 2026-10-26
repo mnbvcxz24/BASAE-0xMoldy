@@ -1018,13 +1018,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
         local AntiPaloCard = CreateCard(Page, "🛡  Anti Palo", "Test remote rename behavior.")
         AntiPaloCard.LayoutOrder = 2
-        AntiPaloCard.Size = UDim2.new(1, 0, 0, 108)
+        AntiPaloCard.Size = UDim2.new(1, 0, 0, 124)
         local AntiPaloBusy = false
         local AntiPaloEnabled = false
         local AntiPaloRemote
         local AntiPaloStatus = Create("TextLabel", {
             Parent = AntiPaloCard,
-            Position = UDim2.fromOffset(11, 88),
+            Position = UDim2.fromOffset(11, 104),
             Size = UDim2.new(1, -22, 0, 14),
             BackgroundTransparency = 1,
             Text = "Status: OFF",
@@ -1033,7 +1033,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             TextSize = 9,
             TextXAlignment = Enum.TextXAlignment.Left
         })
-        local AntiPaloToggle = CreateToggle(AntiPaloCard, "Immortal si Bai", false, function(enabled)
+        local AntiPaloToggle
+        AntiPaloToggle = CreateToggle(AntiPaloCard, "Immortal si Bai", false, function(enabled)
             if AntiPaloBusy then
                 local controller = ToggleControllers[AntiPaloToggle]
                 if controller then controller.SetEnabled(AntiPaloEnabled, false) end
