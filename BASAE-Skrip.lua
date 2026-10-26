@@ -42,18 +42,18 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.153 -- 0xMoldy"
+local testver = "Test v1.154 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
     Subtitle = testver,
     Width = 480,
-    Height = 350,
+    Height = 320,
     SidebarWidth = 108,
     SidebarNames = {
-        "Auto",
+        "Main",
         "ESP",
-        "Placed",
+        "Misc. feature",
         "Pickups",
         "Settings",
         "Debug"
@@ -931,7 +931,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Parent = SidebarContainer,
         Size = UDim2.new(1, -2, 0, 34),
         BackgroundColor3 = Theme.Sidebar,
-        Text = ({"⌂", "◎", "◇", "♧", "⚙", "≡"})[index] .. "  " .. name,
+        Text = ({"⌂", "◎", "✦", "♧", "⚙", "≡"})[index] .. "  " .. name,
         TextColor3 = Theme.DarkGray,
         Font = Enum.Font.GothamMedium,
         TextSize = 9,
@@ -967,6 +967,7 @@ end
 local ShutdownAutomation
 local CancelActiveAutomation
 local TouchAutomationProgress
+local AntiPaloEnabled = false
 -- CREATE ALL PAGES
 for index, name in ipairs(UIConfig.SidebarNames) do
     local Page = CreatePage(index, name)
@@ -1029,44 +1030,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BorderSizePixel = 0,
             LayoutOrder = 2
         })
-        local AntiPaloCard = CreateCard(AntiFuseRow, "🛡  Anti Palo", "Immortal si Bai")
-        AntiPaloCard.Position = UDim2.new(0, 0, 0, 0)
-        AntiPaloCard.Size = UDim2.new(0.5, -6, 0, 150)
-        local AntiPaloBusy = false
-        local AntiPaloEnabled = false
-        local AntiPaloStatus = Create("TextLabel", {
-            Parent = AntiPaloCard,
-            Position = UDim2.fromOffset(11, 78),
-            Size = UDim2.new(1, -22, 0, 14),
-            BackgroundTransparency = 1,
-            Text = "Status: OFF",
-            TextColor3 = Theme.Gray,
-            Font = Enum.Font.Gotham,
-            TextSize = 9,
-            TextXAlignment = Enum.TextXAlignment.Left
-        })
-        local AntiPaloToggle
-        AntiPaloToggle = CreateToggle(AntiPaloCard, "", false, function(enabled)
-            if AntiPaloBusy then
-                local controller = ToggleControllers[AntiPaloToggle]
-                if controller then controller.SetEnabled(AntiPaloEnabled, false) end
-                return
-            end
-            AntiPaloBusy = true
-            AntiPaloEnabled = enabled
-            AntiPaloStatus.Text = enabled and "Status: ON • Fling Release" or "Status: OFF"
-            AntiPaloStatus.TextColor3 = enabled and Theme.Accent or Theme.Gray
-            AddDebugLog("[Anti Palo] Fling release " .. (enabled and "enabled" or "disabled") .. ".")
-            task.delay(0.25, function()
-                AntiPaloBusy = false
-            end)
-        end)
-        AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
-        AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
-
         local AutoFuseCard = CreateCard(AntiFuseRow, "⚙  Auto Fuse", "Auto fuse Requirement")
-        AutoFuseCard.Position = UDim2.new(0.5, 6, 0, 0)
-        AutoFuseCard.Size = UDim2.new(0.5, -6, 0, 150)
+        AutoFuseCard.Position = UDim2.new(0, 0, 0, 0)
+        AutoFuseCard.Size = UDim2.new(1, 0, 0, 150)
         local AutoFuseEnabled = false
         local AutoFuseGeneration = 0
         local AutoFuseRequirements = {}
@@ -4264,86 +4230,61 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ESPCard.Size = UDim2.new(1, 0, 0, 125)
 
     elseif index == 3 then
-        local AnimalsCard = CreateCard(Page, "♧  Placed Animals", "")
-        AnimalsCard.Size = UDim2.new(1, 0, 0, 230)
-        local animalsTitle = AnimalsCard:FindFirstChildWhichIsA("TextLabel")
-        if animalsTitle then animalsTitle.Position = UDim2.fromOffset(15, 10) end
-        local BaseStatus = Create("TextLabel", {
-            Parent = AnimalsCard, Position = UDim2.fromOffset(15, 42),
-            Size = UDim2.new(1, -30, 0, 18), BackgroundTransparency = 1,
-            Text = "Searching for Your Base...", TextColor3 = Theme.Gray,
-            Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left
+        local AntiPaloCard = CreateCard(Page, "🛡  Anti Palo", "Immortal si Bai")
+        AntiPaloCard.Size = UDim2.new(1, 0, 0, 100)
+        local AntiPaloBusy = false
+        local AntiPaloStatus = Create("TextLabel", {
+            Parent = AntiPaloCard,
+            Position = UDim2.fromOffset(11, 62),
+            Size = UDim2.new(1, -22, 0, 14),
+            BackgroundTransparency = 1,
+            Text = "Status: OFF",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
         })
-        local AnimalsList = Create("ScrollingFrame", {
-            Parent = AnimalsCard, Position = UDim2.fromOffset(10, 64),
-            Size = UDim2.new(1, -20, 1, -74), BackgroundColor3 = Theme.SurfaceInput,
-            BorderSizePixel = 0, ScrollBarThickness = 3, ScrollBarImageColor3 = Theme.Gray,
-            CanvasSize = UDim2.new(0, 0, 0, 0)
-        })
-        AddCorner(AnimalsList, 6)
-        local AnimalsLayout = Create("UIListLayout", {Parent = AnimalsList, Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder})
-        Create("UIPadding", {Parent = AnimalsList, PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)})
-        local function FindOwnedBase()
-            local plots = workspace:FindFirstChild("Plots")
-            if not plots then return nil end
-            for _, base in ipairs(plots:GetChildren()) do
-                local hitbox = base:FindFirstChild("Hitbox")
-                local info = hitbox and hitbox:FindFirstChild("PlayerInfoUi")
-                local nameLabel = info and info:FindFirstChild("Name")
-                if nameLabel and nameLabel:IsA("TextLabel") and nameLabel.Text == "Your Base" then return base end
-            end
-            return nil
-        end
-        local function ReadCPS(animal)
-            for _, item in ipairs(animal:GetDescendants()) do
-                if item.Name == "CashPerSecond" and item:IsA("TextLabel") then
-                    local display = item.Text
-                    local raw = display:gsub(",", ""):gsub("%s+", "")
-                    local number = tonumber(raw:match("[%d%.]+"))
-                    local suffix = raw:match("[KkMmBbTt]$")
-                    local scale = ({k=1e3,m=1e6,b=1e9,t=1e12})[suffix and suffix:lower() or ""]
-                    return number and number * (scale or 1) or -1, display
-                end
-            end
-            return -1, "CPS unavailable"
-        end
-        local function RefreshPlacedAnimals()
-            for _, child in ipairs(AnimalsList:GetChildren()) do
-                if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
-            end
-            local base = FindOwnedBase()
-            if not base then
-                BaseStatus.Text = "Your Base not found"
-                local waiting = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "Waiting for Your Base...", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
+        local AntiPaloToggle
+        AntiPaloToggle = CreateToggle(AntiPaloCard, "", false, function(enabled)
+            if AntiPaloBusy then
+                local controller = ToggleControllers[AntiPaloToggle]
+                if controller then controller.SetEnabled(AntiPaloEnabled, false) end
                 return
             end
-            local placed = base:FindFirstChild("PlacedAnimals")
-            BaseStatus.Text = base.Name .. (placed and " | Placed animals" or " | PlacedAnimals not found")
-            if not placed then return end
-            local records = {}
-            for _, animal in ipairs(placed:GetChildren()) do
-                local value, display = ReadCPS(animal)
-                table.insert(records, {name = animal.Name, value = value, display = display})
-            end
-            table.sort(records, function(a, b) if a.value == b.value then return a.name < b.name end return a.value > b.value end)
-            if #records == 0 then
-                Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No placed animals found.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
-            end
-            for order, record in ipairs(records) do
-                local row = Create("TextLabel", {Parent = AnimalsList, Size = UDim2.new(1, -8, 0, 25), BackgroundColor3 = Theme.Card, BorderSizePixel = 0, Text = "  " .. record.name .. "  |  " .. record.display, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = order})
-                AddCorner(row, 4)
-            end
-            AnimalsList.CanvasSize = UDim2.new(0, 0, 0, AnimalsLayout.AbsoluteContentSize.Y + 10)
-        end
-        AnimalsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            AnimalsList.CanvasSize = UDim2.new(0, 0, 0, AnimalsLayout.AbsoluteContentSize.Y + 10)
+            AntiPaloBusy = true
+            AntiPaloEnabled = enabled
+            AntiPaloStatus.Text = enabled and "Status: ON • Fling Release" or "Status: OFF"
+            AntiPaloStatus.TextColor3 = enabled and Theme.Accent or Theme.Gray
+            AddDebugLog("[Anti Palo] Fling release " .. (enabled and "enabled" or "disabled") .. ".")
+            task.delay(0.25, function()
+                AntiPaloBusy = false
+            end)
         end)
-        task.spawn(function()
-            while not Runtime.Stopped and ScreenGui.Parent and Page.Parent do
-                RefreshPlacedAnimals()
-                task.wait(2)
-            end
+        AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
+        AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
+
+        local AuraCard = CreateCard(Page, "Aura ni Bai", "Auto parry")
+        AuraCard.Size = UDim2.new(1, 0, 0, 90)
+        local AuraStatus = Create("TextLabel", {
+            Parent = AuraCard,
+            Position = UDim2.fromOffset(11, 60),
+            Size = UDim2.new(1, -22, 0, 14),
+            BackgroundTransparency = 1,
+            Text = "Status: OFF",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        local AuraEnabled = false
+        local AuraToggle = CreateToggle(AuraCard, "", false, function(enabled)
+            AuraEnabled = enabled
+            AuraStatus.Text = enabled and "Status: ON" or "Status: OFF"
+            AuraStatus.TextColor3 = enabled and Theme.Accent or Theme.Gray
+            AddDebugLog("[Aura ni Bai] Toggle " .. (enabled and "ON" or "OFF") .. ".")
         end)
+        AuraToggle.Position = UDim2.new(1, -58, 0, 7)
+        AuraToggle.Size = UDim2.fromOffset(48, 24)
 
     elseif index == 4 then
         local PickupCard = CreateCard(Page, "◇  Animal Pickups", "")
