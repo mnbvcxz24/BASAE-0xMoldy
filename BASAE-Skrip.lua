@@ -1021,7 +1021,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AntiPaloCard.Size = UDim2.new(1, 0, 0, 110)
         local AntiPaloBusy = false
         local AntiPaloEnabled = false
-        local AntiPaloRemote
         local AntiPaloStatus = Create("TextLabel", {
             Parent = AntiPaloCard,
             Position = UDim2.fromOffset(11, 78),
@@ -1041,43 +1040,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             AntiPaloBusy = true
-            AntiPaloStatus.Text = "Applying..."
-            AntiPaloStatus.TextColor3 = Theme.Accent
-            task.spawn(function()
-                local success, err = pcall(function()
-                    local replicatedStorage = game:GetService("ReplicatedStorage")
-                    if not AntiPaloRemote or not AntiPaloRemote.Parent then
-                        AntiPaloRemote = replicatedStorage:FindFirstChild("CatchFlingRemote")
-                            or replicatedStorage:FindFirstChild("BaiNaBai")
-                    end
-                    if not AntiPaloRemote then
-                        error("CatchFlingRemote was not found")
-                    end
-                    local targetName = enabled and "BaiNaBai" or "CatchFlingRemote"
-                    local conflict = replicatedStorage:FindFirstChild(targetName)
-                    if conflict and conflict ~= AntiPaloRemote then
-                        error(targetName .. " already exists")
-                    end
-                    if AntiPaloRemote.Name ~= targetName then
-                        AntiPaloRemote.Name = targetName
-                    end
-                    if AntiPaloRemote.Name ~= targetName then
-                        error("Remote rename did not apply")
-                    end
-                    AntiPaloEnabled = enabled
-                    AddDebugLog("[Anti Palo] Remote renamed to " .. targetName)
-                end)
-                if not success then
-                    local controller = ToggleControllers[AntiPaloToggle]
-                    if controller then controller.SetEnabled(AntiPaloEnabled, false) end
-                    AntiPaloStatus.Text = "Failed: " .. tostring(err):sub(1, 90)
-                    AntiPaloStatus.TextColor3 = Color3.fromRGB(255, 130, 130)
-                    AddDebugLog("[Anti Palo] " .. tostring(err))
-                else
-                    AntiPaloStatus.Text = AntiPaloEnabled and "Status: ON • BaiNaBai" or "Status: OFF • CatchFlingRemote"
-                    AntiPaloStatus.TextColor3 = AntiPaloEnabled and Theme.Accent or Theme.Gray
-                end
-                task.wait(0.25)
+            AntiPaloEnabled = enabled
+            AntiPaloStatus.Text = enabled and "Status: ON • Fling Release" or "Status: OFF"
+            AntiPaloStatus.TextColor3 = enabled and Theme.Accent or Theme.Gray
+            AddDebugLog("[Anti Palo] Fling release " .. (enabled and "enabled" or "disabled") .. ".")
+            task.delay(0.25, function()
                 AntiPaloBusy = false
             end)
         end)
@@ -2995,6 +2962,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
         FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
             if tostring(action):lower() ~= "fling" then return end
+            if AntiPaloEnabled then
+                local released, releaseError = pcall(function()
+                    CatchFlingRemote:FireServer("release")
+                end)
+                if released then
+                    AddDebugLog("[Anti Palo] Sent fling release.")
+                else
+                    AddDebugLog("[Anti Palo] Fling release failed: " .. tostring(releaseError))
+                end
+            end
             local flingAnimal = ActivePickup or FlingAnimalTarget
             local targetAnimalName = (flingAnimal and flingAnimal.Name) or FlingTargetAnimalName
             local targetWeightKg = FlingTargetWeightKg
