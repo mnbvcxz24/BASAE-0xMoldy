@@ -1107,7 +1107,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local empty = input and input:FindFirstChild("Empty")
             local nameObject = empty and empty:FindFirstChild("Name")
             if not nameObject or not nameObject:IsA("TextLabel") then return nil end
-            local animalName = nameObject:GetAttribute("ContentText")
+            local attributes = nameObject:GetAttributes()
+            local animalName = attributes.ContentText or attributes.contentText or attributes.Text or attributes.text
+            if typeof(animalName) ~= "string" or animalName == "" then
+                for attributeName, attributeValue in pairs(attributes) do
+                    if string.find(string.lower(attributeName), "text", 1, true)
+                        and typeof(attributeValue) == "string"
+                        and attributeValue ~= "" then
+                        animalName = attributeValue
+                        break
+                    end
+                end
+            end
             if typeof(animalName) ~= "string" then return nil end
             animalName = animalName:match("^%s*(.-)%s*$")
             if animalName == "" then return nil end
