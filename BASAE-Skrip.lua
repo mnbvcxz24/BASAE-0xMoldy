@@ -1106,8 +1106,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local input = inputs and inputs:FindFirstChild("Input" .. slot)
             local empty = input and input:FindFirstChild("Empty")
             if not empty then return nil end
-            local animalName = empty.Name
-            if not animalName or animalName == "" then
+            local contentText = empty:FindFirstChild("ContentText", true)
+            if not contentText then return nil end
+            local animalName = contentText.Name
+            if not animalName or animalName == "" or animalName == "ContentText" then
                 return nil
             end
             return animalName
