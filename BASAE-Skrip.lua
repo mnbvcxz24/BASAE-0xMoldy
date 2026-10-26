@@ -4384,6 +4384,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         AuraStatus.Text = nearbyText
                         AuraStatus.TextColor3 = Theme.Accent
                         if not AuraWasNearby then
+                            AddDebugLog("[Aura ni Bai] Detected " .. nearby[1].Name .. " within 15 studs (" .. string.format("%.1f", nearby[1].Distance) .. " studs).")
                             ShowAuraPrankNotice(nearby[1].Name)
                         end
                         AuraWasNearby = true
