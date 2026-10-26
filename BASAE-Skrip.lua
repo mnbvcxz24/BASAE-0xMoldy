@@ -1029,7 +1029,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AntiPaloCard.Size = UDim2.new(0.5, -6, 0, 124)
         local AntiPaloBusy = false
         local AntiPaloEnabled = false
-        local AntiPaloRemote
         local AntiPaloStatus = Create("TextLabel", {
             Parent = AntiPaloCard,
             Position = UDim2.fromOffset(11, 104),
@@ -1041,6 +1040,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             TextSize = 9,
             TextXAlignment = Enum.TextXAlignment.Left
         })
+        local AntiPaloWarning = Create("TextLabel", {
+            Parent = AntiPaloCard,
+            Position = UDim2.fromOffset(11, 29),
+            Size = UDim2.new(1, -22, 0, 32),
+            BackgroundTransparency = 1,
+            Text = "Warning: ON deletes CatchFlingRemote. Rejoin to restore it; this cannot be turned off here.",
+            TextColor3 = Color3.fromRGB(255, 185, 105),
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            TextWrapped = true,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top
+        })
         local AntiPaloToggle
         AntiPaloToggle = CreateToggle(AntiPaloCard, "Immortal si Bai", false, function(enabled)
             if AntiPaloBusy then
@@ -1048,43 +1060,44 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if controller then controller.SetEnabled(AntiPaloEnabled, false) end
                 return
             end
+            if AntiPaloEnabled and not enabled then
+                local controller = ToggleControllers[AntiPaloToggle]
+                if controller then controller.SetEnabled(true, false) end
+                AntiPaloStatus.Text = "ON • Rejoin to restore"
+                return
+            end
+            if not enabled then
+                AntiPaloStatus.Text = "OFF"
+                return
+            end
             AntiPaloBusy = true
-            AntiPaloStatus.Text = "Applying..."
+            AntiPaloStatus.Text = "Deleting remote..."
             AntiPaloStatus.TextColor3 = Theme.Accent
             task.spawn(function()
                 local success, err = pcall(function()
                     local replicatedStorage = game:GetService("ReplicatedStorage")
-                    if not AntiPaloRemote or not AntiPaloRemote.Parent then
-                        AntiPaloRemote = replicatedStorage:FindFirstChild("CatchFlingRemote")
-                            or replicatedStorage:FindFirstChild("BaiNaBai")
-                    end
-                    if not AntiPaloRemote then
+                    local remote = replicatedStorage:FindFirstChild("CatchFlingRemote")
+                    if not remote then
                         error("CatchFlingRemote was not found")
                     end
-                    local targetName = enabled and "BaiNaBai" or "CatchFlingRemote"
-                    local otherName = enabled and "CatchFlingRemote" or "BaiNaBai"
-                    local conflict = replicatedStorage:FindFirstChild(targetName)
-                    if conflict and conflict ~= AntiPaloRemote then
-                        error(targetName .. " already exists")
+                    remote:Destroy()
+                    if replicatedStorage:FindFirstChild("CatchFlingRemote") then
+                        error("Remote still exists after deletion")
                     end
-                    if AntiPaloRemote.Name ~= targetName then
-                        AntiPaloRemote.Name = targetName
-                    end
-                    if AntiPaloRemote.Name ~= targetName then
-                        error("Remote rename did not apply")
-                    end
-                    AntiPaloEnabled = enabled
-                    AddDebugLog("[Anti Palo] Remote renamed to " .. targetName)
+                    AntiPaloEnabled = true
+                    AddDebugLog("[Anti Palo] CatchFlingRemote deleted locally. Rejoin to restore.")
                 end)
                 if not success then
                     local controller = ToggleControllers[AntiPaloToggle]
-                    if controller then controller.SetEnabled(AntiPaloEnabled, false) end
-                    AntiPaloStatus.Text = "Failed: " .. tostring(err):sub(1, 90)
+                    if controller then controller.SetEnabled(false, false) end
+                    AntiPaloStatus.Text = "Failed: " .. tostring(err):sub(1, 65)
                     AntiPaloStatus.TextColor3 = Color3.fromRGB(255, 130, 130)
                     AddDebugLog("[Anti Palo] " .. tostring(err))
                 else
-                    AntiPaloStatus.Text = AntiPaloEnabled and "ON • BaiNaBai" or "OFF • CatchFlingRemote"
-                    AntiPaloStatus.TextColor3 = AntiPaloEnabled and Theme.Accent or Theme.Gray
+                    local controller = ToggleControllers[AntiPaloToggle]
+                    if controller then controller.SetEnabled(true, false) end
+                    AntiPaloStatus.Text = "ON • Rejoin to restore"
+                    AntiPaloStatus.TextColor3 = Theme.Accent
                 end
                 task.wait(0.25)
                 AntiPaloBusy = false
