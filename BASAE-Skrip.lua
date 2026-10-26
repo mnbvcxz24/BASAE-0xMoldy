@@ -1021,9 +1021,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
-        local AntiPaloCard = CreateCard(Page, "🛡  Anti Palo", "Immortal si Bai")
-        AntiPaloCard.LayoutOrder = 2
-        AntiPaloCard.Size = UDim2.new(0.5, -6, 0, 110)
+        local AntiFuseRow = Create("Frame", {
+            Name = "AntiFuseRow",
+            Parent = Page,
+            Size = UDim2.new(1, 0, 0, 150),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            LayoutOrder = 2
+        })
+        local AntiPaloCard = CreateCard(AntiFuseRow, "🛡  Anti Palo", "Immortal si Bai")
+        AntiPaloCard.Position = UDim2.new(0, 0, 0, 0)
+        AntiPaloCard.Size = UDim2.new(0.5, -6, 0, 150)
         local AntiPaloBusy = false
         local AntiPaloEnabled = false
         local AntiPaloStatus = Create("TextLabel", {
@@ -1056,8 +1064,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
         AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
 
-        local AutoFuseCard = CreateCard(Page, "⚙  Auto Fuse", "Auto fuse Requirement")
-        AutoFuseCard.LayoutOrder = 3
+        local AutoFuseCard = CreateCard(AntiFuseRow, "⚙  Auto Fuse", "Auto fuse Requirement")
         AutoFuseCard.Position = UDim2.new(0.5, 6, 0, 0)
         AutoFuseCard.Size = UDim2.new(0.5, -6, 0, 150)
         local AutoFuseEnabled = false
