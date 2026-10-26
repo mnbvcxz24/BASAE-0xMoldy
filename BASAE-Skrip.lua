@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.157 -- 0xMoldy"
+local testver = "Test v1.158 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -4323,7 +4323,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AddDebugLog("[Aura ni Bai] Could not select hotbar slot 2: " .. tostring(selectTwoError))
             end
             local fired, fireError = pcall(function()
-                remote:FireServer(nil)
+                remote:FireServer(targetName)
             end)
             if fired then
                 AddDebugLog("[Aura ni Bai] BatHitRequest:FireServer() called for " .. targetName .. ".")
