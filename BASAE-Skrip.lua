@@ -1043,9 +1043,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AntiPaloWarning = Create("TextLabel", {
             Parent = AntiPaloCard,
             Position = UDim2.fromOffset(11, 29),
-            Size = UDim2.new(1, -22, 0, 32),
+            Size = UDim2.new(1, -22, 0, 24),
             BackgroundTransparency = 1,
-            Text = "Warning: ON deletes CatchFlingRemote. Rejoin to restore it; this cannot be turned off here.",
+            Text = "Need to rejoin to turn off this feature.",
             TextColor3 = Color3.fromRGB(255, 185, 105),
             Font = Enum.Font.Gotham,
             TextSize = 9,
@@ -1103,8 +1103,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AntiPaloBusy = false
             end)
         end)
-        AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
-        AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
+        AntiPaloToggle.Position = UDim2.fromOffset(11, 58)
+        AntiPaloToggle.Size = UDim2.new(1, -22, 0, 28)
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
