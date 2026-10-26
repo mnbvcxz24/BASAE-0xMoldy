@@ -1016,9 +1016,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
-        local AntiPaloCard = CreateCard(Page, "🛡  Anti Palo", "")
+        local AntiPaloCard = CreateCard(Page, "🛡  Anti Palo", "Immortal si Bai")
         AntiPaloCard.LayoutOrder = 2
-        AntiPaloCard.Size = UDim2.new(1, 0, 0, 110)
+        AntiPaloCard.Size = UDim2.new(0.5, -6, 0, 110)
         local AntiPaloBusy = false
         local AntiPaloEnabled = false
         local AntiPaloStatus = Create("TextLabel", {
@@ -1033,7 +1033,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             TextXAlignment = Enum.TextXAlignment.Left
         })
         local AntiPaloToggle
-        AntiPaloToggle = CreateToggle(AntiPaloCard, "Immortal si Bai", false, function(enabled)
+        AntiPaloToggle = CreateToggle(AntiPaloCard, "", false, function(enabled)
             if AntiPaloBusy then
                 local controller = ToggleControllers[AntiPaloToggle]
                 if controller then controller.SetEnabled(AntiPaloEnabled, false) end
@@ -1048,7 +1048,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AntiPaloBusy = false
             end)
         end)
-        AntiPaloToggle.Position = UDim2.new(1, -58, 0, 43)
+        AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
         AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
