@@ -2779,8 +2779,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
-                SetPickupPhase("ACTIVATING", "Reached " .. pickup.Name .. "'s matching StealPrompt; confirming range before activation.")
-                task.wait(1)
+                SetPickupPhase("ACTIVATING", "Reached " .. pickup.Name .. "'s matching StealPrompt; activating immediately when the prompt is ready.")
                 if PickupGeneration ~= pickupToken then return end
                 if LocalPlayer.Character ~= character or not character.Parent or humanoid.Health <= 0 or not root.Parent then
                     PickupRequested = false
@@ -2794,7 +2793,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupRequested = false
                     ActivePickup = nil
                     ActivePickupCPS = -1
-                    SetTrackerStatus("Pickup cancelled: pet disappeared during the 3-second wait.")
+                    SetTrackerStatus("Pickup cancelled: animal disappeared before activation.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
@@ -2803,7 +2802,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     PickupRequested = false
                     ActivePickup = nil
                     ActivePickupCPS = -1
-                    SetTrackerStatus("Pickup cancelled: StealPrompt became unavailable after the 3-second wait.")
+                    SetTrackerStatus("Pickup cancelled: StealPrompt became unavailable before activation.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     return
                 end
