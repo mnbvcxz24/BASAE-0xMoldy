@@ -42,11 +42,11 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "BASAE v1.151"
+local testver = "BASAE v1.152"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIP NI BAI",
-    Subtitle = "BASAE v1.151",
+    Subtitle = "BASAE v1.152",
     Width = 480,
     Height = 350,
     SidebarWidth = 108,
@@ -1016,6 +1016,73 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
+        local AntiPaloCard = CreateCard(Page, "🛡  Anti Palo", "Test remote rename behavior.")
+        AntiPaloCard.LayoutOrder = 2
+        AntiPaloCard.Size = UDim2.new(1, 0, 0, 108)
+        local AntiPaloBusy = false
+        local AntiPaloEnabled = false
+        local AntiPaloRemote
+        local AntiPaloStatus = Create("TextLabel", {
+            Parent = AntiPaloCard,
+            Position = UDim2.fromOffset(11, 88),
+            Size = UDim2.new(1, -22, 0, 14),
+            BackgroundTransparency = 1,
+            Text = "Status: OFF",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        local AntiPaloToggle = CreateToggle(AntiPaloCard, "Immortal si Bai", false, function(enabled)
+            if AntiPaloBusy then
+                local controller = ToggleControllers[AntiPaloToggle]
+                if controller then controller.SetEnabled(AntiPaloEnabled, false) end
+                return
+            end
+            AntiPaloBusy = true
+            AntiPaloStatus.Text = "Applying..."
+            AntiPaloStatus.TextColor3 = Theme.Accent
+            task.spawn(function()
+                local success, err = pcall(function()
+                    local replicatedStorage = game:GetService("ReplicatedStorage")
+                    if not AntiPaloRemote or not AntiPaloRemote.Parent then
+                        AntiPaloRemote = replicatedStorage:FindFirstChild("CatchFlingRemote")
+                            or replicatedStorage:FindFirstChild("BaiNaBai")
+                    end
+                    if not AntiPaloRemote then
+                        error("CatchFlingRemote was not found")
+                    end
+                    local targetName = enabled and "BaiNaBai" or "CatchFlingRemote"
+                    local otherName = enabled and "CatchFlingRemote" or "BaiNaBai"
+                    local conflict = replicatedStorage:FindFirstChild(targetName)
+                    if conflict and conflict ~= AntiPaloRemote then
+                        error(targetName .. " already exists")
+                    end
+                    if AntiPaloRemote.Name ~= targetName then
+                        AntiPaloRemote.Name = targetName
+                    end
+                    if AntiPaloRemote.Name ~= targetName then
+                        error("Remote rename did not apply")
+                    end
+                    AntiPaloEnabled = enabled
+                    AddDebugLog("[Anti Palo] Remote renamed to " .. targetName)
+                end)
+                if not success then
+                    local controller = ToggleControllers[AntiPaloToggle]
+                    if controller then controller.SetEnabled(AntiPaloEnabled, false) end
+                    AntiPaloStatus.Text = "Failed: " .. tostring(err):sub(1, 90)
+                    AntiPaloStatus.TextColor3 = Color3.fromRGB(255, 130, 130)
+                    AddDebugLog("[Anti Palo] " .. tostring(err))
+                else
+                    AntiPaloStatus.Text = AntiPaloEnabled and "Status: ON • BaiNaBai" or "Status: OFF • CatchFlingRemote"
+                    AntiPaloStatus.TextColor3 = AntiPaloEnabled and Theme.Accent or Theme.Gray
+                end
+                task.wait(0.25)
+                AntiPaloBusy = false
+            end)
+        end)
+        AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
+        AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
