@@ -42,11 +42,11 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "BASAE v1.152"
+local testver = "BASAE v1.153"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIP NI BAI",
-    Subtitle = "BASAE v1.152",
+    Subtitle = "BASAE v1.153",
     Width = 480,
     Height = 350,
     SidebarWidth = 108,
@@ -2934,7 +2934,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not pickup or not pickup.Parent or PendingAnimalPickupSet[pickup] then return end
             PendingAnimalPickupSet[pickup] = true
             table.insert(PendingAnimalPickups, pickup)
-            SetTrackerStatus("NEW ANIMAL queued: " .. pickup.Name .. " | current pickup/return lock is active; will evaluate when movement is released.")
+            local queueMessage = "NEW ANIMAL queued: " .. pickup.Name .. " | current pickup/return lock is active; will evaluate when movement is released."
+            SetTrackerStatus(queueMessage)
+            AddDebugLog("[Movement Release] " .. queueMessage)
             if PendingAnimalPickupWorker then return end
             PendingAnimalPickupWorker = true
             task.spawn(function()
@@ -3492,11 +3494,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if distance < MovementSlowDistance and not MovementStallWatchdogBusy
                         and not FlingRecoveryActive and AutoBreakEnabled and AutoPickupEnabled then
                         MovementStallWatchdogBusy = true
-                        SetTrackerStatus(string.format("Movement watchdog: stalled/slow movement detected (%.2f studs in %.1fs); attempting fling recovery.", distance, elapsed))
+                        local watchdogMessage = string.format("Movement watchdog: stalled/slow movement detected (%.2f studs in %.1fs); attempting fling recovery.", distance, elapsed)
+                        SetTrackerStatus(watchdogMessage)
+                        AddDebugLog("[Movement Watchdog] " .. watchdogMessage)
                         task.spawn(function()
                             local ok, err = pcall(HandleFlingRecovery, "fling", root.Position, 1, 1)
                             if not ok then
                                 warn("[BASAE-Skrip] Movement stall recovery failed: " .. tostring(err))
+                                AddDebugLog("[Movement Watchdog] Recovery failed: " .. tostring(err))
                                 SetTrackerStatus("Movement watchdog recovery failed: " .. tostring(err):gsub("[%r\\n]+", " "):sub(1, 180))
                             end
                             task.wait(1)
