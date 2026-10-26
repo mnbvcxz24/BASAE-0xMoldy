@@ -4357,9 +4357,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AddDebugLog("[Aura ni Bai] Cannot prank: character or humanoid is unavailable.")
                 return
             end
-            local remote = game:GetService("ReplicatedStorage"):FindFirstChild("YouGotPrank", true)
+            local remote = game:GetService("ReplicatedStorage"):FindFirstChild("BatHitRequest", true)
             if not remote or not remote:IsA("RemoteEvent") then
-                AddDebugLog("[Aura ni Bai] YouGotPrank RemoteEvent not found.")
+                AddDebugLog("[Aura ni Bai] BatHitRequest RemoteEvent not found.")
                 return
             end
             local hotbarTwo = FindAuraHotbarTool(2)
@@ -4379,9 +4379,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 remote:FireServer()
             end)
             if fired then
-                AddDebugLog("[Aura ni Bai] YouGotPrank:FireServer() called for " .. targetName .. ".")
+                AddDebugLog("[Aura ni Bai] BatHitRequest:FireServer() called for " .. targetName .. ".")
             else
-                AddDebugLog("[Aura ni Bai] YouGotPrank call failed: " .. tostring(fireError))
+                AddDebugLog("[Aura ni Bai] BatHitRequest call failed: " .. tostring(fireError))
             end
             task.wait(0.15)
             local hotbarOne = FindAuraHotbarTool(1)
