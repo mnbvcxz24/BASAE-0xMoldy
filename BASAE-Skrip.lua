@@ -4327,25 +4327,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nearby, "Nearby: " .. table.concat(names, ", ")
         end
-        local function FindAuraHotbarTool(slot)
-            local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
-            local character = LocalPlayer.Character
-            local tools = {}
-            if backpack then
-                for _, item in ipairs(backpack:GetChildren()) do
-                    if item:IsA("Tool") then
-                        table.insert(tools, item)
-                    end
-                end
+        local function SelectAuraHotbarSlot(slot)
+            local key = slot == 1 and Enum.KeyCode.One or slot == 2 and Enum.KeyCode.Two
+            if not key then
+                return false, "Unsupported hotbar slot: " .. tostring(slot)
             end
-            if character then
-                for _, item in ipairs(character:GetChildren()) do
-                    if item:IsA("Tool") and not table.find(tools, item) then
-                        table.insert(tools, item)
-                    end
-                end
+            local ok, err = pcall(function()
+                local virtualInput = game:GetService("VirtualInputManager")
+                virtualInput:SendKeyEvent(true, key, false, game)
+                task.wait(0.05)
+                virtualInput:SendKeyEvent(false, key, false, game)
+            end)
+            if not ok then
+                return false, tostring(err)
             end
-            return tools[slot]
+            return true
         end
         local function RunAuraPrank(targetName)
             local character = LocalPlayer.Character
@@ -4359,23 +4355,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AddDebugLog("[Aura ni Bai] BatHitRequest RemoteEvent not found.")
                 return
             end
-            local hotbarTwo = FindAuraHotbarTool(2)
-            if hotbarTwo then
-                local ok, err = pcall(function()
-                    humanoid:EquipTool(hotbarTwo)
-                end)
-                if ok then
-                    task.wait(0.15)
-                else
-                    AddDebugLog("[Aura ni Bai] Hotbar 2 equip failed: " .. tostring(err))
-                end
+            local selectedTwo, selectTwoError = SelectAuraHotbarSlot(2)
+            if selectedTwo then
+                AddDebugLog("[Aura ni Bai] Selected hotbar slot 2.")
+                task.wait(0.15)
             else
-                AddDebugLog("[Aura ni Bai] Hotbar 2 tool not found; firing prank remote without switching tools.")
+                AddDebugLog("[Aura ni Bai] Could not select hotbar slot 2: " .. tostring(selectTwoError))
             end
             local fired, fireError = pcall(function()
-                remote:FireServer(
-                    nil
-                )
+                remote:FireServer(nil)
             end)
             if fired then
                 AddDebugLog("[Aura ni Bai] BatHitRequest:FireServer() called for " .. targetName .. ".")
@@ -4383,18 +4371,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AddDebugLog("[Aura ni Bai] BatHitRequest call failed: " .. tostring(fireError))
             end
             task.wait(0.15)
-            local hotbarOne = FindAuraHotbarTool(1)
-            if hotbarOne and LocalPlayer.Character == character then
-                local ok, err = pcall(function()
-                    humanoid:EquipTool(hotbarOne)
-                end)
-                if ok then
-                    AddDebugLog("[Aura ni Bai] Returned to hotbar 1: " .. hotbarOne.Name)
+            if LocalPlayer.Character == character then
+                local selectedOne, selectOneError = SelectAuraHotbarSlot(1)
+                if selectedOne then
+                    AddDebugLog("[Aura ni Bai] Returned to hotbar slot 1.")
                 else
-                    AddDebugLog("[Aura ni Bai] Hotbar 1 equip failed: " .. tostring(err))
+                    AddDebugLog("[Aura ni Bai] Could not return to hotbar slot 1: " .. tostring(selectOneError))
                 end
-            else
-                AddDebugLog("[Aura ni Bai] Hotbar 1 tool not found after prank.")
             end
         end
         local AuraToggle = CreateToggle(AuraCard, "", false, function(enabled)
