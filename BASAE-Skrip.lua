@@ -1896,7 +1896,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local Players = game:GetService("Players")
             local currentPlayer = LocalPlayer or Players.LocalPlayer
             if not currentPlayer then
-                SetTrackerStatus("Hotbar 1 equip failed: LocalPlayer unavailable.")
+                SetTrackerStatus("Hotbar 1 select failed: LocalPlayer unavailable.")
                 return false
             end
 
@@ -1908,80 +1908,40 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if ok then character = result end
             end
             if not character then
-                SetTrackerStatus("Hotbar 1 equip failed: character not loaded.")
+                SetTrackerStatus("Hotbar 1 select failed: character not loaded.")
                 return false
             end
 
             local humanoid = character:FindFirstChildOfClass("Humanoid")
                 or character:WaitForChild("Humanoid", 5)
-            local backpack = currentPlayer:FindFirstChildOfClass("Backpack")
-                or currentPlayer:WaitForChild("Backpack", 5)
-            if not humanoid or not backpack then
-                SetTrackerStatus("Hotbar 1 equip failed: Humanoid or Backpack not ready.")
+            if not humanoid then
+                SetTrackerStatus("Hotbar 1 select failed: Humanoid not ready.")
                 return false
             end
             if humanoid.Health <= 0 then
-                SetTrackerStatus("Hotbar 1 equip failed: character is dead.")
+                SetTrackerStatus("Hotbar 1 select failed: character is dead.")
                 return false
             end
 
-            local function FindHotbarOneTool()
-                local tools = {}
-                for _, container in ipairs({backpack, character}) do
-                    for _, item in ipairs(container:GetChildren()) do
-                        if item:IsA("Tool") then
-                            if item.Name:lower():find("pickaxe", 1, true) then
-                                return item
-                            end
-                            if container == backpack then
-                                table.insert(tools, item)
-                            end
-                        end
-                    end
-                end
-                return tools[1]
+            if currentPlayer.Character ~= character or not character.Parent then
+                SetTrackerStatus("Hotbar 1 select failed: character changed before selection.")
+                return false
             end
 
-            for attempt = 1, 5 do
-                if currentPlayer.Character ~= character or not character.Parent then
-                    SetTrackerStatus("Hotbar 1 equip failed: character changed during equip.")
-                    return false
-                end
-
-                local tool = FindHotbarOneTool()
-                if not tool then
-                    if attempt < 5 then
-                        SetTrackerStatus("Waiting for a hotbar tool... (" .. attempt .. "/5)")
-                        task.wait(0.3)
-                    else
-                        SetTrackerStatus("Hotbar 1 equip failed: no Tool found in Backpack or character.")
-                    end
-                elseif tool.Parent == character then
-                    SetTrackerStatus("Hotbar 1 already equipped: " .. tool.Name)
-                    return true
-                else
-                    local ok, err = pcall(function()
-                        humanoid:EquipTool(tool)
-                    end)
-                    if not ok then
-                        SetTrackerStatus("Hotbar 1 equip attempt " .. attempt .. " failed: " .. tostring(err))
-                    else
-                        local deadline = os.clock() + 0.75
-                        repeat
-                            if tool.Parent == character then
-                                SetTrackerStatus("Equipped hotbar 1 tool: " .. tool.Name)
-                                return true
-                            end
-                            task.wait(0.05)
-                        until os.clock() >= deadline
-                        SetTrackerStatus("Equip not confirmed for " .. tool.Name .. " (attempt " .. attempt .. "/5). Retrying...")
-                    end
-                    if attempt < 5 then task.wait(0.25) end
-                end
+            local ok, err = pcall(function()
+                local virtualInput = game:GetService("VirtualInputManager")
+                virtualInput:SendKeyEvent(true, Enum.KeyCode.One, false, game)
+                task.wait(0.05)
+                virtualInput:SendKeyEvent(false, Enum.KeyCode.One, false, game)
+            end)
+            if not ok then
+                SetTrackerStatus("Hotbar 1 key selection failed: " .. tostring(err))
+                return false
             end
 
-            SetTrackerStatus("Hotbar 1 equip failed: tool stayed in Backpack after 5 attempts.")
-            return false
+            task.wait(0.15)
+            SetTrackerStatus("Selected hotbar slot 1.")
+            return true
         end
         local AnimalBankEquipConnections = {}
         local function BindAnimalBankEquip(remote)
