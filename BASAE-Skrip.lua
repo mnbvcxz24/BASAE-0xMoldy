@@ -2964,10 +2964,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if tostring(action):lower() ~= "fling" then return end
             if AntiPaloEnabled then
                 local released, releaseError = pcall(function()
-                    CatchFlingRemote:FireServer("release")
+                    if type(firesignal) ~= "function" then
+                        error("firesignal is unavailable in this executor")
+                    end
+                    firesignal(CatchFlingRemote.OnClientEvent, "release")
                 end)
                 if released then
-                    AddDebugLog("[Anti Palo] Sent fling release.")
+                    AddDebugLog("[Anti Palo] Fling release signal fired.")
                 else
                     AddDebugLog("[Anti Palo] Fling release failed: " .. tostring(releaseError))
                 end
