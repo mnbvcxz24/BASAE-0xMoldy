@@ -3459,46 +3459,42 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(HandleFlingRecovery)
         end
         local MovementStallWatchdogBusy = false
-        local MovementStallThreshold = 1.5
-        local MovementStallMinDistance = 1.25
+        local MovementStallThreshold = 1
+        local MovementSlowDistance = 1
         task.spawn(function()
-            local lastPosition
-            local lastMovedAt = os.clock()
+            local windowStartPosition
+            local windowStartedAt = os.clock()
             local lastCharacter
             while not Runtime.Stopped and not ScriptShuttingDown do
-                task.wait(0.25)
+                task.wait(0.2)
                 local character = LocalPlayer.Character
                 local humanoid = character and character:FindFirstChildOfClass("Humanoid")
                 local root = character and character:FindFirstChild("HumanoidRootPart")
-                local expectedToMove = AutoBreakEnabled and AutoPickupEnabled and PickupRequested
-                    and (MovementConnection ~= nil or PickupMovementConnection ~= nil)
-                    and not FlingRecoveryActive and not ReturningAfterPickup
-                if not character or not humanoid or not root or not expectedToMove or humanoid.Health <= 0 then
-                    lastPosition = root and root.Position or nil
+                local movementActive = AutoBreakEnabled and AutoPickupEnabled
+                    and (MovementConnection ~= nil or PickupMovementConnection ~= nil or ReturnMovementConnection ~= nil)
+                    and not FlingRecoveryActive
+                if not character or not humanoid or not root or not movementActive or humanoid.Health <= 0 then
+                    windowStartPosition = root and root.Position or nil
                     lastCharacter = character
-                    lastMovedAt = os.clock()
+                    windowStartedAt = os.clock()
                     continue
                 end
-                if character ~= lastCharacter or not lastPosition then
+                if character ~= lastCharacter or not windowStartPosition then
                     lastCharacter = character
-                    lastPosition = root.Position
-                    lastMovedAt = os.clock()
+                    windowStartPosition = root.Position
+                    windowStartedAt = os.clock()
                     continue
                 end
-                local position = root.Position
-                if (position - lastPosition).Magnitude >= MovementStallMinDistance then
-                    lastPosition = position
-                    lastMovedAt = os.clock()
-                elseif os.clock() - lastMovedAt >= MovementStallThreshold and not MovementStallWatchdogBusy then
-                    MovementStallWatchdogBusy = true
-                    lastMovedAt = os.clock()
-                    local state = humanoid:GetState()
-                    local stalled = humanoid.Health > 0 and root.Parent == character
-                        and state ~= Enum.HumanoidStateType.Dead
-                    if stalled and not FlingRecoveryActive and PickupRequested and AutoBreakEnabled and AutoPickupEnabled then
-                        SetTrackerStatus("Movement watchdog: character stalled; attempting fling recovery.")
+                local now = os.clock()
+                local elapsed = now - windowStartedAt
+                local distance = (root.Position - windowStartPosition).Magnitude
+                if elapsed >= MovementStallThreshold then
+                    if distance < MovementSlowDistance and not MovementStallWatchdogBusy
+                        and not FlingRecoveryActive and AutoBreakEnabled and AutoPickupEnabled then
+                        MovementStallWatchdogBusy = true
+                        SetTrackerStatus(string.format("Movement watchdog: stalled/slow movement detected (%.2f studs in %.1fs); attempting fling recovery.", distance, elapsed))
                         task.spawn(function()
-                            local ok, err = pcall(HandleFlingRecovery, "fling", root.Position, 1.5, 1)
+                            local ok, err = pcall(HandleFlingRecovery, "fling", root.Position, 1, 1)
                             if not ok then
                                 warn("[BASAE-Skrip] Movement stall recovery failed: " .. tostring(err))
                                 SetTrackerStatus("Movement watchdog recovery failed: " .. tostring(err):gsub("[%r\\n]+", " "):sub(1, 180))
@@ -3506,9 +3502,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             task.wait(1)
                             MovementStallWatchdogBusy = false
                         end)
-                    else
-                        MovementStallWatchdogBusy = false
                     end
+                    windowStartPosition = root.Position
+                    windowStartedAt = now
                 end
             end
         end)
