@@ -1105,12 +1105,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local inputs = tradeIn and tradeIn:FindFirstChild("SacrificeInputs")
             local input = inputs and inputs:FindFirstChild("Input" .. slot)
             local empty = input and input:FindFirstChild("Empty")
-            local nameObject = empty and empty:FindFirstChild("Name", true)
-            if not nameObject then return nil end
+            local nameObject = empty and empty:FindFirstChild("Name")
+            if not nameObject or not nameObject:IsA("TextLabel") then return nil end
             local animalName = nameObject:GetAttribute("ContentText")
-            if typeof(animalName) ~= "string" or animalName == "" then
-                return nil
-            end
+            if typeof(animalName) ~= "string" then return nil end
+            animalName = animalName:match("^%s*(.-)%s*$")
+            if animalName == "" then return nil end
             return animalName
         end
         local function RefreshAutoFuseRequirements()
