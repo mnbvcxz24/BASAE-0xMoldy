@@ -4292,9 +4292,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         local AuraEnabled = false
         local AuraWasNearby = false
-        local AuraPrankNotice = nil
-        local AuraPrankCooldown = 4
-        local AuraLastPrank = 0
         local function GetNearbyPlayers()
             local nearby = {}
             local myCharacter = LocalPlayer.Character
@@ -4357,9 +4354,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AddDebugLog("[Aura ni Bai] Cannot prank: character or humanoid is unavailable.")
                 return
             end
-            local remote = game:GetService("ReplicatedStorage"):FindFirstChild("BatHitRequest", true)
+            local remote = game:GetService("ReplicatedStorage"):FindFirstChild("YouGotPrank", true)
             if not remote or not remote:IsA("RemoteEvent") then
-                AddDebugLog("[Aura ni Bai] BatHitRequest RemoteEvent not found.")
+                AddDebugLog("[Aura ni Bai] YouGotPrank RemoteEvent not found.")
                 return
             end
             local hotbarTwo = FindAuraHotbarTool(2)
@@ -4379,9 +4376,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 remote:FireServer()
             end)
             if fired then
-                AddDebugLog("[Aura ni Bai] BatHitRequest:FireServer() called for " .. targetName .. ".")
+                AddDebugLog("[Aura ni Bai] YouGotPrank:FireServer() called for " .. targetName .. ".")
             else
-                AddDebugLog("[Aura ni Bai] BatHitRequest call failed: " .. tostring(fireError))
+                AddDebugLog("[Aura ni Bai] YouGotPrank call failed: " .. tostring(fireError))
             end
             task.wait(0.15)
             local hotbarOne = FindAuraHotbarTool(1)
@@ -4398,45 +4395,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AddDebugLog("[Aura ni Bai] Hotbar 1 tool not found after prank.")
             end
         end
-        local function ShowAuraPrankNotice(targetName)
-            if os.clock() - AuraLastPrank < AuraPrankCooldown then return end
-            AuraLastPrank = os.clock()
-            if AuraPrankNotice then
-                AuraPrankNotice:Destroy()
-                AuraPrankNotice = nil
-            end
-            AuraPrankNotice = Create("TextLabel", {
-                Parent = ScreenGui,
-                AnchorPoint = Vector2.new(0.5, 0),
-                Position = UDim2.new(0.5, 0, 0.12, 0),
-                Size = UDim2.fromOffset(290, 42),
-                BackgroundColor3 = Theme.Panel,
-                BackgroundTransparency = 0.08,
-                BorderSizePixel = 0,
-                Text = "⚔️ AURA NI BAI: " .. targetName .. " got boinked!",
-                TextColor3 = Theme.Accent,
-                Font = Enum.Font.GothamBold,
-                TextSize = 13,
-                TextWrapped = true,
-                ZIndex = 100
-            })
-            Create("UICorner", {Parent = AuraPrankNotice, CornerRadius = UDim.new(0, 8)})
-            local notice = AuraPrankNotice
-            task.delay(2, function()
-                if AuraPrankNotice == notice then
-                    notice:Destroy()
-                    AuraPrankNotice = nil
-                end
-            end)
-        end
         local AuraToggle = CreateToggle(AuraCard, "", false, function(enabled)
             AuraEnabled = enabled
             if not enabled then
                 AuraWasNearby = false
-                if AuraPrankNotice then
-                    AuraPrankNotice:Destroy()
-                    AuraPrankNotice = nil
-                end
                 AuraStatus.Text = "Status: OFF"
                 AuraStatus.TextColor3 = Theme.Gray
                 AddDebugLog("[Aura ni Bai] Proximity tracking disabled.")
@@ -4453,7 +4415,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         AuraStatus.TextColor3 = Theme.Accent
                         if not AuraWasNearby then
                             AddDebugLog("[Aura ni Bai] Detected " .. nearby[1].Name .. " within 15 studs (" .. string.format("%.1f", nearby[1].Distance) .. " studs).")
-                            ShowAuraPrankNotice(nearby[1].Name)
                             task.spawn(RunAuraPrank, nearby[1].Name)
                         end
                         AuraWasNearby = true
