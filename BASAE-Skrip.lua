@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.158 -- 0xMoldy"
+local testver = "Test v1.159 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -4303,11 +4303,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return true
         end
-        local function RunAuraPrank(targetName)
+        local function RunAuraNiBai(targetName)
             local character = LocalPlayer.Character
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if not humanoid or humanoid.Health <= 0 then
-                AddDebugLog("[Aura ni Bai] Cannot prank: character or humanoid is unavailable.")
+                AddDebugLog("[Aura ni Bai] Cannot boink: character or humanoid is unavailable.")
                 return
             end
             local remote = game:GetService("ReplicatedStorage"):FindFirstChild("BatHitRequest", true)
@@ -4360,7 +4360,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         AuraStatus.TextColor3 = Theme.Accent
                         if not AuraWasNearby then
                             AddDebugLog("[Aura ni Bai] Detected " .. nearby[1].Name .. " within 15 studs (" .. string.format("%.1f", nearby[1].Distance) .. " studs).")
-                            task.spawn(RunAuraPrank, nearby[1].Name)
+                            task.spawn(RunAuraNiBai, nearby[1].Name)
                         end
                         AuraWasNearby = true
                     else
