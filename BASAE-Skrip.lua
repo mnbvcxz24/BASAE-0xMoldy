@@ -4373,7 +4373,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AddDebugLog("[Aura ni Bai] Hotbar 2 tool not found; firing prank remote without switching tools.")
             end
             local fired, fireError = pcall(function()
-                remote:FireServer()
+                remote:FireServer(
+                    nil
+                )
             end)
             if fired then
                 AddDebugLog("[Aura ni Bai] BatHitRequest:FireServer() called for " .. targetName .. ".")
