@@ -42,11 +42,11 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "BASAE v1.153"
+local testver = "BASAE v1.154"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIP NI BAI",
-    Subtitle = "BASAE v1.153",
+    Subtitle = "BASAE v1.154",
     Width = 480,
     Height = 350,
     SidebarWidth = 108,
@@ -3460,59 +3460,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if CatchFlingRemote and CatchFlingRemote:IsA("RemoteEvent") then
             FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(HandleFlingRecovery)
         end
-        local MovementStallWatchdogBusy = false
-        local MovementStallThreshold = 1
-        local MovementSlowDistance = 1
-        task.spawn(function()
-            local windowStartPosition
-            local windowStartedAt = os.clock()
-            local lastCharacter
-            while not Runtime.Stopped and not ScriptShuttingDown do
-                task.wait(0.2)
-                local character = LocalPlayer.Character
-                local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                local root = character and character:FindFirstChild("HumanoidRootPart")
-                local movementActive = AutoBreakEnabled and AutoPickupEnabled
-                    and (MovementConnection ~= nil or PickupMovementConnection ~= nil or ReturnMovementConnection ~= nil)
-                    and not FlingRecoveryActive
-                if not character or not humanoid or not root or not movementActive or humanoid.Health <= 0 then
-                    windowStartPosition = root and root.Position or nil
-                    lastCharacter = character
-                    windowStartedAt = os.clock()
-                    continue
-                end
-                if character ~= lastCharacter or not windowStartPosition then
-                    lastCharacter = character
-                    windowStartPosition = root.Position
-                    windowStartedAt = os.clock()
-                    continue
-                end
-                local now = os.clock()
-                local elapsed = now - windowStartedAt
-                local distance = (root.Position - windowStartPosition).Magnitude
-                if elapsed >= MovementStallThreshold then
-                    if distance < MovementSlowDistance and not MovementStallWatchdogBusy
-                        and not FlingRecoveryActive and AutoBreakEnabled and AutoPickupEnabled then
-                        MovementStallWatchdogBusy = true
-                        local watchdogMessage = string.format("Movement watchdog: stalled/slow movement detected (%.2f studs in %.1fs); attempting fling recovery.", distance, elapsed)
-                        SetTrackerStatus(watchdogMessage)
-                        AddDebugLog("[Movement Watchdog] " .. watchdogMessage)
-                        task.spawn(function()
-                            local ok, err = pcall(HandleFlingRecovery, "fling", root.Position, 1, 1)
-                            if not ok then
-                                warn("[BASAE-Skrip] Movement stall recovery failed: " .. tostring(err))
-                                AddDebugLog("[Movement Watchdog] Recovery failed: " .. tostring(err))
-                                SetTrackerStatus("Movement watchdog recovery failed: " .. tostring(err):gsub("[%r\\n]+", " "):sub(1, 180))
-                            end
-                            task.wait(1)
-                            MovementStallWatchdogBusy = false
-                        end)
-                    end
-                    windowStartPosition = root.Position
-                    windowStartedAt = now
-                end
-            end
-        end)
         AnimalFolderConnection = workspace.ChildAdded:Connect(function(child)
             if child.Name == "AnimalPickups" and not AnimalPickups then
                 BindAnimalPickups(child)
