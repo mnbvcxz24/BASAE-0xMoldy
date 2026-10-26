@@ -1055,6 +1055,128 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
         AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
+
+        local AutoFuseCard = CreateCard(Page, "⚙  Auto Fuse", "Auto fuse Requirement")
+        AutoFuseCard.LayoutOrder = 3
+        AutoFuseCard.Position = UDim2.new(0.5, 6, 0, 0)
+        AutoFuseCard.Size = UDim2.new(0.5, -6, 0, 150)
+        local AutoFuseEnabled = false
+        local AutoFuseGeneration = 0
+        local AutoFuseRequirements = {}
+        local AutoFuseStatus = Create("TextLabel", {
+            Name = "AutoFuseStatus",
+            Parent = AutoFuseCard,
+            Position = UDim2.fromOffset(11, 47),
+            Size = UDim2.new(1, -22, 0, 14),
+            BackgroundTransparency = 1,
+            Text = "Status: OFF",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        local AutoFuseRequirementLabels = {}
+        for slot = 1, 3 do
+            AutoFuseRequirementLabels[slot] = Create("TextLabel", {
+                Name = "Requirement" .. slot,
+                Parent = AutoFuseCard,
+                Position = UDim2.fromOffset(11, 64 + (slot - 1) * 18),
+                Size = UDim2.new(1, -22, 0, 16),
+                BackgroundTransparency = 1,
+                Text = "Animal " .. slot .. ": loading...",
+                TextColor3 = Theme.Text,
+                Font = Enum.Font.Gotham,
+                TextSize = 10,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextTruncate = Enum.TextTruncate.AtEnd
+            })
+        end
+        local function GetAutoFuseRequirement(slot)
+            local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+            local sciFiUI = playerGui and playerGui:FindFirstChild("SciFi UI")
+            local tradeIn = sciFiUI and sciFiUI:FindFirstChild("SciFiTradeInMain")
+            local inputs = tradeIn and tradeIn:FindFirstChild("SacrificeInputs")
+            local input = inputs and inputs:FindFirstChild("Input" .. slot)
+            local empty = input and input:FindFirstChild("Empty")
+            if not empty then return nil end
+            local name = empty.Name
+            if not name or name == "" or name == "Empty" then
+                name = empty:IsA("TextLabel") and empty.Text or nil
+            end
+            if (not name or name == "" or name == "Empty") and input then
+                local label = input:FindFirstChildWhichIsA("TextLabel", true)
+                name = label and label.Text or nil
+            end
+            if not name or name == "" or name == "Empty" or name == " " then
+                return nil
+            end
+            return name
+        end
+        local function RefreshAutoFuseRequirements()
+            local requirements = {}
+            for slot = 1, 3 do
+                local animalName = GetAutoFuseRequirement(slot)
+                requirements[slot] = animalName
+                AutoFuseRequirementLabels[slot].Text = "Animal " .. slot .. ": " .. (animalName or "not detected")
+                AutoFuseRequirementLabels[slot].TextColor3 = animalName and Theme.Text or Theme.Gray
+            end
+            AutoFuseRequirements = requirements
+            return requirements
+        end
+        local AutoFuseToggle
+        AutoFuseToggle = CreateToggle(AutoFuseCard, "", false, function(enabled)
+            AutoFuseEnabled = enabled
+            AutoFuseGeneration += 1
+            local generation = AutoFuseGeneration
+            AutoFuseStatus.Text = enabled and "Status: ON • Checking Backpack" or "Status: OFF"
+            AutoFuseStatus.TextColor3 = enabled and Theme.Accent or Theme.Gray
+            AddDebugLog("[Auto Fuse] " .. (enabled and "enabled." or "disabled."))
+            if not enabled then return end
+            task.spawn(function()
+                local depositedSlots = {}
+                while AutoFuseEnabled and AutoFuseGeneration == generation and not Runtime.Stopped do
+                    local requirements = RefreshAutoFuseRequirements()
+                    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+                    local remote = game:GetService("ReplicatedStorage"):FindFirstChild("FuseMachineRequest")
+                    if backpack and remote and remote:IsA("RemoteEvent") then
+                        for slot = 1, 3 do
+                            if not AutoFuseEnabled or AutoFuseGeneration ~= generation then break end
+                            local animalName = requirements[slot]
+                            if animalName and not depositedSlots[slot] then
+                                local animal = backpack:FindFirstChild(animalName)
+                                if animal then
+                                    local ok, err = pcall(function()
+                                        remote:FireServer("Deposit", animalName, animal)
+                                    end)
+                                    if ok then
+                                        depositedSlots[slot] = true
+                                        AutoFuseStatus.Text = "Status: Deposited " .. animalName
+                                        AutoFuseStatus.TextColor3 = Theme.Accent
+                                        AddDebugLog("[Auto Fuse] Deposited " .. animalName .. " for slot " .. slot .. ".")
+                                        task.wait(0.35)
+                                    else
+                                        AutoFuseStatus.Text = "Status: Deposit failed"
+                                        AddDebugLog("[Auto Fuse] Deposit failed for " .. animalName .. ": " .. tostring(err))
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        AutoFuseStatus.Text = "Status: Waiting for Backpack/remote"
+                        AutoFuseStatus.TextColor3 = Theme.Gray
+                    end
+                    task.wait(1)
+                end
+            end)
+        end)
+        AutoFuseToggle.Position = UDim2.new(1, -58, 0, 7)
+        AutoFuseToggle.Size = UDim2.fromOffset(48, 24)
+        task.spawn(function()
+            while not Runtime.Stopped and AutoFuseCard.Parent do
+                RefreshAutoFuseRequirements()
+                task.wait(1)
+            end
+        end)
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
