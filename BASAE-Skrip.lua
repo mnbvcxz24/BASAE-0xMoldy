@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.154 -- 0xMoldy"
+local testver = "Test v1.155 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -931,7 +931,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Parent = SidebarContainer,
         Size = UDim2.new(1, -2, 0, 34),
         BackgroundColor3 = Theme.Sidebar,
-        Text = ({"⌂", "◎", "✦", "♧", "⚙", "≡"})[index] .. "  " .. name,
+        Text = ({"🏠", "🥚", "✨", "🐾", "⚙️", "🪲"})[index] .. "  " .. name,
         TextColor3 = Theme.DarkGray,
         Font = Enum.Font.GothamMedium,
         TextSize = 9,
@@ -1011,7 +1011,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoBreakToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoBreakToggle.Size = UDim2.fromOffset(48, 24)
-        local AutoPickupCard = CreateCard(AutoRow, "◇  Auto Pickup", "")
+        local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
         AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
         AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
         local AutoPickupEnabled = false
@@ -1030,7 +1030,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BorderSizePixel = 0,
             LayoutOrder = 2
         })
-        local AutoFuseCard = CreateCard(AntiFuseRow, "⚙  Auto Fuse", "Auto fuse Requirement")
+        local AutoFuseCard = CreateCard(AntiFuseRow, "⚙️  Auto Fuse", "Auto fuse Requirement")
         AutoFuseCard.Position = UDim2.new(0, 0, 0, 0)
         AutoFuseCard.Size = UDim2.new(1, 0, 0, 150)
         local AutoFuseEnabled = false
@@ -3878,7 +3878,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end)
         end
     elseif index == 5 then
-        local ThemeCard = CreateCard(Page, "⚙  Theme Settings", "Choose a color palette for the interface.")
+        local ThemeCard = CreateCard(Page, "🎨  Theme Settings", "Choose a color palette for the interface.")
         local ThemeOptions = {
             "Midnight Blue + Cyan",
             "Black + Purple",
@@ -4025,7 +4025,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
 
     elseif index == 6 then
-        local ConsoleCard = CreateCard(Page, "≡  Debug Console", "")
+        local ConsoleCard = CreateCard(Page, "🪲  Debug Console", "")
         ConsoleCard.Size = UDim2.new(1, 0, 0, 190)
         local consoleTitle = ConsoleCard:FindFirstChildWhichIsA("TextLabel")
         if consoleTitle then consoleTitle.Position = UDim2.fromOffset(11, 7); consoleTitle.TextSize = 10 end
@@ -4089,7 +4089,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddDebugLog("Debug console ready.")
 
     elseif index == 2 then
-        local ESPCard = CreateCard(Page, "◎  Egg ESP", "")
+        local ESPCard = CreateCard(Page, "🥚  Egg ESP", "")
         ESPCard.Size = UDim2.new(1, 0, 0, 125)
         local ESPStatus = Create("TextLabel", {
             Parent = ESPCard,
@@ -4230,8 +4230,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ESPCard.Size = UDim2.new(1, 0, 0, 125)
 
     elseif index == 3 then
-        local AntiPaloCard = CreateCard(Page, "🛡  Anti Palo", "Immortal si Bai")
+        local AntiPaloCard = CreateCard(Page, "🛡️  Anti Palo", "Immortal si Bai")
         AntiPaloCard.Size = UDim2.new(1, 0, 0, 100)
+        AntiPaloCard.LayoutOrder = 1
         local AntiPaloBusy = false
         local AntiPaloStatus = Create("TextLabel", {
             Parent = AntiPaloCard,
@@ -4263,8 +4264,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
         AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
 
-        local AuraCard = CreateCard(Page, "Aura ni Bai", "Auto parry")
-        AuraCard.Size = UDim2.new(1, 0, 0, 90)
+        local AuraCard = CreateCard(Page, "⚔️  Aura ni Bai", "Auto parry")
+        AuraCard.Size = UDim2.new(1, 0, 0, 100)
+        AuraCard.LayoutOrder = 2
         local AuraStatus = Create("TextLabel", {
             Parent = AuraCard,
             Position = UDim2.fromOffset(11, 60),
@@ -4287,7 +4289,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AuraToggle.Size = UDim2.fromOffset(48, 24)
 
     elseif index == 4 then
-        local PickupCard = CreateCard(Page, "◇  Animal Pickups", "")
+        local PickupCard = CreateCard(Page, "🐾  Animal Pickups", "")
         PickupCard.Size = UDim2.new(1, 0, 0, 230)
         local pickupTitle = PickupCard:FindFirstChildWhichIsA("TextLabel")
         if pickupTitle then pickupTitle.Position = UDim2.fromOffset(15, 10) end
@@ -4352,11 +4354,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         CreateButton(Card1, "Example Button", function()
             -- Put your actual function here.
         end)
-        local Card2 = CreateCard(Page, "⚙  Example Settings", "Example controls that only change the UI state.")
+        local Card2 = CreateCard(Page, "🎨  Example Settings", "Example controls that only change the UI state.")
         CreateToggle(Card2, "Example Toggle", false, function(state)
             -- state = true / false
         end)
-        local Card3 = CreateCard(Page, "≡  Example Options", "Dropdown and slider examples.")
+        local Card3 = CreateCard(Page, "🎛️  Example Options", "Dropdown and slider examples.")
         CreateDropdown(Card3, "Mode", {"Option 1", "Option 2", "Option 3"}, function(selection)
             -- selection contains the selected option.
         end)
