@@ -42,11 +42,11 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "BASAE v1.155"
+local testver = "BASAE v1.156"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIP NI BAI",
-    Subtitle = "BASAE v1.155",
+    Subtitle = "BASAE v1.156",
     Width = 480,
     Height = 350,
     SidebarWidth = 108,
@@ -3908,7 +3908,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 while not Runtime.Stopped and not ScriptShuttingDown do
                     task.wait(0.5)
                     if not AntiPaloEnabled or not AutoBreakEnabled or not AutoPickupEnabled
-                        or FlingRecoveryActive or PickupPhase == "IDLE"
+                        or FlingRecoveryActive or (PickupPhase == "IDLE" and not ReturningAfterPickup)
                         or not (PickupRequested or ReturningAfterPickup or MovementConnection or PickupMovementConnection or ReturnMovementConnection) then
                         lastPosition = nil
                         lastProgressAt = os.clock()
@@ -3928,27 +3928,29 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         continue
                     end
                     local moved = (root.Position - lastPosition).Magnitude
+                    local unexpectedDisplacement = moved >= 14
                     if moved >= 1 then
                         lastProgressAt = os.clock()
                         lastPosition = root.Position
-                    elseif os.clock() - lastProgressAt >= 2.5 then
-                        if os.clock() - lastLogAt >= 3 then
-                            lastLogAt = os.clock()
-                            local tracked = ActivePickup or FlingAnimalTarget
-                            AddDebugLog("[Anti Palo Watchdog] Movement stalled for " .. string.format("%.1f", os.clock() - lastProgressAt) .. "s; stage=" .. tostring(AutomationProgressStage) .. "; target=" .. tostring((tracked and tracked.Name) or FlingTargetAnimalName or "unknown"))
-                        end
+                    end
+                    local stalled = os.clock() - lastProgressAt >= 2.5
+                    if unexpectedDisplacement or stalled then
                         local tracked = ActivePickup or FlingAnimalTarget
+                        if os.clock() - lastLogAt >= 1 then
+                            lastLogAt = os.clock()
+                            AddDebugLog("[Anti Palo Watchdog] " .. (unexpectedDisplacement and ("Unexpected displacement " .. string.format("%.1f", moved) .. " studs") or ("Movement stalled for " .. string.format("%.1f", os.clock() - lastProgressAt) .. "s")) .. "; stage=" .. tostring(AutomationProgressStage) .. "; phase=" .. tostring(PickupPhase) .. "; returning=" .. tostring(ReturningAfterPickup) .. "; target=" .. tostring((tracked and tracked.Name) or FlingTargetAnimalName or "unknown"))
+                        end
                         if FlingTargetAnimalName and FlingTargetWeightKg ~= nil and tracked then
                             AddDebugLog("[Anti Palo Watchdog] Starting separate identity-based recovery.")
                             HandleAntiPaloRecovery("fling", root.Position, 1.5, 1)
                             lastPosition = nil
                             lastProgressAt = os.clock()
                         else
-                            SetTrackerStatus("Anti Palo watchdog detected stalled movement, but target identity is incomplete; waiting safely.")
+                            AddDebugLog("[Anti Palo Watchdog] Recovery skipped: tracked animal identity is incomplete.")
                             lastPosition = root.Position
                             lastProgressAt = os.clock()
                         end
-                    else
+                    elseif moved < 1 then
                         lastPosition = root.Position
                     end
                 end
