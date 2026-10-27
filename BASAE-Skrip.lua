@@ -2399,7 +2399,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                 local targetName = FlingTargetAnimalName or (targetAnimal and targetAnimal.Name)
                                 local targetWeight = FlingTargetWeightKg
                                 if targetWeight == nil and carriedBefore then targetWeight = GetAnimalWeightKg(carriedBefore) end
-                                local signature = GetDroppedAnimalSignature(targetAnimal, targetWeight)
+                                local signature
+                                if targetAnimal then
+                                    for _, key in ipairs({"AnimalId", "AnimalID", "UniqueId", "UUID", "Id"}) do
+                                        local value = targetAnimal:GetAttribute(key)
+                                        if value ~= nil and tostring(value) ~= "" then
+                                            signature = "id:" .. tostring(value)
+                                            break
+                                        end
+                                    end
+                                    if not signature and targetWeight ~= nil and tostring(targetWeight) ~= "" then
+                                        signature = "name:" .. targetAnimal.Name .. "|weight:" .. tostring(targetWeight)
+                                    end
+                                end
                                 local targetRarity = targetAnimal and targetAnimal:GetAttribute("Rarity")
                                 if targetRarity == nil and targetAnimal then
                                     local rarityNode = targetAnimal:FindFirstChild("Rarity", true)
