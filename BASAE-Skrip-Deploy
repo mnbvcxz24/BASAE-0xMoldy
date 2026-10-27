@@ -990,6 +990,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoBreakEnabled = false
         local AutoBreakGeneration = 0
         local RefreshTitanicPriority
+        local AutoBreakControlLayout = {
+            ZoneY = 44,
+            EggY = 78,
+            HighLuckY = 112,
+            TitanicY = 146,
+            Height = 28,
+            SidePadding = 11
+        }
+        local function SetAutoBreakControl(control, y)
+            control.Position = UDim2.fromOffset(AutoBreakControlLayout.SidePadding, y)
+            control.Size = UDim2.new(1, -AutoBreakControlLayout.SidePadding * 2, 0, AutoBreakControlLayout.Height)
+        end
         local AutoBreakToggle = CreateToggle(Card1, "", false, function(enabled)
             AutoBreakEnabled = enabled
             AutoBreakGeneration += 1
@@ -1353,16 +1365,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             RarityFilterOpen = false
             UpdateFilterPanel()
         end)
-        ZoneFilterButton.Position = UDim2.fromOffset(11, 44)
-        ZoneFilterButton.Size = UDim2.new(0.5, -17, 0, 28)
+        SetAutoBreakControl(ZoneFilterButton, AutoBreakControlLayout.ZoneY)
         EggFilterButton = CreateButton(Card1, "Eggs ▼", function()
             EggFilterOpen = not EggFilterOpen
             ZoneFilterOpen = false
             RarityFilterOpen = false
             UpdateFilterPanel()
         end)
-        EggFilterButton.Position = UDim2.new(0.5, 6, 0, 44)
-        EggFilterButton.Size = UDim2.new(0.5, -17, 0, 28)
+        SetAutoBreakControl(EggFilterButton, AutoBreakControlLayout.EggY)
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
             Parent = Main,
@@ -1420,8 +1430,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         SortFrame = Create("Frame", {
             Name = "EggSortOptions",
             Parent = Card1,
-            Position = UDim2.fromOffset(15, 78),
-            Size = UDim2.new(1, -30, 0, 28),
+            Position = UDim2.fromOffset(AutoBreakControlLayout.SidePadding, AutoBreakControlLayout.HighLuckY),
+            Size = UDim2.new(1, -AutoBreakControlLayout.SidePadding * 2, 0, AutoBreakControlLayout.Height),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             Visible = true
@@ -1755,17 +1765,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 RefreshTitanicPriority()
             end
         end)
-        TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
-        TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
+        SetAutoBreakControl(TitanicPriorityToggle, AutoBreakControlLayout.TitanicY)
         Card1.Size = UDim2.new(0.5, -6, 0, 190)
         AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
         AutoRow.Size = UDim2.new(1, 0, 0, 190)
         local function UpdateFilterPanelWithTitanic()
             UpdateFilterPanel()
             HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
-            HighestLuckToggle.Size = UDim2.new(1, 0, 0, 28)
-            TitanicPriorityToggle.Position = UDim2.fromOffset(15, 110)
-            TitanicPriorityToggle.Size = UDim2.new(1, -30, 0, 28)
+            HighestLuckToggle.Size = UDim2.new(1, 0, 0, AutoBreakControlLayout.Height)
+            SetAutoBreakControl(TitanicPriorityToggle, AutoBreakControlLayout.TitanicY)
         end
         ZoneFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
         EggFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
