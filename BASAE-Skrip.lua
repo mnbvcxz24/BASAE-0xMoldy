@@ -6,10 +6,10 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local HttpService = game:GetService("HttpService")
-local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
+local STARTUP_WEBHOOK_URL = "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.168 -- 0xMoldy"
+local testver = "Test v1.174 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1082,7 +1082,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BorderSizePixel = 0,
             LayoutOrder = 2
         })
-        local AutoFuseCard = CreateCard(AntiFuseRow, "⚙️  Auto Fuse", "Auto fuse Requirement")
+        local AutoFuseCard = CreateCard(AntiFuseRow, "⚙️  Auto Fuse", "TEST MODE • Testing enabled")
         AutoFuseCard.Position = UDim2.new(0, 0, 0, 0)
         AutoFuseCard.Size = UDim2.new(0.5, -6, 0, 150)
         local AutoFuseEnabled = false
@@ -1855,6 +1855,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local FlingRemoteConnection
         local FlingRecoveryActive = false
         local FlingAnimalTarget
+        local HandleFlingRecovery
+        local CarriedAnimalWatch = {}
         local CancelFlingRecovery
         local LastAutomationProgressAt = os.clock()
         local AutomationProgressStage = "INITIALIZING"
@@ -1984,6 +1986,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if HitEventConnection then HitEventConnection:Disconnect(); HitEventConnection = nil end
             if FlingRemoteConnection then FlingRemoteConnection:Disconnect(); FlingRemoteConnection = nil end
             if AnimalFolderConnection then AnimalFolderConnection:Disconnect(); AnimalFolderConnection = nil end
+            if CarriedAnimalWatch.childAdded then CarriedAnimalWatch.childAdded:Disconnect(); CarriedAnimalWatch.childAdded = nil end
+            if CarriedAnimalWatch.childRemoved then CarriedAnimalWatch.childRemoved:Disconnect(); CarriedAnimalWatch.childRemoved = nil end
             local character = LocalPlayer.Character
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if humanoid then humanoid:Move(Vector3.zero, false) end
@@ -2178,7 +2182,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         SetTrackerStatus = function(message)
             AddDebugLog("[Egg Tracker] " .. tostring(message))
         end
-        HitEvent.OnClientEvent:Connect(function(eggReference, hitCounter, health)
+        HitEventConnection = HitEvent.OnClientEvent:Connect(function(eggReference, hitCounter, health)
             local target = CurrentTarget
             if not target or not IsTargetReference(eggReference, target) then
                 return
@@ -2522,7 +2526,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         PickupMovementConnection:Disconnect()
                         PickupMovementConnection = nil
                     end
-                    local oldPickupName = ActivePickup.Name
+                    local oldPickupName = ActivePickup and ActivePickup.Name or "none"
                     SetTrackerStatus(string.format("PICKUP LOCK PREEMPT: %s (%.2f CPS) replaces %s (%.2f CPS) during phase %s.", pickup.Name, cps, oldPickupName, ActivePickupCPS, PickupPhase))
                     local oldCharacter = LocalPlayer.Character
                     local oldHumanoid = oldCharacter and oldCharacter:FindFirstChildOfClass("Humanoid")
@@ -3131,9 +3135,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BindAnimalPickups(AnimalPickups)
         end
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
-        FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
+        HandleFlingRecovery = function(action, flingPosition, duration, strength, carriedAnimalLost)
             if tostring(action):lower() ~= "fling" then return end
-            if AntiPaloEnabled then
+            if AntiPaloEnabled and not carriedAnimalLost then
                 local released, releaseError = pcall(function()
                     if type(firesignal) ~= "function" then
                         error("firesignal is unavailable in this executor")
@@ -3146,9 +3150,26 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     AddDebugLog("[Anti Palo] Fling release failed: " .. tostring(releaseError))
                 end
             end
+            if not AutoPickupEnabled or not AutoBreakEnabled then
+                SetTrackerStatus("Fling detected: recovery cancelled because Auto Break or Auto Pickup is OFF.")
+                return
+            end
+            if FlingRecoveryActive then
+                SetTrackerStatus("Fling recovery event received while recovery is active; ignoring duplicate trigger.")
+                return
+            end
+            if carriedAnimalLost and not ReturningAfterPickup and not PickupRequested then return end
+            if not carriedAnimalLost and not CarriedAnimalWatch.model and not ReturningAfterPickup and not PickupRequested then
+                SetTrackerStatus("Fling event ignored: no active animal pickup or carried animal.")
+                return
+            end
             local flingAnimal = ActivePickup or FlingAnimalTarget
             local targetAnimalName = (flingAnimal and flingAnimal.Name) or FlingTargetAnimalName
             local targetWeightKg = FlingTargetWeightKg
+            if not targetAnimalName then
+                SetTrackerStatus("Fling recovery skipped: tracked animal name is unavailable.")
+                return
+            end
             local function findTrackedAnimal()
                 local folder = workspace:FindFirstChild("AnimalPickups")
                 if not folder or targetAnimalName == nil or targetWeightKg == nil then return nil end
@@ -3195,21 +3216,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
             if interruptedHumanoid then interruptedHumanoid:Move(Vector3.zero, false) end
 
-            if not AutoPickupEnabled or not AutoBreakEnabled then
-                SetTrackerStatus("Fling detected: recovery cancelled because Auto Break or Auto Pickup is OFF.")
-                return
-            end
-            if FlingRecoveryActive then
-                SetTrackerStatus("Fling recovery event received while recovery is active; base-return movement cancelled.")
-                return
-            end
             FlingRecoveryActive = true
             local recoverySearchToken = PickupGeneration
             TouchAutomationProgress("FLING_RECOVERY:WAITING_FOR_IDENTITY")
 
             if targetWeightKg == nil then
                 SetTrackerStatus("FLING RECOVERY waiting for WeightKg on " .. tostring(targetAnimalName) .. "...")
-                local identityDeadline = os.clock() + 10
+                local identityDeadline = os.clock() + (carriedAnimalLost and 3 or 10)
                 local identityAttempts = 0
                 local lastIdentityLog = 0
                 while not Runtime.Stopped and FlingRecoveryActive and PickupGeneration == recoverySearchToken
@@ -3217,16 +3230,30 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     identityAttempts += 1
                     local identityFolder = workspace:FindFirstChild("AnimalPickups")
                     if identityFolder then
+                        local uniqueNameMatch, uniqueNameWeight
+                        local ambiguousNameMatch = false
                         for _, candidate in ipairs(identityFolder:GetChildren()) do
-                            if candidate == flingAnimal and candidate.Name == targetAnimalName then
+                            if candidate.Name == targetAnimalName then
                                 local identity = GetAnimalWeightKg(candidate)
                                 if identity ~= nil then
-                                    targetWeightKg = identity
-                                    FlingTargetWeightKg = identity
-                                    SetTrackerStatus("Fling recovery captured identity: " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
-                                    break
+                                    if candidate == flingAnimal then
+                                        targetWeightKg = identity
+                                        break
+                                    elseif not uniqueNameMatch then
+                                        uniqueNameMatch = candidate
+                                        uniqueNameWeight = identity
+                                    else
+                                        ambiguousNameMatch = true
+                                    end
                                 end
                             end
+                        end
+                        if targetWeightKg == nil and uniqueNameMatch and not ambiguousNameMatch then
+                            targetWeightKg = uniqueNameWeight
+                        end
+                        if targetWeightKg ~= nil then
+                            FlingTargetWeightKg = targetWeightKg
+                            SetTrackerStatus("Fling recovery captured identity: " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(targetWeightKg) .. " | attempts=" .. tostring(identityAttempts))
                         end
                     end
                     local now = os.clock()
@@ -3234,7 +3261,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         lastIdentityLog = now
                         SetTrackerStatus("FLING RECOVERY searching AnimalPickups | animal=" .. tostring(targetAnimalName) .. " | WeightKg=waiting | attempts=" .. tostring(identityAttempts))
                     end
-                    if targetWeightKg == nil then task.wait(0.25) end
+                    if targetWeightKg == nil then task.wait(carriedAnimalLost and 0.1 or 0.25) end
                 end
             end
             if not FlingRecoveryActive or PickupGeneration ~= recoverySearchToken then
@@ -3244,6 +3271,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 FlingRecoveryActive = false
                 PickupRequested = false
                 ActivePickup = nil
+                ActivePickupCPS = -1
                 TouchAutomationProgress("IDLE")
                 SetTrackerStatus("FLING RECOVERY stopped: WeightKg still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
                 if AutoBreakEnabled and StartAutoBreak then task.delay(0.2, function() if AutoBreakEnabled then StartAutoBreak(true) end end) end
@@ -3318,6 +3346,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 local recoveryPosition = getTrackedAnimalPosition()
+                if carriedAnimalLost and not recoveryPosition then
+                    local animalWaitDeadline = os.clock() + 2.5
+                    repeat
+                        task.wait(0.1)
+                        recoveryPosition = getTrackedAnimalPosition()
+                    until recoveryPosition or os.clock() >= animalWaitDeadline
+                        or Runtime.Stopped or PickupGeneration ~= flingToken or not FlingRecoveryActive
+                end
                 if not recoveryPosition then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY cancelled: no unique AnimalPickups match for " .. tostring(targetAnimalName) .. " + WeightKg=" .. tostring(targetWeightKg) .. ".")
@@ -3367,7 +3403,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if now - moveStarted >= 45 then
                         humanoid:Move(Vector3.zero, false)
                         PickupRequested = false
-                        SetTrackerStatus(string.format("FLING RECOVERY cancelled: timed out reaching reported animal location (%.1f studs away).", distance))
+                        SetTrackerStatus(string.format("FLING RECOVERY cancelled: timed out reaching the animal location (%.1f studs away).", distance))
                         if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                         finishFlingRecovery()
                         return
@@ -3412,7 +3448,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); searching nearest PromptAnchor StealPrompt.", arrivalDistance))
+                SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); searching for the nearest animal StealPrompt.", arrivalDistance))
                 local anchor = workspace:FindFirstChild("PromptAnchor")
                 local prompt, promptPosition
                 local searchDeadline = os.clock() + 8
@@ -3454,12 +3490,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 if not prompt or not prompt.Parent or not prompt.Enabled or not promptPosition then
                     PickupRequested = false
-                    SetTrackerStatus("FLING RECOVERY failed: no enabled StealPrompt within 12 studs of reported fling location.")
+                    SetTrackerStatus("FLING RECOVERY failed: no enabled StealPrompt within 12 studs of the current animal location.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     finishFlingRecovery()
                     return
                 end
-                SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - recoveryPosition).Magnitude))
+                SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from the animal; verifying prompt position.", (promptPosition - recoveryPosition).Magnitude))
                 local moveStarted = os.clock()
                 local bestPromptDistance = math.huge
                 TouchAutomationProgress("FLING_RECOVERY:PROMPT_APPROACH")
@@ -3469,7 +3505,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if locationError > 14 then
                         humanoid:Move(Vector3.zero, false)
                         PickupRequested = false
-                        SetTrackerStatus(string.format("FLING RECOVERY cancelled: prompt moved %.1f studs from reported location.", locationError))
+                        SetTrackerStatus(string.format("FLING RECOVERY cancelled: prompt moved %.1f studs away from the animal location.", locationError))
                         if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                         finishFlingRecovery()
                         return
@@ -3509,7 +3545,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local finalLocationError = (promptPosition - recoveryPosition).Magnitude
                 if finalPlayerDistance > math.min(prompt.MaxActivationDistance, 5) or finalLocationError > 14 then
                     PickupRequested = false
-                    SetTrackerStatus(string.format("FLING RECOVERY blocked by location verification: player=%.1f studs, fling mismatch=%.1f studs.", finalPlayerDistance, finalLocationError))
+                    SetTrackerStatus(string.format("FLING RECOVERY blocked by location verification: player=%.1f studs, animal mismatch=%.1f studs.", finalPlayerDistance, finalLocationError))
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     finishFlingRecovery()
                     return
@@ -3583,10 +3619,53 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 finishFlingRecovery()
                 ReturnToPickup("Fling recovery pickup confirmed. Returning to saved base position.")
             end)
-        end)
+        end
+        FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(HandleFlingRecovery)
+        CarriedAnimalWatch.Bind = function(folder)
+            if not folder or not folder:IsA("Folder") or CarriedAnimalWatch.folder == folder then return end
+            CarriedAnimalWatch.folder = folder
+            local function observeCarriedAnimal(model)
+                if model and model.Name == "CarriedAnimal" then
+                    CarriedAnimalWatch.model = model
+                    CarriedAnimalWatch.seen = true
+                end
+            end
+            for _, child in ipairs(folder:GetChildren()) do observeCarriedAnimal(child) end
+            CarriedAnimalWatch.childAdded = folder.ChildAdded:Connect(function(child)
+                observeCarriedAnimal(child)
+            end)
+            CarriedAnimalWatch.childRemoved = folder.ChildRemoved:Connect(function(child)
+                if child ~= CarriedAnimalWatch.model or not CarriedAnimalWatch.seen then return end
+                local removedModel = child
+                CarriedAnimalWatch.model = nil
+                CarriedAnimalWatch.seen = false
+                local carriedWeight = GetAnimalWeightKg(removedModel)
+                if FlingTargetWeightKg == nil and carriedWeight ~= nil then
+                    FlingTargetWeightKg = carriedWeight
+                end
+                task.defer(function()
+                    if Runtime.Stopped or ScriptShuttingDown or CarriedAnimalWatch.model ~= nil
+                        or not AutoPickupEnabled or not AutoBreakEnabled
+                        or (not ReturningAfterPickup and not PickupRequested) then return end
+                    local character = LocalPlayer.Character
+                    local root = character and character:FindFirstChild("HumanoidRootPart")
+                    if root and (root.Position - BaseReturnPosition).Magnitude <= 10 then
+                        SetTrackerStatus("CarriedAnimal disappeared near base; treating it as a normal bank instead of recovery.")
+                        return
+                    end
+                    SetTrackerStatus("CarriedAnimal disappeared while away from base; starting fast animal-location recovery.")
+                    if HandleFlingRecovery then HandleFlingRecovery("fling", nil, nil, nil, true) end
+                end)
+            end)
+            SetTrackerStatus("CarriedAnimals folder connected; watching CarriedAnimal presence.")
+        end
+        local existingCarriedFolder = workspace:FindFirstChild("CarriedAnimals")
+        if existingCarriedFolder then CarriedAnimalWatch.Bind(existingCarriedFolder) end
         AnimalFolderConnection = workspace.ChildAdded:Connect(function(child)
             if child.Name == "AnimalPickups" and not AnimalPickups then
                 BindAnimalPickups(child)
+            elseif child.Name == "CarriedAnimals" then
+                CarriedAnimalWatch.Bind(child)
             end
         end)
         StopAutoBreak = function(reason, preserveTargetState)
@@ -4168,14 +4247,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddDebugLog("Debug console ready.")
 
     elseif index == 2 then
-        local CandyCard = CreateCard(Page, "🍬  Auto collect candies", "")
+        local CandyCard = CreateCard(Page, "🍬  Auto collect candies", "TEST MODE")
         CandyCard.Size = UDim2.new(1, 0, 0, 110)
         local CandyInfo = Create("TextLabel", {
             Parent = CandyCard,
             Position = UDim2.fromOffset(12, 42),
             Size = UDim2.new(1, -24, 0, 38),
             BackgroundTransparency = 1,
-            Text = "Candy auto-collection",
+            Text = "TEST MODE — Auto candy collection logic is not implemented yet.",
             TextColor3 = Theme.Gray,
             Font = Enum.Font.Gotham,
             TextSize = 9,
@@ -4713,4 +4792,3 @@ UserInputService.InputEnded:Connect(function(input)
         Dragging = false
     end
 end)
-
