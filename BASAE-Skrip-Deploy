@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Deploy v1.182 -- 0xMoldy"
+local testver = "Deploy v1.198"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1050,13 +1050,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoRow = Create("Frame", {
             Name = "AutoControlsRow",
             Parent = Page,
-            Size = UDim2.new(1, 0, 0, 220),
+            Size = UDim2.new(1, 0, 0, 350),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 1
         })
         local Card1 = CreateCard(AutoRow, "⚡  Auto Break", "")
-        Card1.Position = UDim2.new(0, 0, 0, 0)
+        Card1.Position = UDim2.new(0.5, 6, 0, 0)
         Card1.Size = UDim2.new(0.5, -6, 0, 190)
         local StartAutoBreak
         local StopAutoBreak
@@ -1067,11 +1067,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoBreakGeneration = 0
         local RefreshTitanicPriority
         local AutoBreakControlLayout = {
-            ZoneY = 44,
-            EggY = 78,
-            HighLuckY = 112,
-            TitanicY = 146,
-            Height = 28,
+            ZoneY = 42,
+            EggY = 81,
+            HighLuckY = 109,
+            TitanicY = 135,
+            Height = 22,
             SidePadding = 11
         }
         function SetAutoBreakControl(control, y)
@@ -1101,11 +1101,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoBreakTitle = Card1:FindFirstChildWhichIsA("TextLabel")
         if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
-        AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
+        AutoPickupCard.Position = UDim2.new(0, 0, 0, 0)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 264)
         local AutoPickupEnabled = false
+        local PickupMonitorSeen = setmetatable({}, {__mode = "k"})
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
+            table.clear(PickupMonitorSeen)
             AddDebugLog("[Auto Pickup] " .. (enabled and "Monitoring ON." or "Monitoring OFF."))
             if not enabled and StopPickupAutomation then StopPickupAutomation("Auto Pickup disabled") end
         end)
@@ -1116,14 +1118,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AntiFuseRow = Create("Frame", {
             Name = "AntiFuseRow",
             Parent = Page,
-            Size = UDim2.new(1, 0, 0, 150),
+            Size = UDim2.new(1, 0, 0, 0),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 2
         })
-        local AutoFuseCard = CreateCard(AntiFuseRow, "⚙️  Auto Fuse", "UNDER DEVELOPMENT • Not fully functional")
+        local AutoFuseCard = CreateCard(AutoRow, "⚙️  Auto Fuse", "UNDER DEVELOPMENT • Not fully functional")
         MarkCardUnderDevelopment(AutoFuseCard)
-        AutoFuseCard.Position = UDim2.new(0, 0, 0, 0)
+        AutoFuseCard.Position = UDim2.new(0.5, 6, 0, 196)
         AutoFuseCard.Size = UDim2.new(0.5, -6, 0, 150)
         local AutoFuseEnabled = false
         local AutoFuseGeneration = 0
@@ -1250,25 +1252,49 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             EggFilterOpen = false
             if RarityFilterOpen then
                 RarityList.Position = UDim2.fromOffset(11, RarityFilterButton.Position.Y.Offset + RarityFilterButton.AbsoluteSize.Y + 4)
-                RarityList.Size = UDim2.new(1, -22, 0, 155)
+                RarityList.Size = UDim2.new(1, -22, 0, 140)
             end
             RarityFilterButton.Text = RarityFilterOpen and "Rarity ▲" or "Rarity ▼"
             RarityList.Visible = RarityFilterOpen
             if ZoneList then ZoneList.Visible = false end
             if EggFilterList then EggFilterList.Visible = false end
         end)
+        Create("TextLabel", {
+            Name = "RarityFilterLabel",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 27),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Rarity Filter",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
-        RarityFilterButton.Size = UDim2.new(1, -22, 0, 28)
+        RarityFilterButton.Size = UDim2.new(1, -22, 0, 22)
         local KGThresholdAmount = 0
         local KGThresholdUnit = "K"
+        Create("TextLabel", {
+            Name = "KGThresholdLabel",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 69),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Weight Threshold (KG) · Unit",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
         local KGThresholdInput = Create("TextBox", {
             Name = "KGThresholdInput",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 77),
-            Size = UDim2.new(1, -22, 0, 25),
+            Position = UDim2.fromOffset(11, 84),
+            Size = UDim2.new(1, -84, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
-            PlaceholderText = "Pickup weight threshold (blank = off)",
+            PlaceholderText = "e.g. 100",
             PlaceholderColor3 = Theme.Gray,
             TextColor3 = Theme.Text,
             Font = Enum.Font.Gotham,
@@ -1278,45 +1304,70 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         AddCorner(KGThresholdInput, 5)
         AddStroke(KGThresholdInput, Theme.Border, 1)
-        local KGUnitRow = Create("Frame", {
-            Name = "KGUnitFilter",
+        local KGUnitButton
+        local KGUnitState = {options = {"K", "M", "B", "T"}, open = false, list = nil}
+        KGUnitButton = CreateButton(AutoPickupCard, "KG: K ▼", function()
+            KGUnitState.open = not KGUnitState.open
+            RarityFilterOpen = false
+            ZoneFilterOpen = false
+            EggFilterOpen = false
+            RarityList.Visible = false
+            if ZoneList then ZoneList.Visible = false end
+            if EggFilterList then EggFilterList.Visible = false end
+            if KGUnitState.list then KGUnitState.list.Visible = KGUnitState.open end
+            KGUnitButton.Text = KGUnitState.open and "KG: " .. KGThresholdUnit .. " ▲" or "KG: " .. KGThresholdUnit .. " ▼"
+        end)
+        KGUnitButton.Name = "KGUnitFilterButton"
+        KGUnitButton.Position = UDim2.new(1, -63, 0, 84)
+        KGUnitButton.Size = UDim2.fromOffset(52, 25)
+        KGUnitState.list = Create("Frame", {
+            Name = "KGUnitFilterList",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 106),
-            Size = UDim2.new(1, -22, 0, 22),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0
+            Position = UDim2.new(1, -63, 0, 111),
+            Size = UDim2.fromOffset(52, #KGUnitState.options * 24 + 8),
+            BackgroundColor3 = Theme.SurfaceInput,
+            BorderSizePixel = 0,
+            Visible = false,
+            ZIndex = 120
         })
+        AddCorner(KGUnitState.list, 6)
+        AddStroke(KGUnitState.list, Theme.Border, 1)
         Create("UIListLayout", {
-            Parent = KGUnitRow,
-            FillDirection = Enum.FillDirection.Horizontal,
-            HorizontalAlignment = Enum.HorizontalAlignment.Left,
-            VerticalAlignment = Enum.VerticalAlignment.Center,
+            Parent = KGUnitState.list,
             Padding = UDim.new(0, 2),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
-        for index, unit in ipairs({"K", "M", "B", "T", "Qa", "Qi"}) do
-            local button = Create("TextButton", {
+        Create("UIPadding", {
+            Parent = KGUnitState.list,
+            PaddingTop = UDim.new(0, 4),
+            PaddingBottom = UDim.new(0, 4),
+            PaddingLeft = UDim.new(0, 4),
+            PaddingRight = UDim.new(0, 4)
+        })
+        for index, unit in ipairs(KGUnitState.options) do
+            local unitButton = Create("TextButton", {
                 Name = "KGUnit_" .. unit,
-                Parent = KGUnitRow,
-                Size = UDim2.new(1 / 6, -2, 1, 0),
-                BackgroundColor3 = unit == KGThresholdUnit and Theme.Selected or Theme.SurfaceInput,
+                Parent = KGUnitState.list,
+                Size = UDim2.new(1, -4, 0, 22),
+                BackgroundColor3 = unit == KGThresholdUnit and Theme.Selected or Theme.Card,
                 Text = unit,
-                TextColor3 = unit == KGThresholdUnit and Theme.Accent or Theme.Text,
-                Font = Enum.Font.GothamBold,
-                TextSize = 9,
+                TextColor3 = Theme.Text,
+                Font = Enum.Font.Gotham,
+                TextSize = 10,
                 BorderSizePixel = 0,
+                LayoutOrder = index,
                 AutoButtonColor = false,
-                LayoutOrder = index
+                ZIndex = 121
             })
-            AddCorner(button, 4)
-            AddStroke(button, Theme.Border, 1)
-            button.MouseButton1Click:Connect(function()
+            AddCorner(unitButton, 4)
+            unitButton.MouseButton1Click:Connect(function()
                 KGThresholdUnit = unit
-                for _, child in ipairs(KGUnitRow:GetChildren()) do
+                KGUnitButton.Text = "KG: " .. unit .. " ▼"
+                KGUnitState.open = false
+                KGUnitState.list.Visible = false
+                for _, child in ipairs(KGUnitState.list:GetChildren()) do
                     if child:IsA("TextButton") then
-                        local selected = child.Text == KGThresholdUnit
-                        child.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
-                        child.TextColor3 = selected and Theme.Accent or Theme.Text
+                        child.BackgroundColor3 = child.Name == "KGUnit_" .. unit and Theme.Selected or Theme.Card
                     end
                 end
                 AddDebugLog("[Auto Pickup] KG threshold unit set to " .. unit .. ".")
@@ -1330,27 +1381,130 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 and string.format("[Auto Pickup] KG priority threshold set to %s %s KG.", tostring(KGThresholdAmount), KGThresholdUnit)
                 or "[Auto Pickup] KG priority filter OFF.")
         end)
+        local CPSFilter = {amount = 0, unit = "K", options = {"K", "M", "B", "T"}, open = false}
+        Create("TextLabel", {
+            Name = "CPSFilterLabel",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 112),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Coins per Second Threshold · Unit",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        CPSFilter.input = Create("TextBox", {
+            Name = "CPSFilterInput",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 127),
+            Size = UDim2.new(1, -84, 0, 25),
+            BackgroundColor3 = Theme.SurfaceInput,
+            Text = "",
+            PlaceholderText = "e.g. 100",
+            PlaceholderColor3 = Theme.Gray,
+            TextColor3 = Theme.Text,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            ClearTextOnFocus = false,
+            BorderSizePixel = 0,
+            ZIndex = 2
+        })
+        AddCorner(CPSFilter.input, 5)
+        AddStroke(CPSFilter.input, Theme.Border, 1)
+        CPSFilter.button = CreateButton(AutoPickupCard, "Unit: K ▼", function()
+            CPSFilter.open = not CPSFilter.open
+            RarityFilterOpen = false
+            ZoneFilterOpen = false
+            EggFilterOpen = false
+            RarityList.Visible = false
+            if ZoneList then ZoneList.Visible = false end
+            if EggFilterList then EggFilterList.Visible = false end
+            if KGUnitState.list then KGUnitState.list.Visible = false; KGUnitState.open = false end
+            CPSFilter.list.Visible = CPSFilter.open
+            CPSFilter.button.Text = CPSFilter.open and "Unit: " .. CPSFilter.unit .. " ▲" or "Unit: " .. CPSFilter.unit .. " ▼"
+        end)
+        CPSFilter.button.Name = "CPSUnitFilterButton"
+        CPSFilter.button.Position = UDim2.new(1, -63, 0, 127)
+        CPSFilter.button.Size = UDim2.fromOffset(52, 25)
+        CPSFilter.list = Create("Frame", {
+            Name = "CPSUnitFilterList",
+            Parent = AutoPickupCard,
+            Position = UDim2.new(1, -63, 0, 154),
+            Size = UDim2.fromOffset(52, #CPSFilter.options * 24 + 8),
+            BackgroundColor3 = Theme.SurfaceInput,
+            BorderSizePixel = 0,
+            Visible = false,
+            ZIndex = 122
+        })
+        AddCorner(CPSFilter.list, 6)
+        AddStroke(CPSFilter.list, Theme.Border, 1)
+        Create("UIListLayout", {Parent = CPSFilter.list, Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder})
+        Create("UIPadding", {
+            Parent = CPSFilter.list,
+            PaddingTop = UDim.new(0, 4),
+            PaddingBottom = UDim.new(0, 4),
+            PaddingLeft = UDim.new(0, 4),
+            PaddingRight = UDim.new(0, 4)
+        })
+        for index, unit in ipairs(CPSFilter.options) do
+            local unitButton = Create("TextButton", {
+                Name = "CPSUnit_" .. unit,
+                Parent = CPSFilter.list,
+                Size = UDim2.new(1, -4, 0, 22),
+                BackgroundColor3 = unit == CPSFilter.unit and Theme.Selected or Theme.Card,
+                Text = unit,
+                TextColor3 = Theme.Text,
+                Font = Enum.Font.Gotham,
+                TextSize = 10,
+                BorderSizePixel = 0,
+                LayoutOrder = index,
+                AutoButtonColor = false,
+                ZIndex = 123
+            })
+            AddCorner(unitButton, 4)
+            unitButton.MouseButton1Click:Connect(function()
+                CPSFilter.unit = unit
+                CPSFilter.button.Text = "Unit: " .. unit .. " ▼"
+                CPSFilter.open = false
+                CPSFilter.list.Visible = false
+                for _, child in ipairs(CPSFilter.list:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child.BackgroundColor3 = child.Name == "CPSUnit_" .. unit and Theme.Selected or Theme.Card
+                    end
+                end
+                AddDebugLog("[Auto Pickup] Coins/second unit set to " .. unit .. ".")
+            end)
+        end
+        CPSFilter.input.FocusLost:Connect(function()
+            local rawAmount = tostring(CPSFilter.input.Text or ""):gsub(",", ""):match("^%s*(.-)%s*$")
+            local amount = tonumber(rawAmount)
+            CPSFilter.amount = amount and math.max(amount, 0) or 0
+            AddDebugLog(CPSFilter.amount > 0
+                and string.format("[Auto Pickup] Coins/second minimum set to %s %s/s.", tostring(CPSFilter.amount), CPSFilter.unit)
+                or "[Auto Pickup] Coins/second filter OFF.")
+        end)
         local HighestCashEnabled = false
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest $/s", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(11, 134)
-        HighestCashToggle.Size = UDim2.new(1, -22, 0, 24)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 179)
+        HighestCashToggle.Size = UDim2.new(1, -22, 0, 22)
         local UnindexedOnlyEnabled = false
         local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
-        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 160)
-        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 24)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 205)
+        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 22)
         local DropInZone1Enabled = false
         local DropInZone1Toggle = CreateToggle(AutoPickupCard, "Drop in Zone 1", false, function(enabled)
             DropInZone1Enabled = enabled
             AddDebugLog("[Auto Pickup] Drop in Zone 1 " .. (enabled and "ON." or "OFF."))
         end)
-        DropInZone1Toggle.Position = UDim2.fromOffset(11, 186)
-        DropInZone1Toggle.Size = UDim2.new(1, -22, 0, 24)
+        DropInZone1Toggle.Position = UDim2.fromOffset(11, 231)
+        DropInZone1Toggle.Size = UDim2.new(1, -22, 0, 22)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
             Parent = AutoPickupCard,
@@ -1432,16 +1586,40 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SortFrame.Visible = true
             if ZoneFilterOpen then
                 ZoneList.Position = UDim2.new(0, ZoneFilterButton.Position.X.Offset, 0, ZoneFilterButton.Position.Y.Offset + ZoneFilterButton.AbsoluteSize.Y + 4)
-                ZoneList.Size = UDim2.new(1, -22, 0, 150)
+                ZoneList.Size = UDim2.new(1, -22, 0, 140)
             end
             if EggFilterOpen then
                 EggFilterList.Position = UDim2.new(0, EggFilterButton.Position.X.Offset, 0, EggFilterButton.Position.Y.Offset + EggFilterButton.AbsoluteSize.Y + 4)
-                EggFilterList.Size = UDim2.new(1, -22, 0, 150)
+                EggFilterList.Size = UDim2.new(1, -22, 0, 140)
             end
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
             RarityFilterButton.Text = RarityFilterOpen and "Rarity ▲" or "Rarity ▼"
         end
+        Create("TextLabel", {
+            Name = "ZoneFilterLabel",
+            Parent = Card1,
+            Position = UDim2.fromOffset(11, 27),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Zone Filter",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        Create("TextLabel", {
+            Name = "EggFilterLabel",
+            Parent = Card1,
+            Position = UDim2.fromOffset(11, 66),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Egg Filter",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
         ZoneFilterButton = CreateButton(Card1, "Zones ▼", function()
             ZoneFilterOpen = not ZoneFilterOpen
             EggFilterOpen = false
@@ -1851,8 +2029,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         SetAutoBreakControl(TitanicPriorityToggle, AutoBreakControlLayout.TitanicY)
         Card1.Size = UDim2.new(0.5, -6, 0, 190)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
-        AutoRow.Size = UDim2.new(1, 0, 0, 190)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 264)
+        AutoRow.Size = UDim2.new(1, 0, 0, 350)
         function UpdateFilterPanelWithTitanic()
             UpdateFilterPanel()
             HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
@@ -2384,20 +2562,22 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 .. " | counter=" .. tostring(hitCounter)
                 .. " | health=" .. tostring(health))
             if numericHealth and numericHealth <= 0 then
-                TouchAutomationProgress("WAITING_FOR_ANIMAL")
+                TouchAutomationProgress("EGG_BROKEN")
                 CompletedEggs[target] = true
-                WaitingForPickup = true
+                WaitingForPickup = false
                 ArrivedAtTarget = false
-                if MovementConnection then
-                    MovementConnection:Disconnect()
-                    MovementConnection = nil
-                end
+                if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
                 local character = LocalPlayer.Character
                 local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                if humanoid then
-                    humanoid:Move(Vector3.zero, false)
-                end
-                SetTrackerStatus("Target egg reached 0 HP (including while travelling); movement stopped and watching AnimalPickups.")
+                if humanoid and not PickupRequested and not ReturningAfterPickup then humanoid:Move(Vector3.zero, false) end
+                SetTrackerStatus("Egg broken; Auto Break will continue while Auto Pickup monitors AnimalPickups.")
+                task.defer(function()
+                    task.wait(0.15)
+                    if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup
+                        and not FlingRecoveryActive and not ScriptShuttingDown and StartAutoBreak then
+                        StartAutoBreak(true)
+                    end
+                end)
             end
         end)
         function GetPetRarity(pickup)
@@ -2516,7 +2696,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, selected in pairs(SelectedRarities) do
                 if selected then selectedCount += 1 end
             end
-            if selectedCount == 0 then return true end
+            if selectedCount == 0 then return false end
             local rarity = GetPetRarity(pickup)
             if not rarity then
                 SetTrackerStatus("Cannot filter " .. pickup.Name .. ": Rarity value not found.")
@@ -2632,9 +2812,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return false, displayName
         end
         function EvaluatePickup(pickup)
-            local evaluationGeneration = AutoBreakGeneration
             local function evaluationCancelled()
-                return ScriptShuttingDown or evaluationGeneration ~= AutoBreakGeneration or not AutoPickupEnabled
+                return ScriptShuttingDown or not AutoPickupEnabled or not pickup.Parent
             end
             pickup:SetAttribute("BASAE_Qualified", false)
             SetPickupTracking(pickup, "Checking")
@@ -2679,27 +2858,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end
             local kgPriorityPickup, pickupWeightKg = false, nil
+            local aboveLowestPriorityPickup = false
+            local cpsPriorityPickup = false
+            local rarityPriorityPickup = false
+            local cps, cpsText = -1, "CPS skipped for unindexed animal"
+            local pickupPriority = 5
             if not forceUnindexedPickup then
                 kgPriorityPickup, pickupWeightKg = IsKGFilterMatch(pickup)
                 if kgPriorityPickup then
-                    SetPickupTracking(pickup, "KG filter match", tostring(pickupWeightKg) .. " KG")
+                    SetPickupTracking(pickup, "KG threshold matched", tostring(pickupWeightKg) .. " KG")
                 end
-                if not IsRarityAllowed(pickup) then
-                    SetPickupTracking(pickup, "Rejected: rarity filter")
-                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown"))
-                    return
-                end
-                local petZone = GetPickupZone(pickup)
-                local targetZone = CurrentTarget and CurrentTarget.Parent and CurrentTarget.Parent.Parent
-                local targetZoneName = targetZone and targetZone.Name
-                if petZone and targetZoneName and petZone:lower() ~= targetZoneName:lower() then
-                    SetPickupTracking(pickup, "Rejected: zone mismatch")
-                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | zone=" .. petZone .. " (target zone " .. targetZoneName .. ")")
-                    return
-                end
-            end
-            local cps, cpsText = -1, "CPS skipped for unindexed animal"
-            if not forceUnindexedPickup then
+                rarityPriorityPickup = IsRarityAllowed(pickup)
                 SetPickupTracking(pickup, "CPS scan 1/2: warming up")
                 local _, firstScanText = GetPetCPS(pickup)
                 if evaluationCancelled() or not pickup.Parent then
@@ -2724,29 +2893,67 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end
                 SetPickupTracking(pickup, cps >= 0 and "CPS checked (second scan)" or "CPS read failed", cpsText)
-                if HighestCashEnabled and not kgPriorityPickup and cps < 0 then
-                    SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
-                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
-                    return
+                if CPSFilter.amount > 0 and cps >= 0 then
+                    local scales = {K = 1e3, M = 1e6, B = 1e9, T = 1e12}
+                    local minimumCPS = CPSFilter.amount * (scales[CPSFilter.unit] or 1)
+                    cpsPriorityPickup = cps >= minimumCPS
                 end
-                if HighestCashEnabled and not kgPriorityPickup then
+                if HighestCashEnabled and cps >= 0 then
                     local lowestPlaced = GetLowestPlacedCPS()
-                    if lowestPlaced >= 0 and cps <= lowestPlaced then
-                        SetPickupTracking(pickup, "Rejected: below lowest placed CPS", cpsText)
-                        RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. cpsText
-                            .. " is not above your lowest placed CPS (" .. tostring(lowestPlaced) .. ").")
-                        return
-                    end
+                    aboveLowestPriorityPickup = lowestPlaced >= 0 and cps > lowestPlaced
                 end
             end
             if evaluationCancelled() or not pickup.Parent then
                 SetPickupTracking(pickup, "Cancelled: automation toggled")
                 return
             end
+            local selectedRarityCount = 0
+            for _, selected in pairs(SelectedRarities) do
+                if selected then selectedRarityCount += 1 end
+            end
+            local anyPickupFilterEnabled = UnindexedOnlyEnabled or HighestCashEnabled
+                or KGThresholdAmount > 0 or CPSFilter.amount > 0 or selectedRarityCount > 0
+            local qualified = not anyPickupFilterEnabled or forceUnindexedPickup
+                or aboveLowestPriorityPickup or kgPriorityPickup or cpsPriorityPickup or rarityPriorityPickup
+            if not qualified then
+                local reason = "no enabled pickup rule matched"
+                if HighestCashEnabled and cps < 0 then
+                    reason = "CPS unavailable for Above Lowest $/s"
+                elseif CPSFilter.amount > 0 and cps < 0 then
+                    reason = "CPS unavailable for minimum CPS"
+                elseif not rarityPriorityPickup then
+                    reason = "rarity mismatch and no CPS/KG priority matched"
+                end
+                SetPickupTracking(pickup, "Rejected: " .. reason, cpsText)
+                RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | " .. reason .. ".")
+                return
+            end
+            if forceUnindexedPickup then
+                pickupPriority = 1
+            elseif aboveLowestPriorityPickup then
+                pickupPriority = 2
+            elseif kgPriorityPickup then
+                pickupPriority = 3
+            elseif cpsPriorityPickup then
+                pickupPriority = 4
+            else
+                pickupPriority = 5
+            end
+            pickup:SetAttribute("BASAE_Priority", pickupPriority)
             pickup:SetAttribute("BASAE_Qualified", true)
             if PickupRequested then
-                if forceUnindexedPickup or kgPriorityPickup or (HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS) then
-                    SetPickupTracking(pickup, "Replacing lower-CPS pickup", cpsText)
+                local activePriority = ActivePickup and ActivePickup.Parent and (ActivePickup:GetAttribute("BASAE_Priority") or 5) or math.huge
+                local activeWeight = ActivePickup and ActivePickup.Parent and GetPickupWeightKg(ActivePickup) or nil
+                local shouldPreempt = pickupPriority < activePriority
+                if pickupPriority == activePriority then
+                    if pickupPriority == 2 or pickupPriority == 4 then
+                        shouldPreempt = cps > ActivePickupCPS
+                    elseif pickupPriority == 3 then
+                        shouldPreempt = pickupWeightKg ~= nil and (activeWeight == nil or pickupWeightKg > activeWeight)
+                    end
+                end
+                if shouldPreempt then
+                    SetPickupTracking(pickup, "Replacing lower-priority pickup (priority " .. tostring(pickupPriority) .. ")", cpsText)
                     PickupGeneration += 1
                     PickupRequested = false
                     if PickupMovementConnection then
@@ -2754,14 +2961,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         PickupMovementConnection = nil
                     end
                     local oldPickupName = ActivePickup and ActivePickup.Name or "none"
-                    SetTrackerStatus(string.format("PICKUP LOCK PREEMPT: %s (%.2f CPS) replaces %s (%.2f CPS) during phase %s.", pickup.Name, cps, oldPickupName, ActivePickupCPS, PickupPhase))
+                    SetTrackerStatus(string.format("PICKUP LOCK PREEMPT: %s (priority %d, %.2f CPS) replaces %s (priority %s, %.2f CPS) during phase %s.", pickup.Name, pickupPriority, cps, oldPickupName, tostring(activePriority), ActivePickupCPS, PickupPhase))
                     local oldCharacter = LocalPlayer.Character
                     local oldHumanoid = oldCharacter and oldCharacter:FindFirstChildOfClass("Humanoid")
                     if oldHumanoid then oldHumanoid:Move(Vector3.zero, false) end
                     task.wait()
                 else
                     SetPickupTracking(pickup, "Checked: another pickup has priority", cpsText)
-                    SetTrackerStatus(string.format("Eligible pet %s ignored while %s is locked (CPS %.2f vs %.2f).", pickup.Name, tostring(ActivePickup and ActivePickup.Name or "another pickup"), cps, ActivePickupCPS))
+                    SetTrackerStatus(string.format("Eligible pet %s ignored while %s is locked (priority %s vs %d; CPS %.2f vs %.2f).", pickup.Name, tostring(ActivePickup and ActivePickup.Name or "another pickup"), tostring(activePriority), pickupPriority, cps, ActivePickupCPS))
                     return
                 end
             end
@@ -2804,6 +3011,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end)
             ActivePickupCPS = cps
+            ActivePickup:SetAttribute("BASAE_Priority", pickupPriority)
             PickupPhase = "ANIMAL_APPROACH"
             SetPickupTracking(pickup, "Selected for pickup", cpsText)
             PickupRequested = true
@@ -3044,7 +3252,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 ActivePickupCPS = -1
                 SetTrackerStatus("Eligible pet " .. pickup.Name
                     .. " but pickup prompt unavailable after 5s: " .. promptState .. ".")
-                if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                task.delay(2, function()
+                    if pickup.Parent and AutoPickupEnabled then PickupMonitorSeen[pickup] = nil end
+                end)
+                if AutoBreakEnabled and StartAutoBreak then StartAutoBreak(true) end
                 return
             end
             SetPickupPhase("PROMPT_APPROACH", pickup.Name .. " | moving to matching StealPrompt; target and movement remain locked.")
@@ -3221,53 +3432,60 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 local pickupConfirmed = false
                 local activationErrors = {}
-                for activationAttempt = 1, 2 do
-                    if PickupGeneration ~= pickupToken or not PickupRequested then return end
-                    if not prompt.Parent or not prompt.Enabled then break end
-                    local currentPromptPosition = getPromptPosition(prompt)
-                    local currentPromptDistance = currentPromptPosition and (currentPromptPosition - root.Position).Magnitude or math.huge
-                    if currentPromptDistance > prompt.MaxActivationDistance then
-                        SetTrackerStatus(string.format("StealPrompt activation attempt %d skipped: %.1f studs away (range %.1f).", activationAttempt, currentPromptDistance, prompt.MaxActivationDistance))
-                        break
-                    end
-                    local holdOk, holdErr = pcall(function()
-                        if typeof(fireproximityprompt) == "function" then
-                            fireproximityprompt(prompt)
-                            if prompt.HoldDuration > 0 then
-                                task.wait(prompt.HoldDuration + 0.15)
+                local activationDeadline = os.clock() + 15
+                local activationAttempt = 0
+                while not pickupConfirmed and os.clock() < activationDeadline do
+                    if PickupGeneration ~= pickupToken or not PickupRequested or not AutoPickupEnabled then return end
+                    if not pickup.Parent then pickupConfirmed = true; break end
+                    if not prompt.Parent or not prompt.Enabled then
+                        task.wait(0.25)
+                    else
+                        activationAttempt += 1
+                        local currentPromptPosition = getPromptPosition(prompt)
+                        local currentPromptDistance = currentPromptPosition and (currentPromptPosition - root.Position).Magnitude or math.huge
+                        if currentPromptDistance <= prompt.MaxActivationDistance then
+                            local holdOk, holdErr = pcall(function()
+                                if typeof(fireproximityprompt) == "function" then
+                                    fireproximityprompt(prompt)
+                                    if prompt.HoldDuration > 0 then task.wait(prompt.HoldDuration + 0.15) end
+                                else
+                                    prompt:InputHoldBegin()
+                                    task.wait(prompt.HoldDuration + 0.1)
+                                    prompt:InputHoldEnd()
+                                end
+                            end)
+                            if not holdOk then
+                                table.insert(activationErrors, tostring(holdErr))
+                                pcall(function() prompt:InputHoldEnd() end)
+                            end
+                            local confirmDeadline = os.clock() + 0.75
+                            while not Runtime.Stopped and os.clock() < confirmDeadline
+                                and PickupGeneration == pickupToken and PickupRequested and pickup.Parent do
+                                task.wait(0.05)
+                            end
+                            if not pickup.Parent then pickupConfirmed = true
+                            elseif activationAttempt == 1 or activationAttempt % 3 == 0 then
+                                SetTrackerStatus("StealPrompt still unchecked for " .. pickup.Name .. "; retry " .. tostring(activationAttempt) .. ".")
                             end
                         else
-                            prompt:InputHoldBegin()
-                            task.wait(prompt.HoldDuration + 0.1)
-                            prompt:InputHoldEnd()
+                            SetTrackerStatus(string.format("Waiting for StealPrompt range for %s (%.1f/%.1f studs).",
+                                pickup.Name, currentPromptDistance, prompt.MaxActivationDistance))
+                            task.wait(0.25)
                         end
-                    end)
-                    if not holdOk then
-                        table.insert(activationErrors, tostring(holdErr))
-                        pcall(function() prompt:InputHoldEnd() end)
                     end
-                    local pickupDeadline = os.clock() + 1.25
-                    while not Runtime.Stopped and os.clock() < pickupDeadline and PickupGeneration == pickupToken do
-                        if not pickup.Parent then
-                            pickupConfirmed = true
-                            break
-                        end
-                        task.wait(0.05)
-                    end
-                    if pickupConfirmed then break end
-                    if activationAttempt == 1 and prompt.Parent and prompt.Enabled then
-                        SetTrackerStatus("StealPrompt did not collect the animal on first attempt; retrying hold.")
-                        task.wait(0.2)
-                    end
+                    if not pickupConfirmed then task.wait(0.2) end
                 end
                 if PickupGeneration ~= pickupToken then return end
                 if not pickupConfirmed then
                     PickupRequested = false
                     ActivePickup = nil
                     ActivePickupCPS = -1
+                    PickupPhase = "IDLE"
                     local detail = #activationErrors > 0 and (" Activation error: " .. table.concat(activationErrors, " | ")) or ""
-                    SetTrackerStatus("StealPrompt activation did not collect " .. pickup.Name .. "; check prompt range/requirements." .. detail)
-                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    SetPickupTracking(pickup, "Retry timeout: steal not confirmed", detail)
+                    SetTrackerStatus("StealPrompt retry window expired for " .. pickup.Name .. "; released pickup lock." .. detail)
+                    PickupMonitorSeen[pickup] = nil
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak(true) end
                     return
                 end
                 SetPickupTracking(pickup, "Collected", cpsText)
@@ -3308,62 +3526,40 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end)
         end
         function BindAnimalPickups(folder)
-            if not folder or not folder:IsA("Folder") and not folder:IsA("Model") then
-                return
-            end
+            if not folder or not folder:IsA("Folder") and not folder:IsA("Model") then return end
             AnimalPickups = folder
-            for _, existing in ipairs(folder:GetChildren()) do
-                BaselinePickups[existing] = true
-            end
             folder.ChildAdded:Connect(function(pickup)
-                if BaselinePickups[pickup] then return end
+                PickupMonitorSeen[pickup] = nil
                 local pickupRarity = tostring(GetPetRarity(pickup) or "Unknown")
                 SetPickupTracking(pickup, "Detected")
                 pickup:SetAttribute("BASAE_Rarity", pickupRarity)
                 if not AutoPickupEnabled then
-                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | rarity=" .. pickupRarity .. " | Auto Pickup is OFF; ignored.")
+                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | rarity=" .. pickupRarity .. " | monitoring waits until Auto Pickup is ON.")
                     return
                 end
-                if ReturningAfterPickup or PickupRequested or FlingRecoveryActive then
-                    QueuePendingAnimalPickup(pickup)
-                    return
-                end
-                SetTrackerStatus("NEW ANIMAL detected: " .. pickup.Name .. " | pausing Auto Break and checking filters/priority.")
-                if AutoPickupEnabled and not PickupRequested and not ReturningAfterPickup then
-                    if StopAutoBreak then StopAutoBreak("Auto Break paused: evaluating new animal pickup.", true) end
-                end
-                task.defer(function()
-                    if not pickup.Parent or not AutoPickupEnabled or ReturningAfterPickup or PickupRequested or FlingRecoveryActive then
-                        if pickup.Parent and AutoPickupEnabled then QueuePendingAnimalPickup(pickup) end
-                        return
-                    end
-                    local ok, err = xpcall(function()
-                        EvaluatePickup(pickup)
-                    end, debug.traceback)
-                    if not ok then
-                        warn("[BASAE-Skrip] EvaluatePickup failed for " .. pickup.Name .. ": " .. tostring(err))
-                        if PickupRequested then
-                            PickupGeneration += 1
-                            PickupRequested = false
-                            ActivePickup = nil
-                            ActivePickupCPS = -1
-                            local character = LocalPlayer.Character
-                            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                            if humanoid then humanoid:Move(Vector3.zero, false) end
-                        end
-                        SetTrackerStatus("Pickup evaluation error for " .. pickup.Name .. ": " .. tostring(err):gsub("[%r\n]+", " "):sub(1, 220))
-                        if AutoBreakEnabled and AutoPickupEnabled and not ReturningAfterPickup and StartAutoBreak then
-                            task.wait(0.2)
-                            StartAutoBreak()
-                        end
-                    end
-                end)
+                PickupMonitorSeen[pickup] = true
+                QueuePendingAnimalPickup(pickup)
             end)
-            SetTrackerStatus("AnimalPickups folder detected and connected.")
+            folder.ChildRemoved:Connect(function(pickup)
+                PickupMonitorSeen[pickup] = nil
+                PendingAnimalPickupSet[pickup] = nil
+            end)
+            SetTrackerStatus("AnimalPickups folder detected; continuous monitoring is ready.")
         end
-        if AnimalPickups then
-            BindAnimalPickups(AnimalPickups)
-        end
+        if AnimalPickups then BindAnimalPickups(AnimalPickups) end
+        task.spawn(function()
+            while not Runtime.Stopped and not ScriptShuttingDown do
+                if AutoPickupEnabled and AnimalPickups and AnimalPickups.Parent then
+                    for _, pickup in ipairs(AnimalPickups:GetChildren()) do
+                        if pickup.Parent == AnimalPickups and not PickupMonitorSeen[pickup] then
+                            PickupMonitorSeen[pickup] = true
+                            QueuePendingAnimalPickup(pickup)
+                        end
+                    end
+                end
+                task.wait(0.3)
+            end
+        end)
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
         HandleFlingRecovery = function(action, flingPosition, duration, strength, carriedAnimalLost)
             if tostring(action):lower() ~= "fling" then return end
@@ -4480,14 +4676,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local ESPEnabled = false
         local ESPObjects = {}
         local ESPFolder = Create("Folder", {Name = "BASE_Skrip_EggESP", Parent = LocalPlayer:WaitForChild("PlayerGui")})
-        function ClearEggESP(egg)
+        local function ClearEggESP(egg)
             local gui = ESPObjects[egg]
             if gui then
                 gui:Destroy()
                 ESPObjects[egg] = nil
             end
         end
-        function GetESPValue(object, names)
+        local function GetESPValue(object, names)
             if not object then return nil end
             local nodes = {object}
             for _, descendant in ipairs(object:GetDescendants()) do
@@ -4507,7 +4703,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nil
         end
-        function GetEggESPInfo(egg)
+        local function GetEggESPInfo(egg)
             local eggModel = egg:FindFirstChild("Egg") or egg
             local info = eggModel:FindFirstChild("EggInfoUi", true)
             local luck = GetESPValue(eggModel, {"LuckMulti", "Luck", "LuckMultiplier"})
