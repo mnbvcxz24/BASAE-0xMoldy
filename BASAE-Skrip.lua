@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.163 -- 0xMoldy"
+local testver = "Test v1.164 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -1844,46 +1844,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nil
         end
-        local function ParseKGValue(raw)
-            if raw == nil then return nil end
-            local value = tostring(raw):lower():gsub(",", ""):gsub("%s+", "")
-            local numberText, suffix = value:match("^([%d%.]+)([%a]*)$")
-            local number = tonumber(numberText)
-            if not number then return nil end
-            local scales = {k=1e3, m=1e6, b=1e9, t=1e12, qa=1e15, qi=1e18}
-            local scale = scales[suffix or ""]
-            if suffix ~= "" and not scale then return nil end
-            return number * (scale or 1)
-        end
         local function GetPickupWeightKg(pickup)
             if not pickup then return nil end
-            local names = {"WeightKg", "WeightKG", "weightKg", "weightKG", "Weight", "weight"}
-            for _, name in ipairs(names) do
-                local value = pickup:GetAttribute(name)
-                if value ~= nil then
-                    local parsed = ParseKGValue(value)
-                    if parsed then return parsed end
-                end
+            local animalPickups = workspace:FindFirstChild("AnimalPickups")
+            local animal = pickup
+            while animal and animalPickups and animal.Parent ~= animalPickups do
+                animal = animal.Parent
             end
-            for _, node in ipairs(pickup:GetDescendants()) do
-                for _, name in ipairs(names) do
-                    local value = node:GetAttribute(name)
-                    if value ~= nil then
-                        local parsed = ParseKGValue(value)
-                        if parsed then return parsed end
-                    end
-                    if node.Name == name then
-                        if node:IsA("ValueBase") then
-                            local parsed = ParseKGValue(node.Value)
-                            if parsed then return parsed end
-                        elseif node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox") then
-                            local parsed = ParseKGValue(node.Text)
-                            if parsed then return parsed end
-                        end
-                    end
-                end
+            if animal and animalPickups and animal.Parent == animalPickups then
+                local weight = tonumber(animal:GetAttribute("WeightKg"))
+                if weight then return weight end
             end
-            return nil
+            return tonumber(pickup:GetAttribute("WeightKg"))
         end
         local function IsKGFilterMatch(pickup)
             if KGThresholdAmount <= 0 then return false, nil end
