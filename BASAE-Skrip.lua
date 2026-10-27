@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.182 -- 0xMoldy"
+local testver = "Test v1.183 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1251,66 +1251,54 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         KGUnitButton.Name = "KGUnitFilterButton"
         KGUnitButton.Position = UDim2.fromOffset(11, 97)
         KGUnitButton.Size = UDim2.new(1, -22, 0, 22)
-        local KGPresetOptions = {
-            {label = "Off", amount = 0},
-            {label = "5K+", amount = 5},
-            {label = "10K+", amount = 10},
-            {label = "15K+", amount = 15},
-            {label = "20K+", amount = 20},
-            {label = "40K+", amount = 40},
-            {label = "60K+", amount = 60},
-            {label = "100K+", amount = 100}
-        }
-        local KGPresetOpen = false
-        local KGPresetList
-        local KGPresetButton
-        KGPresetButton = CreateButton(AutoPickupCard, "KG Filter: Off ▼", function()
-            KGPresetOpen = not KGPresetOpen
+        local KGUnitOptions = {"K", "M", "B", "T"}
+        local KGUnitListOpen = false
+        local KGUnitList
+        KGUnitButton = CreateButton(AutoPickupCard, "Unit: K ▼", function()
+            KGUnitListOpen = not KGUnitListOpen
             RarityFilterOpen = false
             ZoneFilterOpen = false
             EggFilterOpen = false
             RarityList.Visible = false
             if ZoneList then ZoneList.Visible = false end
             if EggFilterList then EggFilterList.Visible = false end
-            if KGPresetList then KGPresetList.Visible = KGPresetOpen end
-            KGPresetButton.Text = KGPresetOpen and "KG Filter ▲" or ("KG Filter: " .. (KGThresholdAmount > 0 and tostring(KGThresholdAmount) .. KGThresholdUnit .. "+" or "Off") .. " ▼")
+            if KGUnitList then KGUnitList.Visible = KGUnitListOpen end
+            KGUnitButton.Text = KGUnitListOpen and "Unit: " .. KGThresholdUnit .. " ▲" or "Unit: " .. KGThresholdUnit .. " ▼"
         end)
-        KGPresetButton.Name = "KGPresetFilterButton"
-        KGPresetButton.Position = UDim2.fromOffset(11, 125)
-        KGPresetButton.Size = UDim2.new(1, -22, 0, 22)
-        KGPresetList = Create("ScrollingFrame", {
-            Name = "KGPresetFilterList",
+        KGUnitButton.Name = "KGUnitFilterButton"
+        KGUnitButton.Position = UDim2.fromOffset(11, 97)
+        KGUnitButton.Size = UDim2.new(1, -22, 0, 22)
+        KGUnitList = Create("Frame", {
+            Name = "KGUnitFilterList",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 151),
-            Size = UDim2.new(1, -22, 0, 140),
-            CanvasSize = UDim2.new(0, 0, 0, 0),
-            ScrollBarThickness = 3,
-            ScrollBarImageColor3 = Theme.Gray,
+            Position = UDim2.fromOffset(11, 123),
+            Size = UDim2.new(1, -22, 0, #KGUnitOptions * 24 + 8),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             Visible = false,
             ZIndex = 120
         })
-        AddCorner(KGPresetList, 6)
-        local KGPresetLayout = Create("UIListLayout", {
-            Parent = KGPresetList,
+        AddCorner(KGUnitList, 6)
+        AddStroke(KGUnitList, Theme.Border, 1)
+        local KGUnitListLayout = Create("UIListLayout", {
+            Parent = KGUnitList,
             Padding = UDim.new(0, 2),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
         Create("UIPadding", {
-            Parent = KGPresetList,
+            Parent = KGUnitList,
             PaddingTop = UDim.new(0, 4),
             PaddingBottom = UDim.new(0, 4),
             PaddingLeft = UDim.new(0, 4),
             PaddingRight = UDim.new(0, 4)
         })
-        for index, option in ipairs(KGPresetOptions) do
-            local optionButton = Create("TextButton", {
-                Name = "KGPreset_" .. option.label:gsub("[^%w]", ""),
-                Parent = KGPresetList,
+        for index, unit in ipairs(KGUnitOptions) do
+            local unitButton = Create("TextButton", {
+                Name = "KGUnit_" .. unit,
+                Parent = KGUnitList,
                 Size = UDim2.new(1, -4, 0, 22),
-                BackgroundColor3 = Theme.Card,
-                Text = option.label,
+                BackgroundColor3 = unit == KGThresholdUnit and Theme.Selected or Theme.Card,
+                Text = unit,
                 TextColor3 = Theme.Text,
                 Font = Enum.Font.Gotham,
                 TextSize = 10,
@@ -1319,21 +1307,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AutoButtonColor = false,
                 ZIndex = 121
             })
-            AddCorner(optionButton, 4)
-            optionButton.MouseButton1Click:Connect(function()
-                KGThresholdAmount = option.amount
-                KGThresholdUnit = "K"
-                KGThresholdInput.Text = option.amount > 0 and tostring(option.amount) or ""
-                KGUnitButton.Text = "Unit: K ▼"
-                KGPresetButton.Text = "KG Filter: " .. option.label .. " ▼"
-                KGPresetOpen = false
-                KGPresetList.Visible = false
-                AddDebugLog("[Auto Pickup] KG preset selected: " .. option.label .. ".")
+            AddCorner(unitButton, 4)
+            unitButton.MouseButton1Click:Connect(function()
+                KGThresholdUnit = unit
+                KGUnitButton.Text = "Unit: " .. unit .. " ▼"
+                KGUnitListOpen = false
+                KGUnitList.Visible = false
+                for _, child in ipairs(KGUnitList:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child.BackgroundColor3 = child.Name == "KGUnit_" .. unit and Theme.Selected or Theme.Card
+                    end
+                end
+                AddDebugLog("[Auto Pickup] KG threshold unit set to " .. unit .. ".")
             end)
         end
-        KGPresetLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            KGPresetList.CanvasSize = UDim2.new(0, 0, 0, KGPresetLayout.AbsoluteContentSize.Y + 8)
-        end)
         KGThresholdInput.FocusLost:Connect(function()
             local rawAmount = tostring(KGThresholdInput.Text or ""):gsub(",", ""):match("^%s*(.-)%s*$")
             local amount = tonumber(rawAmount)
