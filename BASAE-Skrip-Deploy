@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Deploy v1.170 -- 0xMoldy"
+local testver = "Deploy v1.171 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1895,6 +1895,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local FlingRemoteConnection
         local FlingRecoveryActive = false
         local FlingAnimalTarget
+        local HandleFlingRecovery
+        local CarriedAnimalWatch = {}
         local CancelFlingRecovery
         local LastAutomationProgressAt = os.clock()
         local AutomationProgressStage = "INITIALIZING"
@@ -2024,6 +2026,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if HitEventConnection then HitEventConnection:Disconnect(); HitEventConnection = nil end
             if FlingRemoteConnection then FlingRemoteConnection:Disconnect(); FlingRemoteConnection = nil end
             if AnimalFolderConnection then AnimalFolderConnection:Disconnect(); AnimalFolderConnection = nil end
+            if CarriedAnimalWatch.childAdded then CarriedAnimalWatch.childAdded:Disconnect(); CarriedAnimalWatch.childAdded = nil end
+            if CarriedAnimalWatch.childRemoved then CarriedAnimalWatch.childRemoved:Disconnect(); CarriedAnimalWatch.childRemoved = nil end
             local character = LocalPlayer.Character
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if humanoid then humanoid:Move(Vector3.zero, false) end
@@ -2562,7 +2566,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         PickupMovementConnection:Disconnect()
                         PickupMovementConnection = nil
                     end
-                    local oldPickupName = ActivePickup.Name
+                    local oldPickupName = ActivePickup and ActivePickup.Name or "none"
                     SetTrackerStatus(string.format("PICKUP LOCK PREEMPT: %s (%.2f CPS) replaces %s (%.2f CPS) during phase %s.", pickup.Name, cps, oldPickupName, ActivePickupCPS, PickupPhase))
                     local oldCharacter = LocalPlayer.Character
                     local oldHumanoid = oldCharacter and oldCharacter:FindFirstChildOfClass("Humanoid")
@@ -3171,9 +3175,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BindAnimalPickups(AnimalPickups)
         end
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
-        FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(function(action, flingPosition, duration, strength)
+        HandleFlingRecovery = function(action, flingPosition, duration, strength, carriedAnimalLost)
             if tostring(action):lower() ~= "fling" then return end
-            if AntiPaloEnabled then
+            if AntiPaloEnabled and not carriedAnimalLost then
                 local released, releaseError = pcall(function()
                     if type(firesignal) ~= "function" then
                         error("firesignal is unavailable in this executor")
@@ -3186,9 +3190,22 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     AddDebugLog("[Anti Palo] Fling release failed: " .. tostring(releaseError))
                 end
             end
+            if not AutoPickupEnabled or not AutoBreakEnabled then
+                SetTrackerStatus("Fling detected: recovery cancelled because Auto Break or Auto Pickup is OFF.")
+                return
+            end
+            if FlingRecoveryActive then
+                SetTrackerStatus("Fling recovery event received while recovery is active; ignoring duplicate trigger.")
+                return
+            end
+            if carriedAnimalLost and not ReturningAfterPickup and not PickupRequested then return end
             local flingAnimal = ActivePickup or FlingAnimalTarget
             local targetAnimalName = (flingAnimal and flingAnimal.Name) or FlingTargetAnimalName
             local targetWeightKg = FlingTargetWeightKg
+            if not targetAnimalName then
+                SetTrackerStatus("Fling recovery skipped: tracked animal name is unavailable.")
+                return
+            end
             local function findTrackedAnimal()
                 local folder = workspace:FindFirstChild("AnimalPickups")
                 if not folder or targetAnimalName == nil or targetWeightKg == nil then return nil end
@@ -3235,14 +3252,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local interruptedHumanoid = interruptedCharacter and interruptedCharacter:FindFirstChildOfClass("Humanoid")
             if interruptedHumanoid then interruptedHumanoid:Move(Vector3.zero, false) end
 
-            if not AutoPickupEnabled or not AutoBreakEnabled then
-                SetTrackerStatus("Fling detected: recovery cancelled because Auto Break or Auto Pickup is OFF.")
-                return
-            end
-            if FlingRecoveryActive then
-                SetTrackerStatus("Fling recovery event received while recovery is active; base-return movement cancelled.")
-                return
-            end
             FlingRecoveryActive = true
             local recoverySearchToken = PickupGeneration
             TouchAutomationProgress("FLING_RECOVERY:WAITING_FOR_IDENTITY")
@@ -3257,16 +3266,30 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     identityAttempts += 1
                     local identityFolder = workspace:FindFirstChild("AnimalPickups")
                     if identityFolder then
+                        local uniqueNameMatch, uniqueNameWeight
+                        local ambiguousNameMatch = false
                         for _, candidate in ipairs(identityFolder:GetChildren()) do
-                            if candidate == flingAnimal and candidate.Name == targetAnimalName then
+                            if candidate.Name == targetAnimalName then
                                 local identity = GetAnimalWeightKg(candidate)
                                 if identity ~= nil then
-                                    targetWeightKg = identity
-                                    FlingTargetWeightKg = identity
-                                    SetTrackerStatus("Fling recovery captured identity: " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(identity) .. " | attempts=" .. tostring(identityAttempts))
-                                    break
+                                    if candidate == flingAnimal then
+                                        targetWeightKg = identity
+                                        break
+                                    elseif not uniqueNameMatch then
+                                        uniqueNameMatch = candidate
+                                        uniqueNameWeight = identity
+                                    else
+                                        ambiguousNameMatch = true
+                                    end
                                 end
                             end
+                        end
+                        if targetWeightKg == nil and uniqueNameMatch and not ambiguousNameMatch then
+                            targetWeightKg = uniqueNameWeight
+                        end
+                        if targetWeightKg ~= nil then
+                            FlingTargetWeightKg = targetWeightKg
+                            SetTrackerStatus("Fling recovery captured identity: " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(targetWeightKg) .. " | attempts=" .. tostring(identityAttempts))
                         end
                     end
                     local now = os.clock()
@@ -3623,10 +3646,53 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 finishFlingRecovery()
                 ReturnToPickup("Fling recovery pickup confirmed. Returning to saved base position.")
             end)
-        end)
+        end
+        FlingRemoteConnection = CatchFlingRemote.OnClientEvent:Connect(HandleFlingRecovery)
+        CarriedAnimalWatch.Bind = function(folder)
+            if not folder or not folder:IsA("Folder") or CarriedAnimalWatch.folder == folder then return end
+            CarriedAnimalWatch.folder = folder
+            local function observeCarriedAnimal(model)
+                if model and model.Name == "CarriedAnimal" then
+                    CarriedAnimalWatch.model = model
+                    CarriedAnimalWatch.seen = true
+                end
+            end
+            for _, child in ipairs(folder:GetChildren()) do observeCarriedAnimal(child) end
+            CarriedAnimalWatch.childAdded = folder.ChildAdded:Connect(function(child)
+                observeCarriedAnimal(child)
+            end)
+            CarriedAnimalWatch.childRemoved = folder.ChildRemoved:Connect(function(child)
+                if child ~= CarriedAnimalWatch.model or not CarriedAnimalWatch.seen then return end
+                local removedModel = child
+                CarriedAnimalWatch.model = nil
+                CarriedAnimalWatch.seen = false
+                local carriedWeight = GetAnimalWeightKg(removedModel)
+                if FlingTargetWeightKg == nil and carriedWeight ~= nil then
+                    FlingTargetWeightKg = carriedWeight
+                end
+                task.defer(function()
+                    if Runtime.Stopped or ScriptShuttingDown or CarriedAnimalWatch.model ~= nil
+                        or not AutoPickupEnabled or not AutoBreakEnabled
+                        or (not ReturningAfterPickup and not PickupRequested) then return end
+                    local character = LocalPlayer.Character
+                    local root = character and character:FindFirstChild("HumanoidRootPart")
+                    if root and (root.Position - BaseReturnPosition).Magnitude <= 10 then
+                        SetTrackerStatus("CarriedAnimal disappeared near base; treating it as a normal bank instead of recovery.")
+                        return
+                    end
+                    SetTrackerStatus("CarriedAnimal disappeared while away from base; starting fast animal-location recovery.")
+                    if HandleFlingRecovery then HandleFlingRecovery("fling", nil, nil, nil, true) end
+                end)
+            end)
+            SetTrackerStatus("CarriedAnimals folder connected; watching CarriedAnimal presence.")
+        end
+        local existingCarriedFolder = workspace:FindFirstChild("CarriedAnimals")
+        if existingCarriedFolder then CarriedAnimalWatch.Bind(existingCarriedFolder) end
         AnimalFolderConnection = workspace.ChildAdded:Connect(function(child)
             if child.Name == "AnimalPickups" and not AnimalPickups then
                 BindAnimalPickups(child)
+            elseif child.Name == "CarriedAnimals" then
+                CarriedAnimalWatch.Bind(child)
             end
         end)
         StopAutoBreak = function(reason, preserveTargetState)
