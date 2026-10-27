@@ -1032,7 +1032,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         local AutoFuseCard = CreateCard(AntiFuseRow, "⚙️  Auto Fuse", "Auto fuse Requirement")
         AutoFuseCard.Position = UDim2.new(0, 0, 0, 0)
-        AutoFuseCard.Size = UDim2.new(1, 0, 0, 150)
+        AutoFuseCard.Size = UDim2.new(0.5, -6, 0, 150)
         local AutoFuseEnabled = false
         local AutoFuseGeneration = 0
         local AutoFuseRequirements = {}
