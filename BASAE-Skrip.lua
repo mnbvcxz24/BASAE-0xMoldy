@@ -1284,7 +1284,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SortOrder = Enum.SortOrder.LayoutOrder
         })
         Create("UIPadding", {
-            Parent = KGUnitList,
+            Parent = KGUnitState.list,
             PaddingTop = UDim.new(0, 4),
             PaddingBottom = UDim.new(0, 4),
             PaddingLeft = UDim.new(0, 4),
@@ -1293,7 +1293,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         for index, unit in ipairs(KGUnitState.options) do
             local unitButton = Create("TextButton", {
                 Name = "KGUnit_" .. unit,
-                Parent = KGUnitList,
+                Parent = KGUnitState.list,
                 Size = UDim2.new(1, -4, 0, 22),
                 BackgroundColor3 = unit == KGThresholdUnit and Theme.Selected or Theme.Card,
                 Text = unit,
