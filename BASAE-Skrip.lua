@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.183 -- 0xMoldy"
+local testver = "Test v1.184 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1251,37 +1251,35 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         KGUnitButton.Name = "KGUnitFilterButton"
         KGUnitButton.Position = UDim2.fromOffset(11, 97)
         KGUnitButton.Size = UDim2.new(1, -22, 0, 22)
-        local KGUnitOptions = {"K", "M", "B", "T"}
-        local KGUnitListOpen = false
-        local KGUnitList
+        local KGUnitState = {options = {"K", "M", "B", "T"}, open = false, list = nil}
         KGUnitButton = CreateButton(AutoPickupCard, "Unit: K ▼", function()
-            KGUnitListOpen = not KGUnitListOpen
+            KGUnitState.open = not KGUnitState.open
             RarityFilterOpen = false
             ZoneFilterOpen = false
             EggFilterOpen = false
             RarityList.Visible = false
             if ZoneList then ZoneList.Visible = false end
             if EggFilterList then EggFilterList.Visible = false end
-            if KGUnitList then KGUnitList.Visible = KGUnitListOpen end
-            KGUnitButton.Text = KGUnitListOpen and "Unit: " .. KGThresholdUnit .. " ▲" or "Unit: " .. KGThresholdUnit .. " ▼"
+            if KGUnitState.list then KGUnitState.list.Visible = KGUnitState.open end
+            KGUnitButton.Text = KGUnitState.open and "Unit: " .. KGThresholdUnit .. " ▲" or "Unit: " .. KGThresholdUnit .. " ▼"
         end)
         KGUnitButton.Name = "KGUnitFilterButton"
         KGUnitButton.Position = UDim2.fromOffset(11, 97)
         KGUnitButton.Size = UDim2.new(1, -22, 0, 22)
-        KGUnitList = Create("Frame", {
+        KGUnitState.list = Create("Frame", {
             Name = "KGUnitFilterList",
             Parent = AutoPickupCard,
             Position = UDim2.fromOffset(11, 123),
-            Size = UDim2.new(1, -22, 0, #KGUnitOptions * 24 + 8),
+            Size = UDim2.new(1, -22, 0, #KGUnitState.options * 24 + 8),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             Visible = false,
             ZIndex = 120
         })
-        AddCorner(KGUnitList, 6)
-        AddStroke(KGUnitList, Theme.Border, 1)
-        local KGUnitListLayout = Create("UIListLayout", {
-            Parent = KGUnitList,
+        AddCorner(KGUnitState.list, 6)
+        AddStroke(KGUnitState.list, Theme.Border, 1)
+        Create("UIListLayout", {
+            Parent = KGUnitState.list,
             Padding = UDim.new(0, 2),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
@@ -1292,7 +1290,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             PaddingLeft = UDim.new(0, 4),
             PaddingRight = UDim.new(0, 4)
         })
-        for index, unit in ipairs(KGUnitOptions) do
+        for index, unit in ipairs(KGUnitState.options) do
             local unitButton = Create("TextButton", {
                 Name = "KGUnit_" .. unit,
                 Parent = KGUnitList,
@@ -1311,9 +1309,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             unitButton.MouseButton1Click:Connect(function()
                 KGThresholdUnit = unit
                 KGUnitButton.Text = "Unit: " .. unit .. " ▼"
-                KGUnitListOpen = false
-                KGUnitList.Visible = false
-                for _, child in ipairs(KGUnitList:GetChildren()) do
+                KGUnitState.open = false
+                KGUnitState.list.Visible = false
+                for _, child in ipairs(KGUnitState.list:GetChildren()) do
                     if child:IsA("TextButton") then
                         child.BackgroundColor3 = child.Name == "KGUnit_" .. unit and Theme.Selected or Theme.Card
                     end
