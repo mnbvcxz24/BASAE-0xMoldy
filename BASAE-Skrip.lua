@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.198"
+local testver = "Test v1.199"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1023,6 +1023,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local StopAutoBreak
         local StopPickupAutomation
         local CompletedEggs = {}
+
         local AutoBreakToggleInitialized = false
         local AutoBreakEnabled = false
         local AutoBreakGeneration = 0
@@ -1716,9 +1717,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return nil
         end
         function IsEggConfirmedComplete(egg)
-            if not egg or not egg.Parent then return true end
+            if not egg then return false end
+            if not egg.Parent or CompletedEggs[egg] then return true end
             local health = GetKnownEggHealth(egg)
-            return health ~= nil and health <= 0
+            if health ~= nil then return health <= 0 end
+            if LastEggHPTarget == egg then
+                local eventHealth = tonumber(LastEggHPValue)
+                if eventHealth ~= nil then return eventHealth <= 0 end
+            end
+            return false
         end
         function IsEggAvailable(egg)
             if not egg or not egg.Parent or CompletedEggs[egg] then return false end
