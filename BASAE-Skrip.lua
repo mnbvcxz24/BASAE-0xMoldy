@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.161 -- 0xMoldy"
+local testver = "Test v1.162 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -975,14 +975,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoRow = Create("Frame", {
             Name = "AutoControlsRow",
             Parent = Page,
-            Size = UDim2.new(1, 0, 0, 190),
+            Size = UDim2.new(1, 0, 0, 220),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 1
         })
         local Card1 = CreateCard(AutoRow, "⚡  Auto Break", "")
         Card1.Position = UDim2.new(0, 0, 0, 0)
-        Card1.Size = UDim2.new(0.5, -6, 0, 190)
+        Card1.Size = UDim2.new(0.5, -6, 0, 220)
         local StartAutoBreak
         local StopAutoBreak
         local StopPickupAutomation
@@ -1027,7 +1027,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
         AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 220)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
@@ -1288,20 +1288,107 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         KGFilterButton.Position = UDim2.fromOffset(11, 77)
         KGFilterButton.Size = UDim2.new(1, -22, 0, 28)
         RefreshKGFilterList()
+        local MinimumCPSAmount = 0
+        local MinimumCPSUnit = "K"
+        local CPSUnitScales = {
+            K = 1e3,
+            M = 1e6,
+            B = 1e9,
+            T = 1e12,
+            Qa = 1e15,
+            Qi = 1e18
+        }
+        local MinimumCPSInput = Create("TextBox", {
+            Name = "MinimumCPSInput",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 111),
+            Size = UDim2.new(1, -22, 0, 25),
+            BackgroundColor3 = Theme.SurfaceInput,
+            Text = "",
+            PlaceholderText = "Min $/s amount (blank = off)",
+            PlaceholderColor3 = Theme.Gray,
+            TextColor3 = Theme.Text,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            ClearTextOnFocus = false,
+            BorderSizePixel = 0
+        })
+        AddCorner(MinimumCPSInput, 5)
+        AddStroke(MinimumCPSInput, Theme.Border, 1)
+        local CPSUnitRow = Create("Frame", {
+            Name = "CPSUnitFilter",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 140),
+            Size = UDim2.new(1, -22, 0, 22),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0
+        })
+        Create("UIListLayout", {
+            Parent = CPSUnitRow,
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalAlignment = Enum.HorizontalAlignment.Left,
+            VerticalAlignment = Enum.VerticalAlignment.Center,
+            Padding = UDim.new(0, 2),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        local CPSUnitButtons = {}
+        local CPSUnitOptions = {"K", "M", "B", "T", "Qa", "Qi"}
+        local function RefreshCPSUnitButtons()
+            for _, unit in ipairs(CPSUnitOptions) do
+                local button = CPSUnitButtons[unit]
+                if button then
+                    local selected = MinimumCPSUnit == unit
+                    button.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
+                    button.TextColor3 = selected and Theme.Accent or Theme.Text
+                end
+            end
+        end
+        for index, unit in ipairs(CPSUnitOptions) do
+            local button = Create("TextButton", {
+                Name = "CPSUnit_" .. unit,
+                Parent = CPSUnitRow,
+                Size = UDim2.new(1 / #CPSUnitOptions, -2, 1, 0),
+                BackgroundColor3 = Theme.SurfaceInput,
+                Text = unit,
+                TextColor3 = Theme.Text,
+                Font = Enum.Font.GothamBold,
+                TextSize = 9,
+                BorderSizePixel = 0,
+                AutoButtonColor = false,
+                LayoutOrder = index
+            })
+            AddCorner(button, 4)
+            AddStroke(button, Theme.Border, 1)
+            CPSUnitButtons[unit] = button
+            button.MouseButton1Click:Connect(function()
+                MinimumCPSUnit = unit
+                RefreshCPSUnitButtons()
+                AddDebugLog("[Auto Pickup] Minimum CPS unit set to " .. unit .. ".")
+            end)
+        end
+        RefreshCPSUnitButtons()
+        MinimumCPSInput.FocusLost:Connect(function()
+            local rawAmount = tostring(MinimumCPSInput.Text or ""):gsub(",", ""):match("^%s*(.-)%s*$")
+            local amount = tonumber(rawAmount)
+            MinimumCPSAmount = amount and math.max(amount, 0) or 0
+            AddDebugLog(MinimumCPSAmount > 0
+                and string.format("[Auto Pickup] Minimum CPS set to %s %s/s.", tostring(MinimumCPSAmount), MinimumCPSUnit)
+                or "[Auto Pickup] Minimum CPS filter OFF.")
+        end)
         local HighestCashEnabled = false
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest $/s", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(11, 111)
-        HighestCashToggle.Size = UDim2.new(1, -22, 0, 28)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 166)
+        HighestCashToggle.Size = UDim2.new(1, -22, 0, 24)
         local UnindexedOnlyEnabled = false
         local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
-        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 145)
-        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 28)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 192)
+        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 24)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
             Parent = AutoPickupCard,
@@ -1800,9 +1887,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end)
         SetAutoBreakControl(TitanicPriorityToggle, AutoBreakControlLayout.TitanicY)
-        Card1.Size = UDim2.new(0.5, -6, 0, 190)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
-        AutoRow.Size = UDim2.new(1, 0, 0, 190)
+        Card1.Size = UDim2.new(0.5, -6, 0, 220)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 220)
+        AutoRow.Size = UDim2.new(1, 0, 0, 220)
         local function UpdateFilterPanelWithTitanic()
             UpdateFilterPanel()
             HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
@@ -2512,9 +2599,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end
                 SetPickupTracking(pickup, cps >= 0 and "CPS checked (second scan)" or "CPS read failed", cpsText)
-                if HighestCashEnabled and not kgPriorityPickup and cps < 0 then
+                if (HighestCashEnabled or MinimumCPSAmount > 0) and not kgPriorityPickup and cps < 0 then
                     SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
+                    return
+                end
+                local minimumCPS = MinimumCPSAmount * (CPSUnitScales[MinimumCPSUnit] or 1)
+                if MinimumCPSAmount > 0 and not kgPriorityPickup and cps >= 0 and cps < minimumCPS then
+                    SetPickupTracking(pickup, "Rejected: below minimum CPS", cpsText)
+                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. cpsText
+                        .. " is below the minimum (" .. tostring(MinimumCPSAmount) .. " " .. MinimumCPSUnit .. "/s).")
                     return
                 end
                 if HighestCashEnabled and not kgPriorityPickup then
