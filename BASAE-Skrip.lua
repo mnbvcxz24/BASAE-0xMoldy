@@ -1367,11 +1367,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SortFrame.Visible = true
             if ZoneFilterOpen then
                 ZoneList.Position = UDim2.new(0, ZoneFilterButton.Position.X.Offset, 0, ZoneFilterButton.Position.Y.Offset + ZoneFilterButton.AbsoluteSize.Y + 4)
-                ZoneList.Size = UDim2.new(0.5, -17, 0, 150)
+                ZoneList.Size = UDim2.new(1, -22, 0, 150)
             end
             if EggFilterOpen then
                 EggFilterList.Position = UDim2.new(0, EggFilterButton.Position.X.Offset, 0, EggFilterButton.Position.Y.Offset + EggFilterButton.AbsoluteSize.Y + 4)
-                EggFilterList.Size = UDim2.new(0.5, -17, 0, 150)
+                EggFilterList.Size = UDim2.new(1, -22, 0, 150)
             end
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
@@ -1384,15 +1384,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             UpdateFilterPanel()
         end)
         ZoneFilterButton.Position = UDim2.fromOffset(11, 44)
-        ZoneFilterButton.Size = UDim2.new(0.5, -17, 0, 28)
+        ZoneFilterButton.Size = UDim2.new(1, -22, 0, 28)
         EggFilterButton = CreateButton(Card1, "Eggs ▼", function()
             EggFilterOpen = not EggFilterOpen
             ZoneFilterOpen = false
             RarityFilterOpen = false
             UpdateFilterPanel()
         end)
-        EggFilterButton.Position = UDim2.new(0.5, 6, 0, 44)
-        EggFilterButton.Size = UDim2.new(0.5, -17, 0, 28)
+        EggFilterButton.Position = UDim2.fromOffset(11, 78)
+        EggFilterButton.Size = UDim2.new(1, -22, 0, 28)
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
             Parent = Card1,
@@ -4191,12 +4191,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
 
     elseif index == 3 then
-        local ESPCard = CreateCard(Page, "🥚  Egg ESP", "")
-        ESPCard.Size = UDim2.new(1, 0, 0, 125)
+        local ESPCard = CreateCard(Page, "🥚  Egg ESP", "Shows egg luck, weight, and category above each egg.")
+        ESPCard.Size = UDim2.new(1, 0, 0, 120)
         local ESPStatus = Create("TextLabel", {
             Parent = ESPCard,
-            Position = UDim2.fromOffset(15, 43),
-            Size = UDim2.new(1, -30, 0, 30),
+            Position = UDim2.fromOffset(11, 60),
+            Size = UDim2.new(1, -22, 0, 16),
             BackgroundTransparency = 1,
             Text = "ESP is off",
             TextColor3 = Theme.Gray,
@@ -4329,7 +4329,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 ESPStatus.Text = "ESP is off"
             end
         end)
-        ESPCard.Size = UDim2.new(1, 0, 0, 125)
+        local ESPToggle = ESPCard:FindFirstChildWhichIsA("TextButton")
+        if ESPToggle then ESPToggle.Position = UDim2.fromOffset(11, 80) end
+        ESPCard.Size = UDim2.new(1, 0, 0, 120)
 
         local MiscFeatureRow = Create("Frame", {
             Name = "MiscFeatureCardsRow",
