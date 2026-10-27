@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Deploy v1.172 -- 0xMoldy"
+local testver = "Deploy v1.173 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -2222,7 +2222,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         SetTrackerStatus = function(message)
             AddDebugLog("[Egg Tracker] " .. tostring(message))
         end
-        HitEvent.OnClientEvent:Connect(function(eggReference, hitCounter, health)
+        HitEventConnection = HitEvent.OnClientEvent:Connect(function(eggReference, hitCounter, health)
             local target = CurrentTarget
             if not target or not IsTargetReference(eggReference, target) then
                 return
@@ -3199,6 +3199,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             if carriedAnimalLost and not ReturningAfterPickup and not PickupRequested then return end
+            if not carriedAnimalLost and not CarriedAnimalWatch.model and not ReturningAfterPickup and not PickupRequested then
+                SetTrackerStatus("Fling event ignored: no active animal pickup or carried animal.")
+                return
+            end
             local flingAnimal = ActivePickup or FlingAnimalTarget
             local targetAnimalName = (flingAnimal and flingAnimal.Name) or FlingTargetAnimalName
             local targetWeightKg = FlingTargetWeightKg
@@ -3307,6 +3311,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 FlingRecoveryActive = false
                 PickupRequested = false
                 ActivePickup = nil
+                ActivePickupCPS = -1
                 TouchAutomationProgress("IDLE")
                 SetTrackerStatus("FLING RECOVERY stopped: WeightKg still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
                 if AutoBreakEnabled and StartAutoBreak then task.delay(0.2, function() if AutoBreakEnabled then StartAutoBreak(true) end end) end
