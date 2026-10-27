@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.190 -- 0xMoldy"
+local testver = "Test v1.191 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -2032,6 +2032,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local PendingAnimalPickups = {}
         local PendingAnimalPickupSet = {}
         local PendingAnimalPickupWorker = false
+        local DroppedAnimalSignatures = {}
         local LastEggHPProgressAt = 0
         local LastEggHPValue = nil
         local LastEggHPTarget = nil
@@ -2311,6 +2312,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         local function ReturnToPickup(reason)
             if FlingRecoveryActive or ReturningAfterPickup then return end
+            local useZoneDrop = DropInZone1Enabled == true
             ClearPickupLock()
             ReturningAfterPickup = true
             local returnToken = PickupGeneration
@@ -2328,7 +2330,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     return
                 end
-                SetTrackerStatus("Moving to static return position.")
+                SetTrackerStatus(useZoneDrop and "Moving to Zone 1 to drop the animal." or "Moving to static return position.")
                 local moveStarted = os.clock()
                 local lastReturnDistance = math.huge
                 local connection
@@ -2353,34 +2355,114 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         end
                         return
                     end
-                    local offset = Vector3.new(
-                        BaseReturnPosition.X - root.Position.X,
-                        0,
-                        BaseReturnPosition.Z - root.Position.Z
-                    )
+                    local destination = BaseReturnPosition
+                    if useZoneDrop then
+                        local build = workspace:FindFirstChild("Build")
+                        local zoneBuilds = build and build:FindFirstChild("ZoneBuilds")
+                        local zone1 = zoneBuilds and zoneBuilds:FindFirstChild("Zone1")
+                        if not zone1 then
+                            humanoid:Move(Vector3.zero, false)
+                            connection:Disconnect()
+                            connection = nil
+                            ReturningAfterPickup = false
+                            SetTrackerStatus("Drop in Zone 1 cancelled: workspace.Build.ZoneBuilds.Zone1 was not found.")
+                            if AutoBreakEnabled and StartAutoBreak then task.delay(0.2, function()
+                                if PickupGeneration == returnToken and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
+                            end) end
+                            return
+                        end
+                        if zone1:IsA("Model") then
+                            destination = zone1:GetPivot().Position
+                        elseif zone1:IsA("BasePart") then
+                            destination = zone1.Position
+                        else
+                            local ok, pivot = pcall(function() return zone1:GetPivot() end)
+                            if ok and pivot then destination = pivot.Position end
+                        end
+                    end
+                    local offset = Vector3.new(destination.X - root.Position.X, 0, destination.Z - root.Position.Z)
                     if offset.Magnitude < lastReturnDistance - 0.5 then
                         lastReturnDistance = offset.Magnitude
                         TouchAutomationProgress()
                     end
                     if offset.Magnitude <= 4 then
-                        TouchAutomationProgress("RETURNING_TO_BASE:ARRIVED")
+                        TouchAutomationProgress(useZoneDrop and "RETURNING_TO_ZONE1:ARRIVED" or "RETURNING_TO_BASE:ARRIVED")
                         humanoid:Move(Vector3.zero, false)
                         connection:Disconnect()
                         connection = nil
-                        ReturningAfterPickup = false
-                        SetTrackerStatus("Reached base; waiting 2 seconds before equipping hotbar 1.")
-                        task.delay(2, function()
-                            if not ScriptShuttingDown and PickupGeneration == returnToken and not PickupRequested and not ReturningAfterPickup and AutoPickupEnabled and LocalPlayer.Character == character then
-                                local equipped = EquipHotbarOne()
-                                if equipped then
-                                    SetTrackerStatus("Returned to base; hotbar 1 tool equipped.")
+                        if useZoneDrop then
+                            task.spawn(function()
+                                SetTrackerStatus("Reached Zone 1; requesting animal drop.")
+                                local carriedFolder = workspace:FindFirstChild("CarriedAnimals")
+                                local carriedBefore = CarriedAnimalWatch.model
+                                local targetAnimal = FlingAnimalTarget or ActivePickup
+                                local targetName = FlingTargetAnimalName or (targetAnimal and targetAnimal.Name)
+                                local targetWeight = FlingTargetWeightKg
+                                if targetWeight == nil and carriedBefore then targetWeight = GetAnimalWeightKg(carriedBefore) end
+                                local signature = GetDroppedAnimalSignature(targetAnimal, targetWeight)
+                                local targetRarity = targetAnimal and targetAnimal:GetAttribute("Rarity")
+                                if targetRarity == nil and targetAnimal then
+                                    local rarityNode = targetAnimal:FindFirstChild("Rarity", true)
+                                    if rarityNode then
+                                        if rarityNode:IsA("ValueBase") then targetRarity = rarityNode.Value
+                                        elseif rarityNode:IsA("TextLabel") then targetRarity = rarityNode.Text end
+                                    end
                                 end
-                            end
-                        end)
-                        if AutoBreakEnabled and StartAutoBreak then
-                            task.delay(0.2, function()
-                                if PickupGeneration == returnToken and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
+                                local dropRemote = ReplicatedStorage:FindFirstChild("DropCarriedRemote")
+                                local fired, fireError = pcall(function()
+                                    if not dropRemote then error("ReplicatedStorage.DropCarriedRemote was not found") end
+                                    dropRemote:FireServer()
+                                end)
+                                if not fired then
+                                    ReturningAfterPickup = false
+                                    SetTrackerStatus("Zone 1 drop failed: " .. tostring(fireError))
+                                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                                    return
+                                end
+                                local releaseDeadline = os.clock() + 4
+                                local released = false
+                                while not Runtime.Stopped and not ScriptShuttingDown and os.clock() < releaseDeadline do
+                                    local currentFolder = workspace:FindFirstChild("CarriedAnimals")
+                                    local currentModel = CarriedAnimalWatch.model
+                                    if (carriedBefore and currentModel ~= carriedBefore)
+                                        or (not currentModel and (not currentFolder or #currentFolder:GetChildren() == 0)) then
+                                        released = true
+                                        break
+                                    end
+                                    task.wait(0.1)
+                                end
+                                if released then
+                                    if signature then DroppedAnimalSignatures[signature] = true end
+                                    SetTrackerStatus("Zone 1 drop confirmed" .. (targetName and (": " .. targetName) or "") .. " | rarity=" .. tostring(targetRarity or "Unknown"))
+                                else
+                                    SetTrackerStatus("Zone 1 drop was requested, but release could not be confirmed.")
+                                end
+                                task.wait(0.2)
+                                local equipped = EquipHotbarOne()
+                                ReturningAfterPickup = false
+                                if equipped then
+                                    SetTrackerStatus(released and "Dropped in Zone 1; hotbar 1 equipped." or "Zone 1 drop unconfirmed; hotbar 1 equipped.")
+                                end
+                                if AutoBreakEnabled and StartAutoBreak then
+                                    task.delay(0.2, function()
+                                        if PickupGeneration == returnToken and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
+                                    end)
+                                end
                             end)
+                        else
+                            ReturningAfterPickup = false
+                            SetTrackerStatus("Reached base; waiting 2 seconds before equipping hotbar 1.")
+                            task.delay(2, function()
+                                if not ScriptShuttingDown and PickupGeneration == returnToken and not PickupRequested and not ReturningAfterPickup and AutoPickupEnabled and LocalPlayer.Character == character then
+                                    local equipped = EquipHotbarOne()
+                                    if equipped then SetTrackerStatus("Returned to base; hotbar 1 tool equipped.") end
+                                end
+                            end)
+                            if AutoBreakEnabled and StartAutoBreak then
+                                task.delay(0.2, function()
+                                    if PickupGeneration == returnToken and AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup then StartAutoBreak() end
+                                end)
+                            end
                         end
                         return
                     end
@@ -2456,6 +2538,28 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             local attribute = pickup:GetAttribute("Rarity")
             return attribute and tostring(attribute) or nil
+        end
+        local function GetDroppedAnimalSignature(pickup, weight)
+            if not pickup then return nil end
+            for _, key in ipairs({"AnimalId", "AnimalID", "UniqueId", "UUID", "Id"}) do
+                local value = pickup:GetAttribute(key)
+                if value ~= nil and tostring(value) ~= "" then return "id:" .. tostring(value) end
+            end
+            if weight ~= nil and tostring(weight) ~= "" then
+                return "name:" .. pickup.Name .. "|weight:" .. tostring(weight)
+            end
+            return nil
+        end
+        local function IsRecentlyDroppedAnimal(pickup)
+            if not pickup then return false end
+            local signature = GetDroppedAnimalSignature(pickup, GetAnimalWeightKg(pickup))
+            if signature and DroppedAnimalSignatures[signature] then
+                DroppedAnimalSignatures[signature] = nil
+                SetPickupTracking(pickup, "Skipped: just dropped in Zone 1", tostring(GetPetRarity(pickup) or "Unknown"))
+                SetTrackerStatus("Skipped recently dropped animal: " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "Unknown"))
+                return true
+            end
+            return false
         end
         local function GetPickupZone(pickup)
             local zone = pickup:FindFirstChild("ZoneId", true)
@@ -2652,6 +2756,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus("Eligible pet " .. pickup.Name .. " ignored: already returning to base.")
                 return
             end
+            if IsRecentlyDroppedAnimal(pickup) then return end
             if not AutoPickupEnabled then
                 SetPickupTracking(pickup, "Skipped: Auto Pickup OFF")
                 if CurrentTarget then CompletedEggs[CurrentTarget] = true end
@@ -3331,8 +3436,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AnimalPickups = folder
             folder.ChildAdded:Connect(function(pickup)
                 PickupMonitorSeen[pickup] = nil
+                local pickupRarity = tostring(GetPetRarity(pickup) or "Unknown")
+                SetPickupTracking(pickup, "Detected", pickupRarity)
                 if not AutoPickupEnabled then
-                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | monitoring waits until Auto Pickup is ON.")
+                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | rarity=" .. pickupRarity .. " | monitoring waits until Auto Pickup is ON.")
                     return
                 end
                 PickupMonitorSeen[pickup] = true
