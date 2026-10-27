@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.184 -- 0xMoldy"
+local testver = "Test v1.185 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1011,7 +1011,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoRow = Create("Frame", {
             Name = "AutoControlsRow",
             Parent = Page,
-            Size = UDim2.new(1, 0, 0, 260),
+            Size = UDim2.new(1, 0, 0, 286),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 1
@@ -1063,7 +1063,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
         AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 238)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 264)
         local AutoPickupEnabled = false
         local PickupMonitorSeen = setmetatable({}, {__mode = "k"})
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
@@ -1241,16 +1241,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddCorner(KGThresholdInput, 5)
         AddStroke(KGThresholdInput, Theme.Border, 1)
         local KGUnitButton
-        KGUnitButton = CreateButton(AutoPickupCard, "Unit: K ▼", function()
-            local units = {"K", "M", "T"}
-            local currentIndex = table.find(units, KGThresholdUnit) or 1
-            KGThresholdUnit = units[currentIndex % #units + 1]
-            KGUnitButton.Text = "Unit: " .. KGThresholdUnit .. " ▼"
-            AddDebugLog("[Auto Pickup] KG threshold unit set to " .. KGThresholdUnit .. ".")
-        end)
-        KGUnitButton.Name = "KGUnitFilterButton"
-        KGUnitButton.Position = UDim2.fromOffset(11, 97)
-        KGUnitButton.Size = UDim2.new(1, -22, 0, 22)
         local KGUnitState = {options = {"K", "M", "B", "T"}, open = false, list = nil}
         KGUnitButton = CreateButton(AutoPickupCard, "Unit: K ▼", function()
             KGUnitState.open = not KGUnitState.open
@@ -1327,26 +1317,117 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 and string.format("[Auto Pickup] KG priority threshold set to %s %s KG.", tostring(KGThresholdAmount), KGThresholdUnit)
                 or "[Auto Pickup] KG priority filter OFF.")
         end)
+        local CPSFilter = {amount = 0, unit = "K", options = {"K", "M", "B", "T"}, open = false}
+        CPSFilter.input = Create("TextBox", {
+            Name = "CPSFilterInput",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 125),
+            Size = UDim2.new(1, -22, 0, 25),
+            BackgroundColor3 = Theme.SurfaceInput,
+            Text = "",
+            PlaceholderText = "Coins/second minimum (blank = off)",
+            PlaceholderColor3 = Theme.Gray,
+            TextColor3 = Theme.Text,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            ClearTextOnFocus = false,
+            BorderSizePixel = 0,
+            ZIndex = 2
+        })
+        AddCorner(CPSFilter.input, 5)
+        AddStroke(CPSFilter.input, Theme.Border, 1)
+        CPSFilter.button = CreateButton(AutoPickupCard, "Coins/s Unit: K ▼", function()
+            CPSFilter.open = not CPSFilter.open
+            RarityFilterOpen = false
+            ZoneFilterOpen = false
+            EggFilterOpen = false
+            RarityList.Visible = false
+            if ZoneList then ZoneList.Visible = false end
+            if EggFilterList then EggFilterList.Visible = false end
+            if KGUnitState.list then KGUnitState.list.Visible = false; KGUnitState.open = false end
+            CPSFilter.list.Visible = CPSFilter.open
+            CPSFilter.button.Text = CPSFilter.open and "Coins/s Unit: " .. CPSFilter.unit .. " ▲" or "Coins/s Unit: " .. CPSFilter.unit .. " ▼"
+        end)
+        CPSFilter.button.Name = "CPSUnitFilterButton"
+        CPSFilter.button.Position = UDim2.fromOffset(11, 153)
+        CPSFilter.button.Size = UDim2.new(1, -22, 0, 22)
+        CPSFilter.list = Create("Frame", {
+            Name = "CPSUnitFilterList",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 179),
+            Size = UDim2.new(1, -22, 0, #CPSFilter.options * 24 + 8),
+            BackgroundColor3 = Theme.SurfaceInput,
+            BorderSizePixel = 0,
+            Visible = false,
+            ZIndex = 122
+        })
+        AddCorner(CPSFilter.list, 6)
+        AddStroke(CPSFilter.list, Theme.Border, 1)
+        Create("UIListLayout", {Parent = CPSFilter.list, Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder})
+        Create("UIPadding", {
+            Parent = CPSFilter.list,
+            PaddingTop = UDim.new(0, 4),
+            PaddingBottom = UDim.new(0, 4),
+            PaddingLeft = UDim.new(0, 4),
+            PaddingRight = UDim.new(0, 4)
+        })
+        for index, unit in ipairs(CPSFilter.options) do
+            local unitButton = Create("TextButton", {
+                Name = "CPSUnit_" .. unit,
+                Parent = CPSFilter.list,
+                Size = UDim2.new(1, -4, 0, 22),
+                BackgroundColor3 = unit == CPSFilter.unit and Theme.Selected or Theme.Card,
+                Text = unit,
+                TextColor3 = Theme.Text,
+                Font = Enum.Font.Gotham,
+                TextSize = 10,
+                BorderSizePixel = 0,
+                LayoutOrder = index,
+                AutoButtonColor = false,
+                ZIndex = 123
+            })
+            AddCorner(unitButton, 4)
+            unitButton.MouseButton1Click:Connect(function()
+                CPSFilter.unit = unit
+                CPSFilter.button.Text = "Coins/s Unit: " .. unit .. " ▼"
+                CPSFilter.open = false
+                CPSFilter.list.Visible = false
+                for _, child in ipairs(CPSFilter.list:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child.BackgroundColor3 = child.Name == "CPSUnit_" .. unit and Theme.Selected or Theme.Card
+                    end
+                end
+                AddDebugLog("[Auto Pickup] Coins/second unit set to " .. unit .. ".")
+            end)
+        end
+        CPSFilter.input.FocusLost:Connect(function()
+            local rawAmount = tostring(CPSFilter.input.Text or ""):gsub(",", ""):match("^%s*(.-)%s*$")
+            local amount = tonumber(rawAmount)
+            CPSFilter.amount = amount and math.max(amount, 0) or 0
+            AddDebugLog(CPSFilter.amount > 0
+                and string.format("[Auto Pickup] Coins/second minimum set to %s %s/s.", tostring(CPSFilter.amount), CPSFilter.unit)
+                or "[Auto Pickup] Coins/second filter OFF.")
+        end)
         local HighestCashEnabled = false
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest $/s", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(11, 153)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 179)
         HighestCashToggle.Size = UDim2.new(1, -22, 0, 22)
         local UnindexedOnlyEnabled = false
         local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
-        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 179)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 205)
         UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 22)
         local DropInZone1Enabled = false
         local DropInZone1Toggle = CreateToggle(AutoPickupCard, "Drop in Zone 1", false, function(enabled)
             DropInZone1Enabled = enabled
             AddDebugLog("[Auto Pickup] Drop in Zone 1 " .. (enabled and "ON." or "OFF."))
         end)
-        DropInZone1Toggle.Position = UDim2.fromOffset(11, 205)
+        DropInZone1Toggle.Position = UDim2.fromOffset(11, 231)
         DropInZone1Toggle.Size = UDim2.new(1, -22, 0, 22)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
@@ -2579,6 +2660,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end
                 SetPickupTracking(pickup, cps >= 0 and "CPS checked (second scan)" or "CPS read failed", cpsText)
+                if CPSFilter.amount > 0 then
+                    local scales = {K = 1e3, M = 1e6, B = 1e9, T = 1e12}
+                    local minimumCPS = CPSFilter.amount * (scales[CPSFilter.unit] or 1)
+                    if cps < 0 then
+                        SetPickupTracking(pickup, "Rejected: Coins/second unavailable", cpsText)
+                        RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | Coins/second could not be read safely: " .. tostring(cpsText))
+                        return
+                    elseif cps < minimumCPS then
+                        SetPickupTracking(pickup, "Rejected: below Coins/second threshold", cpsText)
+                        RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. tostring(cps) .. " is below minimum " .. tostring(minimumCPS) .. ".")
+                        return
+                    end
+                end
                 if HighestCashEnabled and not kgPriorityPickup and cps < 0 then
                     SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
