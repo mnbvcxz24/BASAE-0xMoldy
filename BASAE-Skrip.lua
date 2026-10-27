@@ -1199,6 +1199,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             PaddingLeft = UDim.new(0, 5),
             PaddingRight = UDim.new(0, 5)
         })
+        local KGFilterButton
         local function UpdateKGFilterButton()
             local count = 0
             for _, threshold in ipairs(KGThresholdOptions) do
@@ -1256,7 +1257,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             KGFilterList.CanvasSize = UDim2.new(0, 0, 0, KGFilterLayout.AbsoluteContentSize.Y + 10)
         end
-        local KGFilterButton
         KGFilterButton = CreateButton(AutoPickupCard, "KG Filter  ▼", function()
             KGFilterOpen = not KGFilterOpen
             RarityFilterOpen = false
