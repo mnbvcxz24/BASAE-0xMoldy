@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.162 -- 0xMoldy"
+local testver = "Test v1.163 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -982,7 +982,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         local Card1 = CreateCard(AutoRow, "⚡  Auto Break", "")
         Card1.Position = UDim2.new(0, 0, 0, 0)
-        Card1.Size = UDim2.new(0.5, -6, 0, 220)
+        Card1.Size = UDim2.new(0.5, -6, 0, 190)
         local StartAutoBreak
         local StopAutoBreak
         local StopPickupAutomation
@@ -1027,7 +1027,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
         AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 220)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
@@ -1183,129 +1183,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
         RarityFilterButton.Size = UDim2.new(1, -22, 0, 28)
-        local KGFilterOpen = false
-        local KGThresholdOptions = {5000, 10000, 15000, 20000, 40000, 60000, 100000}
-        local SelectedKGThresholds = {}
-        local KGFilterList = Create("ScrollingFrame", {
-            Name = "KGFilterContainer",
+        local KGThresholdAmount = 0
+        local KGThresholdUnit = "K"
+        local KGThresholdInput = Create("TextBox", {
+            Name = "KGThresholdInput",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 75),
-            Size = UDim2.fromOffset(160, 155),
-            CanvasSize = UDim2.new(0, 0, 0, 0),
-            ScrollBarThickness = 3,
-            ScrollBarImageColor3 = Theme.Gray,
-            BackgroundColor3 = Theme.SurfaceInput,
-            BorderSizePixel = 0,
-            Visible = false,
-            ZIndex = 110
-        })
-        AddCorner(KGFilterList, 6)
-        local KGFilterLayout = Create("UIListLayout", {
-            Parent = KGFilterList,
-            Padding = UDim.new(0, 3),
-            SortOrder = Enum.SortOrder.LayoutOrder
-        })
-        Create("UIPadding", {
-            Parent = KGFilterList,
-            PaddingTop = UDim.new(0, 5),
-            PaddingBottom = UDim.new(0, 5),
-            PaddingLeft = UDim.new(0, 5),
-            PaddingRight = UDim.new(0, 5)
-        })
-        local KGFilterButton
-        local function UpdateKGFilterButton()
-            local count = 0
-            for _, threshold in ipairs(KGThresholdOptions) do
-                if SelectedKGThresholds[threshold] then count += 1 end
-            end
-            KGFilterButton.Text = count > 0 and ("KG (" .. count .. ") " .. (KGFilterOpen and "▲" or "▼")) or ("KG " .. (KGFilterOpen and "▲" or "▼"))
-        end
-        local function RefreshKGFilterList()
-            for _, child in ipairs(KGFilterList:GetChildren()) do
-                if child:IsA("TextButton") then child:Destroy() end
-            end
-            for index, threshold in ipairs(KGThresholdOptions) do
-                local selected = SelectedKGThresholds[threshold] == true
-                local option = Create("TextButton", {
-                    Name = "KG_" .. tostring(threshold),
-                    Parent = KGFilterList,
-                    Size = UDim2.new(1, -4, 0, 24),
-                    BackgroundColor3 = selected and Theme.Selected or Theme.Card,
-                    Text = "",
-                    BorderSizePixel = 0,
-                    AutoButtonColor = false,
-                    LayoutOrder = index,
-                    ZIndex = 111
-                })
-                AddCorner(option, 4)
-                Create("TextLabel", {
-                    Parent = option,
-                    Position = UDim2.fromOffset(7, 0),
-                    Size = UDim2.new(1, -30, 1, 0),
-                    BackgroundTransparency = 1,
-                    Text = (threshold / 1000) .. "k KG+",
-                    TextColor3 = Theme.Text,
-                    Font = Enum.Font.Gotham,
-                    TextSize = 9,
-                    TextXAlignment = Enum.TextXAlignment.Left,
-                    ZIndex = 112
-                })
-                Create("TextLabel", {
-                    Parent = option,
-                    Position = UDim2.new(1, -23, 0, 0),
-                    Size = UDim2.fromOffset(20, 24),
-                    BackgroundTransparency = 1,
-                    Text = selected and "✓" or "○",
-                    TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
-                    Font = Enum.Font.GothamBold,
-                    TextSize = 11,
-                    ZIndex = 112
-                })
-                option.MouseButton1Click:Connect(function()
-                    SelectedKGThresholds[threshold] = not SelectedKGThresholds[threshold]
-                    RefreshKGFilterList()
-                    UpdateKGFilterButton()
-                    AddDebugLog("[Auto Pickup] KG threshold " .. (threshold / 1000) .. "k " .. (SelectedKGThresholds[threshold] and "ON." or "OFF."))
-                end)
-            end
-            KGFilterList.CanvasSize = UDim2.new(0, 0, 0, KGFilterLayout.AbsoluteContentSize.Y + 10)
-        end
-        KGFilterButton = CreateButton(AutoPickupCard, "KG ▼", function()
-            KGFilterOpen = not KGFilterOpen
-            RarityFilterOpen = false
-            ZoneFilterOpen = false
-            EggFilterOpen = false
-            if KGFilterOpen then
-                KGFilterList.Position = UDim2.fromOffset(11, KGFilterButton.Position.Y.Offset + KGFilterButton.AbsoluteSize.Y + 4)
-                KGFilterList.Size = UDim2.new(1, -22, 0, 155)
-            end
-            KGFilterList.Visible = KGFilterOpen
-            RarityList.Visible = false
-            if ZoneList then ZoneList.Visible = false end
-            if EggFilterList then EggFilterList.Visible = false end
-            UpdateKGFilterButton()
-        end)
-        KGFilterButton.Position = UDim2.fromOffset(11, 77)
-        KGFilterButton.Size = UDim2.new(1, -22, 0, 28)
-        RefreshKGFilterList()
-        local MinimumCPSAmount = 0
-        local MinimumCPSUnit = "K"
-        local CPSUnitScales = {
-            K = 1e3,
-            M = 1e6,
-            B = 1e9,
-            T = 1e12,
-            Qa = 1e15,
-            Qi = 1e18
-        }
-        local MinimumCPSInput = Create("TextBox", {
-            Name = "MinimumCPSInput",
-            Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 111),
+            Position = UDim2.fromOffset(11, 77),
             Size = UDim2.new(1, -22, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
-            PlaceholderText = "Min $/s amount (blank = off)",
+            PlaceholderText = "Pickup weight threshold (blank = off)",
             PlaceholderColor3 = Theme.Gray,
             TextColor3 = Theme.Text,
             Font = Enum.Font.Gotham,
@@ -1313,44 +1200,32 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ClearTextOnFocus = false,
             BorderSizePixel = 0
         })
-        AddCorner(MinimumCPSInput, 5)
-        AddStroke(MinimumCPSInput, Theme.Border, 1)
-        local CPSUnitRow = Create("Frame", {
-            Name = "CPSUnitFilter",
+        AddCorner(KGThresholdInput, 5)
+        AddStroke(KGThresholdInput, Theme.Border, 1)
+        local KGUnitRow = Create("Frame", {
+            Name = "KGUnitFilter",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 140),
+            Position = UDim2.fromOffset(11, 106),
             Size = UDim2.new(1, -22, 0, 22),
             BackgroundTransparency = 1,
             BorderSizePixel = 0
         })
         Create("UIListLayout", {
-            Parent = CPSUnitRow,
+            Parent = KGUnitRow,
             FillDirection = Enum.FillDirection.Horizontal,
             HorizontalAlignment = Enum.HorizontalAlignment.Left,
             VerticalAlignment = Enum.VerticalAlignment.Center,
             Padding = UDim.new(0, 2),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
-        local CPSUnitButtons = {}
-        local CPSUnitOptions = {"K", "M", "B", "T", "Qa", "Qi"}
-        local function RefreshCPSUnitButtons()
-            for _, unit in ipairs(CPSUnitOptions) do
-                local button = CPSUnitButtons[unit]
-                if button then
-                    local selected = MinimumCPSUnit == unit
-                    button.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
-                    button.TextColor3 = selected and Theme.Accent or Theme.Text
-                end
-            end
-        end
-        for index, unit in ipairs(CPSUnitOptions) do
+        for index, unit in ipairs({"K", "M", "B", "T", "Qa", "Qi"}) do
             local button = Create("TextButton", {
-                Name = "CPSUnit_" .. unit,
-                Parent = CPSUnitRow,
-                Size = UDim2.new(1 / #CPSUnitOptions, -2, 1, 0),
-                BackgroundColor3 = Theme.SurfaceInput,
+                Name = "KGUnit_" .. unit,
+                Parent = KGUnitRow,
+                Size = UDim2.new(1 / 6, -2, 1, 0),
+                BackgroundColor3 = unit == KGThresholdUnit and Theme.Selected or Theme.SurfaceInput,
                 Text = unit,
-                TextColor3 = Theme.Text,
+                TextColor3 = unit == KGThresholdUnit and Theme.Accent or Theme.Text,
                 Font = Enum.Font.GothamBold,
                 TextSize = 9,
                 BorderSizePixel = 0,
@@ -1359,35 +1234,39 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             })
             AddCorner(button, 4)
             AddStroke(button, Theme.Border, 1)
-            CPSUnitButtons[unit] = button
             button.MouseButton1Click:Connect(function()
-                MinimumCPSUnit = unit
-                RefreshCPSUnitButtons()
-                AddDebugLog("[Auto Pickup] Minimum CPS unit set to " .. unit .. ".")
+                KGThresholdUnit = unit
+                for _, child in ipairs(KGUnitRow:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        local selected = child.Text == KGThresholdUnit
+                        child.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
+                        child.TextColor3 = selected and Theme.Accent or Theme.Text
+                    end
+                end
+                AddDebugLog("[Auto Pickup] KG threshold unit set to " .. unit .. ".")
             end)
         end
-        RefreshCPSUnitButtons()
-        MinimumCPSInput.FocusLost:Connect(function()
-            local rawAmount = tostring(MinimumCPSInput.Text or ""):gsub(",", ""):match("^%s*(.-)%s*$")
+        KGThresholdInput.FocusLost:Connect(function()
+            local rawAmount = tostring(KGThresholdInput.Text or ""):gsub(",", ""):match("^%s*(.-)%s*$")
             local amount = tonumber(rawAmount)
-            MinimumCPSAmount = amount and math.max(amount, 0) or 0
-            AddDebugLog(MinimumCPSAmount > 0
-                and string.format("[Auto Pickup] Minimum CPS set to %s %s/s.", tostring(MinimumCPSAmount), MinimumCPSUnit)
-                or "[Auto Pickup] Minimum CPS filter OFF.")
+            KGThresholdAmount = amount and math.max(amount, 0) or 0
+            AddDebugLog(KGThresholdAmount > 0
+                and string.format("[Auto Pickup] KG priority threshold set to %s %s KG.", tostring(KGThresholdAmount), KGThresholdUnit)
+                or "[Auto Pickup] KG priority filter OFF.")
         end)
         local HighestCashEnabled = false
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest $/s", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(11, 166)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 134)
         HighestCashToggle.Size = UDim2.new(1, -22, 0, 24)
         local UnindexedOnlyEnabled = false
         local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
-        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 192)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 160)
         UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 24)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
@@ -1887,9 +1766,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end)
         SetAutoBreakControl(TitanicPriorityToggle, AutoBreakControlLayout.TitanicY)
-        Card1.Size = UDim2.new(0.5, -6, 0, 220)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 220)
-        AutoRow.Size = UDim2.new(1, 0, 0, 220)
+        Card1.Size = UDim2.new(0.5, -6, 0, 190)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
+        AutoRow.Size = UDim2.new(1, 0, 0, 190)
         local function UpdateFilterPanelWithTitanic()
             UpdateFilterPanel()
             HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
@@ -1968,11 +1847,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function ParseKGValue(raw)
             if raw == nil then return nil end
             local value = tostring(raw):lower():gsub(",", ""):gsub("%s+", "")
-            local number = tonumber(value:match("[%d%.]+"))
+            local numberText, suffix = value:match("^([%d%.]+)([%a]*)$")
+            local number = tonumber(numberText)
             if not number then return nil end
-            if value:find("k", 1, true) then number *= 1000 end
-            if value:find("m", 1, true) then number *= 1000000 end
-            return number
+            local scales = {k=1e3, m=1e6, b=1e9, t=1e12, qa=1e15, qi=1e18}
+            local scale = scales[suffix or ""]
+            if suffix ~= "" and not scale then return nil end
+            return number * (scale or 1)
         end
         local function GetPickupWeightKg(pickup)
             if not pickup then return nil end
@@ -2005,14 +1886,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return nil
         end
         local function IsKGFilterMatch(pickup)
+            if KGThresholdAmount <= 0 then return false, nil end
             local weight = GetPickupWeightKg(pickup)
             if not weight then return false, nil end
-            for _, threshold in ipairs(KGThresholdOptions) do
-                if SelectedKGThresholds[threshold] and weight >= threshold then
-                    return true, weight
-                end
-            end
-            return false, weight
+            local scale = 1
+            if KGThresholdUnit == "K" then scale = 1e3
+            elseif KGThresholdUnit == "M" then scale = 1e6
+            elseif KGThresholdUnit == "B" then scale = 1e9
+            elseif KGThresholdUnit == "T" then scale = 1e12
+            elseif KGThresholdUnit == "Qa" then scale = 1e15
+            elseif KGThresholdUnit == "Qi" then scale = 1e18 end
+            return weight >= KGThresholdAmount * scale, weight
         end
         local function GetAnimalWeightKg(animal)
             if not animal then return nil end
@@ -2599,16 +2483,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end
                 SetPickupTracking(pickup, cps >= 0 and "CPS checked (second scan)" or "CPS read failed", cpsText)
-                if (HighestCashEnabled or MinimumCPSAmount > 0) and not kgPriorityPickup and cps < 0 then
+                if HighestCashEnabled and not kgPriorityPickup and cps < 0 then
                     SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
-                    return
-                end
-                local minimumCPS = MinimumCPSAmount * (CPSUnitScales[MinimumCPSUnit] or 1)
-                if MinimumCPSAmount > 0 and not kgPriorityPickup and cps >= 0 and cps < minimumCPS then
-                    SetPickupTracking(pickup, "Rejected: below minimum CPS", cpsText)
-                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. cpsText
-                        .. " is below the minimum (" .. tostring(MinimumCPSAmount) .. " " .. MinimumCPSUnit .. "/s).")
                     return
                 end
                 if HighestCashEnabled and not kgPriorityPickup then
