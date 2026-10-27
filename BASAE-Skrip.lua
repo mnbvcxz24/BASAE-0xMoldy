@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.180 -- 0xMoldy"
+local testver = "Test v1.181 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1198,7 +1198,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end)
         local RarityFilterOpen = false
-        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
+        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega", "Spectral"}
         local SelectedRarities = {}
         local RarityList
         local RarityFilterButton
@@ -1240,50 +1240,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         AddCorner(KGThresholdInput, 5)
         AddStroke(KGThresholdInput, Theme.Border, 1)
-        local KGUnitRow = Create("Frame", {
-            Name = "KGUnitFilter",
-            Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 106),
-            Size = UDim2.new(1, -22, 0, 22),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0
-        })
-        Create("UIListLayout", {
-            Parent = KGUnitRow,
-            FillDirection = Enum.FillDirection.Horizontal,
-            HorizontalAlignment = Enum.HorizontalAlignment.Left,
-            VerticalAlignment = Enum.VerticalAlignment.Center,
-            Padding = UDim.new(0, 2),
-            SortOrder = Enum.SortOrder.LayoutOrder
-        })
-        for index, unit in ipairs({"K", "M", "B", "T", "Qa", "Qi"}) do
-            local button = Create("TextButton", {
-                Name = "KGUnit_" .. unit,
-                Parent = KGUnitRow,
-                Size = UDim2.new(1 / 6, -2, 1, 0),
-                BackgroundColor3 = unit == KGThresholdUnit and Theme.Selected or Theme.SurfaceInput,
-                Text = unit,
-                TextColor3 = unit == KGThresholdUnit and Theme.Accent or Theme.Text,
-                Font = Enum.Font.GothamBold,
-                TextSize = 9,
-                BorderSizePixel = 0,
-                AutoButtonColor = false,
-                LayoutOrder = index
-            })
-            AddCorner(button, 4)
-            AddStroke(button, Theme.Border, 1)
-            button.MouseButton1Click:Connect(function()
-                KGThresholdUnit = unit
-                for _, child in ipairs(KGUnitRow:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        local selected = child.Text == KGThresholdUnit
-                        child.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
-                        child.TextColor3 = selected and Theme.Accent or Theme.Text
-                    end
-                end
-                AddDebugLog("[Auto Pickup] KG threshold unit set to " .. unit .. ".")
-            end)
-        end
+        local KGUnitButton
+        KGUnitButton = CreateButton(AutoPickupCard, "Unit: K ▼", function()
+            local units = {"K", "M", "T"}
+            local currentIndex = table.find(units, KGThresholdUnit) or 1
+            KGThresholdUnit = units[currentIndex % #units + 1]
+            KGUnitButton.Text = "Unit: " .. KGThresholdUnit .. " ▼"
+            AddDebugLog("[Auto Pickup] KG threshold unit set to " .. KGThresholdUnit .. ".")
+        end)
+        KGUnitButton.Name = "KGUnitFilterButton"
+        KGUnitButton.Position = UDim2.fromOffset(11, 106)
+        KGUnitButton.Size = UDim2.new(1, -22, 0, 22)
         KGThresholdInput.FocusLost:Connect(function()
             local rawAmount = tostring(KGThresholdInput.Text or ""):gsub(",", ""):match("^%s*(.-)%s*$")
             local amount = tonumber(rawAmount)
