@@ -1251,7 +1251,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Name = "KGThresholdInput",
             Parent = AutoPickupCard,
             Position = UDim2.fromOffset(11, 84),
-            Size = UDim2.new(1, -112, 0, 25),
+            Size = UDim2.new(1, -84, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
             PlaceholderText = "e.g. 100",
@@ -1266,7 +1266,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddStroke(KGThresholdInput, Theme.Border, 1)
         local KGUnitButton
         local KGUnitState = {options = {"K", "M", "B", "T"}, open = false, list = nil}
-        KGUnitButton = CreateButton(AutoPickupCard, "KG Unit: K ▼", function()
+        KGUnitButton = CreateButton(AutoPickupCard, "KG: K ▼", function()
             KGUnitState.open = not KGUnitState.open
             RarityFilterOpen = false
             ZoneFilterOpen = false
@@ -1278,13 +1278,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             KGUnitButton.Text = KGUnitState.open and "KG: " .. KGThresholdUnit .. " ▲" or "KG: " .. KGThresholdUnit .. " ▼"
         end)
         KGUnitButton.Name = "KGUnitFilterButton"
-        KGUnitButton.Position = UDim2.new(1, -93, 0, 84)
-        KGUnitButton.Size = UDim2.fromOffset(82, 25)
+        KGUnitButton.Position = UDim2.new(1, -63, 0, 84)
+        KGUnitButton.Size = UDim2.fromOffset(52, 25)
         KGUnitState.list = Create("Frame", {
             Name = "KGUnitFilterList",
             Parent = AutoPickupCard,
-            Position = UDim2.new(1, -93, 0, 111),
-            Size = UDim2.fromOffset(82, #KGUnitState.options * 24 + 8),
+            Position = UDim2.new(1, -63, 0, 111),
+            Size = UDim2.fromOffset(52, #KGUnitState.options * 24 + 8),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             Visible = false,
@@ -1358,7 +1358,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Name = "CPSFilterInput",
             Parent = AutoPickupCard,
             Position = UDim2.fromOffset(11, 127),
-            Size = UDim2.new(1, -112, 0, 25),
+            Size = UDim2.new(1, -84, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
             PlaceholderText = "e.g. 100",
@@ -1385,13 +1385,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             CPSFilter.button.Text = CPSFilter.open and "Unit: " .. CPSFilter.unit .. " ▲" or "Unit: " .. CPSFilter.unit .. " ▼"
         end)
         CPSFilter.button.Name = "CPSUnitFilterButton"
-        CPSFilter.button.Position = UDim2.new(1, -93, 0, 127)
-        CPSFilter.button.Size = UDim2.fromOffset(82, 25)
+        CPSFilter.button.Position = UDim2.new(1, -63, 0, 127)
+        CPSFilter.button.Size = UDim2.fromOffset(52, 25)
         CPSFilter.list = Create("Frame", {
             Name = "CPSUnitFilterList",
             Parent = AutoPickupCard,
-            Position = UDim2.new(1, -93, 0, 154),
-            Size = UDim2.fromOffset(82, #CPSFilter.options * 24 + 8),
+            Position = UDim2.new(1, -63, 0, 154),
+            Size = UDim2.fromOffset(52, #CPSFilter.options * 24 + 8),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             Visible = false,
