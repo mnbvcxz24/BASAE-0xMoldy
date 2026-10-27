@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Deploy v1.169 -- 0xMoldy"
+local testver = "Deploy v1.170 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -3407,7 +3407,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if now - moveStarted >= 45 then
                         humanoid:Move(Vector3.zero, false)
                         PickupRequested = false
-                        SetTrackerStatus(string.format("FLING RECOVERY cancelled: timed out reaching reported animal location (%.1f studs away).", distance))
+                        SetTrackerStatus(string.format("FLING RECOVERY cancelled: timed out reaching the animal location (%.1f studs away).", distance))
                         if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                         finishFlingRecovery()
                         return
@@ -3452,7 +3452,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); searching nearest PromptAnchor StealPrompt.", arrivalDistance))
+                SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); searching for the nearest animal StealPrompt.", arrivalDistance))
                 local anchor = workspace:FindFirstChild("PromptAnchor")
                 local prompt, promptPosition
                 local searchDeadline = os.clock() + 8
@@ -3494,12 +3494,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 if not prompt or not prompt.Parent or not prompt.Enabled or not promptPosition then
                     PickupRequested = false
-                    SetTrackerStatus("FLING RECOVERY failed: no enabled StealPrompt within 12 studs of reported fling location.")
+                    SetTrackerStatus("FLING RECOVERY failed: no enabled StealPrompt within 12 studs of the current animal location.")
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     finishFlingRecovery()
                     return
                 end
-                SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from reported location; verifying prompt position.", (promptPosition - recoveryPosition).Magnitude))
+                SetTrackerStatus(string.format("FLING RECOVERY found nearest prompt %.1f studs from the animal; verifying prompt position.", (promptPosition - recoveryPosition).Magnitude))
                 local moveStarted = os.clock()
                 local bestPromptDistance = math.huge
                 TouchAutomationProgress("FLING_RECOVERY:PROMPT_APPROACH")
@@ -3509,7 +3509,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if locationError > 14 then
                         humanoid:Move(Vector3.zero, false)
                         PickupRequested = false
-                        SetTrackerStatus(string.format("FLING RECOVERY cancelled: prompt moved %.1f studs from reported location.", locationError))
+                        SetTrackerStatus(string.format("FLING RECOVERY cancelled: prompt moved %.1f studs away from the animal location.", locationError))
                         if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                         finishFlingRecovery()
                         return
@@ -3549,7 +3549,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local finalLocationError = (promptPosition - recoveryPosition).Magnitude
                 if finalPlayerDistance > math.min(prompt.MaxActivationDistance, 5) or finalLocationError > 14 then
                     PickupRequested = false
-                    SetTrackerStatus(string.format("FLING RECOVERY blocked by location verification: player=%.1f studs, fling mismatch=%.1f studs.", finalPlayerDistance, finalLocationError))
+                    SetTrackerStatus(string.format("FLING RECOVERY blocked by location verification: player=%.1f studs, animal mismatch=%.1f studs.", finalPlayerDistance, finalLocationError))
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                     finishFlingRecovery()
                     return
