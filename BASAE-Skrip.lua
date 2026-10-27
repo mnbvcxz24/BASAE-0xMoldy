@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.178 -- 0xMoldy"
+local testver = "Test v1.179 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -2256,7 +2256,22 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if humanoid then
                     humanoid:Move(Vector3.zero, false)
                 end
-                SetTrackerStatus("Target egg reached 0 HP (including while travelling); movement stopped and watching AnimalPickups.")
+                if not AutoPickupEnabled then
+                    WaitingForPickup = false
+                    SetTrackerStatus("Target egg reached 0 HP; Auto Pickup is OFF, continuing to the next eligible egg.")
+                    task.defer(function()
+                        if StopAutoBreak then
+                            StopAutoBreak("Egg broken; Auto Pickup is OFF, selecting the next eligible egg.")
+                        end
+                        task.wait(0.2)
+                        if AutoBreakEnabled and not AutoPickupEnabled and not PickupRequested
+                            and not ReturningAfterPickup and not ScriptShuttingDown and StartAutoBreak then
+                            StartAutoBreak()
+                        end
+                    end)
+                else
+                    SetTrackerStatus("Target egg reached 0 HP (including while travelling); movement stopped and watching AnimalPickups.")
+                end
             end
         end)
         local function GetPetRarity(pickup)
