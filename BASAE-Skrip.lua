@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.165 -- 0xMoldy"
+local testver = "Test v1.166 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -4500,38 +4500,68 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddCorner(PickupList, 6)
         local PickupLayout = Create("UIListLayout", {Parent = PickupList, Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder})
         Create("UIPadding", {Parent = PickupList, PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)})
+        local function GetPickupConsoleCPS(pickup)
+            local cached = pickup:GetAttribute("BASAE_CPSCheckValue")
+            for _, node in ipairs(pickup:GetDescendants()) do
+                if node.Name == "CashPerSecond" then
+                    if node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox") then
+                        if node.Text ~= "" then return node.Text end
+                    end
+                    local textNode = node:FindFirstChild("Text", true) or node:FindFirstChild("ContentText", true)
+                    if textNode and (textNode:IsA("TextLabel") or textNode:IsA("TextButton") or textNode:IsA("TextBox")) and textNode.Text ~= "" then
+                        return textNode.Text
+                    end
+                end
+            end
+            if cached and cached ~= "" then return tostring(cached) end
+            return "—"
+        end
         local function RefreshAnimalPickups()
             for _, child in ipairs(PickupList:GetChildren()) do
                 if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
             end
             local folder = workspace:FindFirstChild("AnimalPickups")
             if not folder then
-                PickupStatus.Text = "AnimalPickups folder not found"
-                Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "Waiting for AnimalPickups...", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
+                PickupStatus.Text = "Waiting for workspace.AnimalPickups..."
+                Create("TextLabel", {
+                    Parent = PickupList, Size = UDim2.new(1, -8, 0, 28),
+                    BackgroundTransparency = 1, Text = "AnimalPickups folder not found.",
+                    TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1
+                })
                 return
             end
             local records = {}
+            local qualifiedCount = 0
             for _, pickup in ipairs(folder:GetChildren()) do
-                if pickup:GetAttribute("BASAE_Qualified") == true then
+                if pickup:IsA("Model") then
+                    local qualified = pickup:GetAttribute("BASAE_Qualified")
+                    local weight = pickup:GetAttribute("WeightKg")
+                    local qualifiedText = qualified == true and "Yes" or qualified == false and "No" or "Not checked"
+                    if qualified == true then qualifiedCount += 1 end
                     table.insert(records, {
                         name = pickup.Name,
-                        cps = tostring(pickup:GetAttribute("BASAE_CPSCheckValue") or "Checking"),
-                        kg = tostring(pickup:GetAttribute("WeightKg") or "—")
+                        cps = GetPickupConsoleCPS(pickup),
+                        kg = weight ~= nil and tostring(weight) or "—",
+                        qualified = qualifiedText
                     })
                 end
             end
             table.sort(records, function(a, b)
-                return a.name < b.name
+                return a.name:lower() < b.name:lower()
             end)
-            PickupStatus.Text = tostring(#records) .. " qualified animals"
+            PickupStatus.Text = string.format("%d animals | %d qualified", #records, qualifiedCount)
             if #records == 0 then
-                Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No qualified animals.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
+                Create("TextLabel", {
+                    Parent = PickupList, Size = UDim2.new(1, -8, 0, 28),
+                    BackgroundTransparency = 1, Text = "No animal models found in AnimalPickups.",
+                    TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1
+                })
             end
             for order, record in ipairs(records) do
                 local row = Create("TextLabel", {
                     Parent = PickupList, Size = UDim2.new(1, -8, 0, 42),
                     BackgroundColor3 = Theme.Card, BorderSizePixel = 0,
-                    Text = "  " .. record.name .. "  |  " .. record.cps .. " $/s  |  " .. record.kg .. " KG  |  Qualified = Yes",
+                    Text = "  " .. record.name .. "  |  " .. record.cps .. " $/s  |  " .. record.kg .. " KG  |  Qualified = " .. record.qualified,
                     TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
                     TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
                     TextWrapped = true, TextTruncate = Enum.TextTruncate.None,
