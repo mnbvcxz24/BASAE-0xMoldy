@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.164 -- 0xMoldy"
+local testver = "Test v1.165 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -2369,6 +2369,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local function evaluationCancelled()
                 return ScriptShuttingDown or evaluationGeneration ~= AutoBreakGeneration or not AutoPickupEnabled
             end
+            pickup:SetAttribute("BASAE_Qualified", false)
             SetPickupTracking(pickup, "Checking")
             if evaluationCancelled() then
                 SetPickupTracking(pickup, "Cancelled: automation toggled")
@@ -2474,6 +2475,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetPickupTracking(pickup, "Cancelled: automation toggled")
                 return
             end
+            pickup:SetAttribute("BASAE_Qualified", true)
             if PickupRequested then
                 if forceUnindexedPickup or kgPriorityPickup or (HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS) then
                     SetPickupTracking(pickup, "Replacing lower-CPS pickup", cpsText)
@@ -4508,23 +4510,33 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "Waiting for AnimalPickups...", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
                 return
             end
-            PickupStatus.Text = tostring(#folder:GetChildren()) .. " animals | tracking status per pickup"
             local records = {}
             for _, pickup in ipairs(folder:GetChildren()) do
-                local state = pickup:GetAttribute("BASAE_CPSCheckStatus") or "Not checked"
-                local cps = pickup:GetAttribute("BASAE_CPSCheckValue")
-                table.insert(records, {name = pickup.Name, state = tostring(state), cps = cps and tostring(cps) or ""})
+                if pickup:GetAttribute("BASAE_Qualified") == true then
+                    table.insert(records, {
+                        name = pickup.Name,
+                        cps = tostring(pickup:GetAttribute("BASAE_CPSCheckValue") or "Checking"),
+                        kg = tostring(pickup:GetAttribute("WeightKg") or "—")
+                    })
+                end
             end
             table.sort(records, function(a, b)
-                if a.state == b.state then return a.name < b.name end
-                return a.state < b.state
+                return a.name < b.name
             end)
+            PickupStatus.Text = tostring(#records) .. " qualified animals"
             if #records == 0 then
-                Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No animal pickups found.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
+                Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No qualified animals.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
             end
             for order, record in ipairs(records) do
-                local detail = record.cps ~= "" and (" | CPS: " .. record.cps) or ""
-                local row = Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 30), BackgroundColor3 = Theme.Card, BorderSizePixel = 0, Text = "  " .. record.name .. "  |  " .. record.state .. detail, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order})
+                local row = Create("TextLabel", {
+                    Parent = PickupList, Size = UDim2.new(1, -8, 0, 42),
+                    BackgroundColor3 = Theme.Card, BorderSizePixel = 0,
+                    Text = "  " .. record.name .. "  |  " .. record.cps .. " $/s  |  " .. record.kg .. " KG  |  Qualified = Yes",
+                    TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
+                    TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
+                    TextWrapped = true, TextTruncate = Enum.TextTruncate.None,
+                    AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order
+                })
                 AddCorner(row, 4)
             end
             PickupList.CanvasSize = UDim2.new(0, 0, 0, PickupLayout.AbsoluteContentSize.Y + 10)
