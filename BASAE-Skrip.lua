@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.175 -- 0xMoldy"
+local testver = "Test v1.176 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -3312,6 +3312,40 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
+                local function positionOf(candidate)
+                    local parent = candidate and candidate.Parent
+                    while parent and parent ~= workspace do
+                        if parent:IsA("Attachment") then return parent.WorldPosition end
+                        if parent:IsA("BasePart") then return parent.Position end
+                        if parent:IsA("Model") then return parent:GetPivot().Position end
+                        parent = parent.Parent
+                    end
+                    return nil
+                end
+                local function findNearbyStealPrompt()
+                    local anchor = workspace:FindFirstChild("PromptAnchor")
+                    if not anchor then return nil, nil end
+                    local nearest = math.huge
+                    local bestPrompt, bestPosition
+                    for _, candidate in ipairs(anchor:GetDescendants()) do
+                        if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
+                            local pos = positionOf(candidate)
+                            if pos then
+                                local distance = (pos - recoveryPosition).Magnitude
+                                if distance < nearest and distance <= 12 then
+                                    nearest, bestPrompt, bestPosition = distance, candidate, pos
+                                end
+                            end
+                        end
+                    end
+                    return bestPrompt, bestPosition
+                end
+                local prompt, promptPosition = findNearbyStealPrompt()
+                if prompt then
+                    SetTrackerStatus(string.format("FLING RECOVERY cached StealPrompt %.1f studs from animal; moving immediately.", (promptPosition - recoveryPosition).Magnitude))
+                else
+                    SetTrackerStatus("FLING RECOVERY: no nearby StealPrompt cached yet; moving toward the animal while recovery continues.")
+                end
                 SetTrackerStatus(string.format(
                     "FLING RECOVERY found dropped %s in AnimalPickups at (%.3f, %.3f, %.3f).",
                     tostring(flingAnimal and flingAnimal.Name or targetAnimalName or "animal"),
@@ -3400,24 +3434,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); searching for the nearest animal StealPrompt.", arrivalDistance))
-                local anchor = workspace:FindFirstChild("PromptAnchor")
-                local prompt, promptPosition
-                local searchDeadline = os.clock() + 8
-                local function positionOf(candidate)
-                    local parent = candidate and candidate.Parent
-                    while parent and parent ~= workspace do
-                        if parent:IsA("Attachment") then return parent.WorldPosition end
-                        if parent:IsA("BasePart") then return parent.Position end
-                        if parent:IsA("Model") then return parent:GetPivot().Position end
-                        parent = parent.Parent
-                    end
-                    return nil
+                if not prompt then
+                    SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); refreshing StealPrompt search.", arrivalDistance))
                 end
-                repeat
+                local searchDeadline = os.clock() + 8
+                if not prompt then
+                    repeat
                     local livePosition = getTrackedAnimalPosition()
                     if livePosition then recoveryPosition = livePosition end
-                    anchor = workspace:FindFirstChild("PromptAnchor")
+                    local anchor = workspace:FindFirstChild("PromptAnchor")
                     local nearest = math.huge
                     prompt, promptPosition = nil, nil
                     if anchor then
@@ -3435,7 +3460,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     if prompt then break end
                     task.wait(0.2)
-                until os.clock() >= searchDeadline or PickupGeneration ~= flingToken
+                    until os.clock() >= searchDeadline or PickupGeneration ~= flingToken
+                end
                 if PickupGeneration ~= flingToken then
                     finishFlingRecovery()
                     return
