@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.176 -- 0xMoldy"
+local testver = "Test v1.177 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -3341,10 +3341,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return bestPrompt, bestPosition
                 end
                 local prompt, promptPosition = findNearbyStealPrompt()
+                local promptLogged = prompt ~= nil
                 if prompt then
                     SetTrackerStatus(string.format("FLING RECOVERY cached StealPrompt %.1f studs from animal; moving immediately.", (promptPosition - recoveryPosition).Magnitude))
                 else
-                    SetTrackerStatus("FLING RECOVERY: no nearby StealPrompt cached yet; moving toward the animal while recovery continues.")
+                    SetTrackerStatus("FLING RECOVERY: searching for StealPrompt while moving toward the animal.")
                 end
                 SetTrackerStatus(string.format(
                     "FLING RECOVERY found dropped %s in AnimalPickups at (%.3f, %.3f, %.3f).",
@@ -3382,6 +3383,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     local livePosition = getTrackedAnimalPosition()
                     if livePosition then recoveryPosition = livePosition end
+                    if not prompt then
+                        prompt, promptPosition = findNearbyStealPrompt()
+                        if prompt and not promptLogged then
+                            promptLogged = true
+                            SetTrackerStatus(string.format("FLING RECOVERY found StealPrompt while moving (%.1f studs from animal).", (promptPosition - recoveryPosition).Magnitude))
+                        end
+                    end
                     local offset = Vector3.new(recoveryPosition.X - root.Position.X, 0, recoveryPosition.Z - root.Position.Z)
                     local distance = offset.Magnitude
                     if distance <= 4 then break end
@@ -3434,32 +3442,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
+                local searchDeadline = os.clock() + 1.5
                 if not prompt then
-                    SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); refreshing StealPrompt search.", arrivalDistance))
-                end
-                local searchDeadline = os.clock() + 8
-                if not prompt then
+                    SetTrackerStatus(string.format("FLING RECOVERY arrived near animal (%.1f studs); brief final StealPrompt check.", arrivalDistance))
                     repeat
-                    local livePosition = getTrackedAnimalPosition()
-                    if livePosition then recoveryPosition = livePosition end
-                    local anchor = workspace:FindFirstChild("PromptAnchor")
-                    local nearest = math.huge
-                    prompt, promptPosition = nil, nil
-                    if anchor then
-                        for _, candidate in ipairs(anchor:GetDescendants()) do
-                            if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
-                                local pos = positionOf(candidate)
-                                if pos then
-                                    local distance = (pos - recoveryPosition).Magnitude
-                                    if distance < nearest and distance <= 12 then
-                                        nearest, prompt, promptPosition = distance, candidate, pos
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    if prompt then break end
-                    task.wait(0.2)
+                        local livePosition = getTrackedAnimalPosition()
+                        if livePosition then recoveryPosition = livePosition end
+                        prompt, promptPosition = findNearbyStealPrompt()
+                        if prompt then break end
+                        task.wait(0.1)
                     until os.clock() >= searchDeadline or PickupGeneration ~= flingToken
                 end
                 if PickupGeneration ~= flingToken then
