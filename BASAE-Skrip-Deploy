@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Deploy v1.198"
+local testver = "Deploy v1.200"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1062,6 +1062,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local StopAutoBreak
         local StopPickupAutomation
         local CompletedEggs = {}
+        local LastEggHPValue = nil
+        local LastEggHPTarget = nil
         local AutoBreakToggleInitialized = false
         local AutoBreakEnabled = false
         local AutoBreakGeneration = 0
@@ -1747,6 +1749,25 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local value = tonumber(tostring(raw):lower():gsub(",", ""):match("[%d%.]+"))
             return value
         end
+        function GetKnownEggHealth(egg)
+            if not egg then return nil end
+            for _, healthName in ipairs({"Health", "CurrentHealth", "EggHealth", "HP"}) do
+                local health = tonumber(GetEggDataValue(egg, healthName))
+                if health ~= nil then return health end
+            end
+            return nil
+        end
+        function IsEggConfirmedComplete(egg)
+            if not egg then return false end
+            if not egg.Parent or CompletedEggs[egg] then return true end
+            local health = GetKnownEggHealth(egg)
+            if health ~= nil then return health <= 0 end
+            if LastEggHPTarget == egg then
+                local eventHealth = tonumber(LastEggHPValue)
+                if eventHealth ~= nil then return eventHealth <= 0 end
+            end
+            return false
+        end
         function IsEggAvailable(egg)
             if not egg or not egg.Parent or CompletedEggs[egg] then return false end
             local eggsFolder = egg.Parent
@@ -2074,8 +2095,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local PendingAnimalPickupWorker = false
         local DroppedAnimalSignatures = {}
         local LastEggHPProgressAt = 0
-        local LastEggHPValue = nil
-        local LastEggHPTarget = nil
         local ScriptShuttingDown = false
         local AnimalFolderConnection
         local FlingRemoteConnection
@@ -4103,11 +4122,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus("Auto Break start ignored: broken target is waiting for its AnimalPickups entry.")
                 return
             end
-            if not forceRefresh and CurrentTarget and IsEggAvailable(CurrentTarget)
-                and (MovementConnection ~= nil or ArrivedAtTarget) then
+            local lockedTarget = CurrentTarget
+            if lockedTarget and IsEggConfirmedComplete(lockedTarget) then
+                CompletedEggs[lockedTarget] = true
+                lockedTarget = nil
+                SetTrackerStatus("Current egg HP reached 0; releasing target lock.")
+            elseif lockedTarget and not IsEggAvailable(lockedTarget) then
+                lockedTarget = nil
+            end
+            if lockedTarget and not forceRefresh and (MovementConnection ~= nil or ArrivedAtTarget) then
                 return
             end
-            StopAutoBreak()
+            StopAutoBreak(nil, lockedTarget ~= nil)
             local selectedZoneNames = {}
             for zoneName, selected in pairs(SelectedZones) do
                 if selected then
@@ -4122,7 +4148,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end
             table.sort(selectedZoneNames)
-            local target
+            local target = lockedTarget
             if TitanicPriorityEnabled then
                 local weightCandidates = {}
                 for _, zoneName in ipairs(selectedZoneNames) do
