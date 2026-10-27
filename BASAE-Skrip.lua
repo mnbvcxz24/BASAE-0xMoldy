@@ -975,14 +975,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoRow = Create("Frame", {
             Name = "AutoControlsRow",
             Parent = Page,
-            Size = UDim2.new(1, 0, 0, 190),
+            Size = UDim2.new(1, 0, 0, 220),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 1
         })
         local Card1 = CreateCard(AutoRow, "⚡  Auto Break", "")
         Card1.Position = UDim2.new(0, 0, 0, 0)
-        Card1.Size = UDim2.new(0.5, -6, 0, 190)
+        Card1.Size = UDim2.new(0.5, -5, 0, 220)
         local StartAutoBreak
         local StopAutoBreak
         local StopPickupAutomation
@@ -1011,9 +1011,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoBreakToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoBreakToggle.Size = UDim2.fromOffset(48, 24)
+        local AutoBreakTitle = Card1:FindFirstChildWhichIsA("TextLabel")
+        if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
-        AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
+        AutoPickupCard.Position = UDim2.new(0.5, 5, 0, 0)
+        AutoPickupCard.Size = UDim2.new(0.5, -5, 0, 220)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
@@ -1022,6 +1024,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
+        local AutoPickupTitle = AutoPickupCard:FindFirstChildWhichIsA("TextLabel")
+        if AutoPickupTitle then AutoPickupTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AntiFuseRow = Create("Frame", {
             Name = "AntiFuseRow",
             Parent = Page,
@@ -1152,28 +1156,28 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local EggFilterOpen = false
         local ZoneList
         local EggFilterList
-        RarityFilterButton = CreateButton(AutoPickupCard, "Rarity Filter  ▼", function()
+        RarityFilterButton = CreateButton(AutoPickupCard, "Rarity ▼", function()
             RarityFilterOpen = not RarityFilterOpen
             ZoneFilterOpen = false
             EggFilterOpen = false
             if RarityFilterOpen then
-                RarityList.Position = UDim2.new(0, RarityFilterButton.Position.X.Offset, 0, RarityFilterButton.Position.Y.Offset + RarityFilterButton.AbsoluteSize.Y + 4)
+                RarityList.Position = UDim2.fromOffset(11, RarityFilterButton.Position.Y.Offset + RarityFilterButton.AbsoluteSize.Y + 4)
                 RarityList.Size = UDim2.new(1, -22, 0, 155)
             end
-            RarityFilterButton.Text = RarityFilterOpen and "Rarity Filter  ▲" or "Rarity Filter  ▼"
+            RarityFilterButton.Text = RarityFilterOpen and "Rarity ▲" or "Rarity ▼"
             RarityList.Visible = RarityFilterOpen
             if ZoneList then ZoneList.Visible = false end
             if EggFilterList then EggFilterList.Visible = false end
         end)
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
-        RarityFilterButton.Size = UDim2.new(1, -22, 0, 28)
+        RarityFilterButton.Size = UDim2.new(0.5, -16, 0, 28)
         local KGFilterOpen = false
         local KGThresholdOptions = {5000, 10000, 15000, 20000, 40000, 60000, 100000}
         local SelectedKGThresholds = {}
         local KGFilterList = Create("ScrollingFrame", {
             Name = "KGFilterContainer",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 177),
+            Position = UDim2.fromOffset(11, 75),
             Size = UDim2.fromOffset(160, 155),
             CanvasSize = UDim2.new(0, 0, 0, 0),
             ScrollBarThickness = 3,
@@ -1202,7 +1206,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, threshold in ipairs(KGThresholdOptions) do
                 if SelectedKGThresholds[threshold] then count += 1 end
             end
-            KGFilterButton.Text = count > 0 and ("KG Filter (" .. count .. ")  " .. (KGFilterOpen and "▲" or "▼")) or ("KG Filter  " .. (KGFilterOpen and "▲" or "▼"))
+            KGFilterButton.Text = count > 0 and ("KG (" .. count .. ") " .. (KGFilterOpen and "▲" or "▼")) or ("KG " .. (KGFilterOpen and "▲" or "▼"))
         end
         local function RefreshKGFilterList()
             for _, child in ipairs(KGFilterList:GetChildren()) do
@@ -1254,13 +1258,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             KGFilterList.CanvasSize = UDim2.new(0, 0, 0, KGFilterLayout.AbsoluteContentSize.Y + 10)
         end
-        KGFilterButton = CreateButton(AutoPickupCard, "KG Filter  ▼", function()
+        KGFilterButton = CreateButton(AutoPickupCard, "KG ▼", function()
             KGFilterOpen = not KGFilterOpen
             RarityFilterOpen = false
             ZoneFilterOpen = false
             EggFilterOpen = false
             if KGFilterOpen then
-                KGFilterList.Position = UDim2.new(0, KGFilterButton.Position.X.Offset, 0, KGFilterButton.Position.Y.Offset + KGFilterButton.AbsoluteSize.Y + 4)
+                KGFilterList.Position = UDim2.fromOffset(11, KGFilterButton.Position.Y.Offset + KGFilterButton.AbsoluteSize.Y + 4)
                 KGFilterList.Size = UDim2.new(1, -22, 0, 155)
             end
             KGFilterList.Visible = KGFilterOpen
@@ -1269,22 +1273,22 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if EggFilterList then EggFilterList.Visible = false end
             UpdateKGFilterButton()
         end)
-        KGFilterButton.Position = UDim2.fromOffset(11, 145)
-        KGFilterButton.Size = UDim2.new(1, -22, 0, 28)
+        KGFilterButton.Position = UDim2.new(0.5, 5, 0, 43)
+        KGFilterButton.Size = UDim2.new(0.5, -16, 0, 28)
         RefreshKGFilterList()
         local HighestCashEnabled = false
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest $/s", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(11, 77)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 80)
         HighestCashToggle.Size = UDim2.new(1, -22, 0, 28)
         local UnindexedOnlyEnabled = false
         local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
-        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 111)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 114)
         UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 28)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
@@ -4191,11 +4195,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
 
     elseif index == 3 then
-        local ESPCard = CreateCard(Page, "🥚  Egg ESP", "Shows egg luck, weight, and category above each egg.")
+        local ESPCard = CreateCard(Page, "🥚  Egg ESP", "Displays egg stats.")
         ESPCard.Size = UDim2.new(1, 0, 0, 120)
         local ESPStatus = Create("TextLabel", {
             Parent = ESPCard,
-            Position = UDim2.fromOffset(11, 60),
+            Position = UDim2.fromOffset(11, 54),
             Size = UDim2.new(1, -22, 0, 16),
             BackgroundTransparency = 1,
             Text = "ESP is off",
@@ -4312,7 +4316,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             ESPStatus.Text = "ESP " .. (ESPEnabled and "ON" or "OFF") .. " | Eggs: " .. count
         end
-        CreateToggle(ESPCard, "Show egg Luck + Size", false, function(enabled)
+        CreateToggle(ESPCard, "", false, function(enabled)
             ESPEnabled = enabled
             if enabled then
                 ESPStatus.Text = "Scanning eggs..."
@@ -4330,8 +4334,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end)
         local ESPToggle = ESPCard:FindFirstChildWhichIsA("TextButton")
-        if ESPToggle then ESPToggle.Position = UDim2.fromOffset(11, 80) end
-        ESPCard.Size = UDim2.new(1, 0, 0, 120)
+        if ESPToggle then
+            ESPToggle.Position = UDim2.new(1, -61, 0, 5)
+            ESPToggle.Size = UDim2.fromOffset(48, 24)
+        end
+        local ESPTitle = ESPCard:FindFirstChildWhichIsA("TextLabel")
+        if ESPTitle then ESPTitle.Size = UDim2.new(1, -78, 0, 22) end
+        ESPCard.Size = UDim2.new(1, 0, 0, 100)
 
         local MiscFeatureRow = Create("Frame", {
             Name = "MiscFeatureCardsRow",
