@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.197"
+local testver = "Test v1.198"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1707,6 +1707,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local value = tonumber(tostring(raw):lower():gsub(",", ""):match("[%d%.]+"))
             return value
         end
+        function GetKnownEggHealth(egg)
+            if not egg then return nil end
+            for _, healthName in ipairs({"Health", "CurrentHealth", "EggHealth", "HP"}) do
+                local health = tonumber(GetEggDataValue(egg, healthName))
+                if health ~= nil then return health end
+            end
+            return nil
+        end
+        function IsEggConfirmedComplete(egg)
+            if not egg or not egg.Parent then return true end
+            local health = GetKnownEggHealth(egg)
+            return health ~= nil and health <= 0
+        end
         function IsEggAvailable(egg)
             if not egg or not egg.Parent or CompletedEggs[egg] then return false end
             local eggsFolder = egg.Parent
@@ -2700,14 +2713,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             local hadTarget = CurrentTarget ~= nil and CurrentTarget.Parent ~= nil
-            if hadTarget and WaitingForPickup then
+            if hadTarget and WaitingForPickup and IsEggConfirmedComplete(CurrentTarget) then
                 CompletedEggs[CurrentTarget] = true
             end
             SetTrackerStatus(message .. (hadTarget and WaitingForPickup
                 and " | rejected animal; releasing egg wait and resuming Auto Break."
                 or " | rejected animal; checking whether Auto Break can resume."))
             task.defer(function()
-                if StopAutoBreak then StopAutoBreak("Recovering after rejected animal.", false) end
+                if StopAutoBreak then StopAutoBreak("Recovering after rejected animal.", CurrentTarget ~= nil and IsEggAvailable(CurrentTarget)) end
                 task.wait(0.2)
                 if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup and StartAutoBreak then
                     StartAutoBreak()
@@ -2789,11 +2802,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if IsRecentlyDroppedAnimal(pickup) then return end
             if not AutoPickupEnabled then
                 SetPickupTracking(pickup, "Skipped: Auto Pickup OFF")
-                if CurrentTarget then CompletedEggs[CurrentTarget] = true end
+                if CurrentTarget and IsEggConfirmedComplete(CurrentTarget) then CompletedEggs[CurrentTarget] = true end
                 WaitingForPickup = false
-                SetTrackerStatus("New pet detected (Auto Pickup OFF): " .. pickup.Name .. " | continuing to next egg.")
+                SetTrackerStatus("New pet detected (Auto Pickup OFF): " .. pickup.Name .. " | checking current egg HP before selecting another.")
                 task.defer(function()
-                    if StopAutoBreak then StopAutoBreak() end
+                    if StopAutoBreak then StopAutoBreak("Auto Pickup is OFF; checking current egg HP.", CurrentTarget ~= nil and IsEggAvailable(CurrentTarget)) end
                     task.wait(0.2)
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                 end)
@@ -2994,7 +3007,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if watchdogHumanoid then watchdogHumanoid:Move(Vector3.zero, false) end
                 WaitingForPickup = false
                 ArrivedAtTarget = false
-                CurrentTarget = nil
                 task.spawn(function()
                     EquipHotbarOne()
                     task.wait(0.2)
@@ -3003,8 +3015,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end)
             end)
-            if CurrentTarget then CompletedEggs[CurrentTarget] = true end
-            if StopAutoBreak then StopAutoBreak() end
+            if StopAutoBreak then StopAutoBreak("Auto Break paused while Auto Pickup handles " .. pickup.Name .. ".", CurrentTarget ~= nil and IsEggAvailable(CurrentTarget)) end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             local activeCharacter = LocalPlayer.Character
             local activeHumanoid = activeCharacter and activeCharacter:FindFirstChildOfClass("Humanoid")
@@ -3624,8 +3635,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ActivePickup = nil
             ActivePickupCPS = -1
             PickupRequested = true
-            if CurrentTarget then CompletedEggs[CurrentTarget] = true end
-            if StopAutoBreak then StopAutoBreak() end
+            if StopAutoBreak then StopAutoBreak("Auto Break paused for fling recovery.", CurrentTarget ~= nil and IsEggAvailable(CurrentTarget)) end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             SetTrackerStatus("Base return paused. FLING RECOVERY locating dropped " .. tostring(targetAnimalName) .. " in AnimalPickups.")
             task.spawn(function()
@@ -4063,11 +4073,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetTrackerStatus("Auto Break start ignored: broken target is waiting for its AnimalPickups entry.")
                 return
             end
-            if not forceRefresh and CurrentTarget and IsEggAvailable(CurrentTarget)
-                and (MovementConnection ~= nil or ArrivedAtTarget) then
+            local lockedTarget = CurrentTarget
+            if lockedTarget and IsEggConfirmedComplete(lockedTarget) then
+                CompletedEggs[lockedTarget] = true
+                lockedTarget = nil
+                SetTrackerStatus("Current egg HP reached 0; releasing target lock.")
+            elseif lockedTarget and not IsEggAvailable(lockedTarget) then
+                lockedTarget = nil
+            end
+            if lockedTarget and not forceRefresh and (MovementConnection ~= nil or ArrivedAtTarget) then
                 return
             end
-            StopAutoBreak()
+            StopAutoBreak(nil, lockedTarget ~= nil)
             local selectedZoneNames = {}
             for zoneName, selected in pairs(SelectedZones) do
                 if selected then
@@ -4082,8 +4099,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end
             table.sort(selectedZoneNames)
-            local target
-            if TitanicPriorityEnabled then
+            local target = lockedTarget
+            if not target and TitanicPriorityEnabled then
                 local weightCandidates = {}
                 for _, zoneName in ipairs(selectedZoneNames) do
                     local zone = ZoneBuilds:FindFirstChild(zoneName)
@@ -4272,9 +4289,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 if CurrentTarget ~= target or not IsEggAvailable(target) or not character.Parent
                 or humanoid.Health <= 0 then
-                    if CurrentTarget == target and (not IsEggAvailable(target) or humanoid.Health <= 0) then
+                    if CurrentTarget == target and not IsEggAvailable(target) then
                         CompletedEggs[target] = true
-                        SetTrackerStatus("Target egg is no longer available or is already broken; refreshing the egg list.")
+                        SetTrackerStatus("Target egg is no longer available or its HP reached 0; refreshing the egg list.")
                         StopAutoBreak()
                         task.defer(function()
                             task.wait(0.2)
@@ -4283,7 +4300,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             end
                         end)
                     else
-                        StopAutoBreak("Movement stopped: target/character unavailable.")
+                        StopAutoBreak("Movement stopped: target/character unavailable.", CurrentTarget == target and IsEggAvailable(target))
                     end
                     return
                 end
@@ -4358,7 +4375,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if humanoid then humanoid:Move(Vector3.zero, false) end
                     WaitingForPickup = false
                     ArrivedAtTarget = false
-                    CurrentTarget = nil
                     FlingRecoveryActive = false
                     TouchAutomationProgress("WATCHDOG_RECOVERY")
                     task.spawn(function()
