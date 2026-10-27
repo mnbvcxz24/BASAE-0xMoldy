@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.192 -- 0xMoldy"
+local testver = "Test v1.193 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1035,7 +1035,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Height = 22,
             SidePadding = 11
         }
-        local function SetAutoBreakControl(control, y)
+        function SetAutoBreakControl(control, y)
             control.Position = UDim2.fromOffset(AutoBreakControlLayout.SidePadding, y)
             control.Size = UDim2.new(1, -AutoBreakControlLayout.SidePadding * 2, 0, AutoBreakControlLayout.Height)
         end
@@ -1118,7 +1118,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 TextTruncate = Enum.TextTruncate.AtEnd
             })
         end
-        local function GetAutoFuseRequirement(slot)
+        function GetAutoFuseRequirement(slot)
             local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
             local sciFiUI = playerGui and playerGui:FindFirstChild("SciFi UI")
             local tradeIn = sciFiUI and sciFiUI:FindFirstChild("SciFiTradeInMain")
@@ -1132,7 +1132,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if animalName == "" then return nil end
             return animalName
         end
-        local function RefreshAutoFuseRequirements()
+        function RefreshAutoFuseRequirements()
             local requirements = {}
             for slot = 1, 3 do
                 local animalName = GetAutoFuseRequirement(slot)
@@ -1494,7 +1494,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         RarityLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             RarityList.CanvasSize = UDim2.new(0, 0, 0, RarityLayout.AbsoluteContentSize.Y + 10)
         end)
-        local function RefreshRarityList()
+        function RefreshRarityList()
             for _, item in ipairs(RarityList:GetChildren()) do
                 if item:IsA("TextButton") then item:Destroy() end
             end
@@ -1539,7 +1539,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local SortLargestButton
         local SortSmallestButton
         local ZoneBuilds = workspace:WaitForChild("Build"):WaitForChild("ZoneBuilds")
-        local function UpdateFilterPanel()
+        function UpdateFilterPanel()
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
             RarityList.Visible = RarityFilterOpen
@@ -1658,7 +1658,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Visible = true
         })
         local HighestLuckToggle
-        local function UpdateSortButtons()
+        function UpdateSortButtons()
             SortOrder = HighestLuckToggle and ToggleControllers[HighestLuckToggle].GetEnabled() and "Highest Luck" or "Default"
         end
         HighestLuckToggle = CreateToggle(SortFrame, "HighLuck Priority", false, function(enabled)
@@ -1670,10 +1670,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         HighestLuckToggle.Size = UDim2.new(1, 0, 0, 28)
         SortLargestButton = HighestLuckToggle
         SortSmallestButton = nil
-        local function GetEggTypeName(name)
+        function GetEggTypeName(name)
             return (name:gsub("^%d+:%s*", ""))
         end
-        local function GetEggDataValue(egg, variableName)
+        function GetEggDataValue(egg, variableName)
             local eggModel = egg and (egg:FindFirstChild("Egg") or egg)
             if not eggModel then return nil end
             local function readFrom(object)
@@ -1695,10 +1695,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nil
         end
-        local function GetEggWeightBracket(egg)
+        function GetEggWeightBracket(egg)
             return GetEggDataValue(egg, "WeightBracket")
         end
-        local function GetEggWeightKg(egg)
+        function GetEggWeightKg(egg)
             local raw = GetEggDataValue(egg, "weightKg")
                 or GetEggDataValue(egg, "WeightKg")
                 or GetEggDataValue(egg, "WeightKG")
@@ -1707,7 +1707,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local value = tonumber(tostring(raw):lower():gsub(",", ""):match("[%d%.]+"))
             return value
         end
-        local function IsEggAvailable(egg)
+        function IsEggAvailable(egg)
             if not egg or not egg.Parent or CompletedEggs[egg] then return false end
             local eggsFolder = egg.Parent
             if eggsFolder.Name ~= "Eggs" then return false end
@@ -1725,7 +1725,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return true
         end
 
-        local function GetEggLuck(egg)
+        function GetEggLuck(egg)
             local eggModel = egg and (egg:FindFirstChild("Egg") or egg)
             if not eggModel then return 0 end
             local info = eggModel:FindFirstChild("EggInfoUi", true)
@@ -1755,7 +1755,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return tonumber(lastNumber) or 0
         end
-        local function GetEggRecords()
+        function GetEggRecords()
             local records = {}
             local byName = {}
             for zoneName, selected in pairs(SelectedZones) do
@@ -1788,7 +1788,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return records
         end
         local RefreshEggList
-        local function RefreshZoneList()
+        function RefreshZoneList()
             for _, item in ipairs(ZoneList:GetChildren()) do
                 if item:IsA("TextButton") then item:Destroy() end
             end
@@ -1991,7 +1991,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Card1.Size = UDim2.new(0.5, -6, 0, 190)
         AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 264)
         AutoRow.Size = UDim2.new(1, 0, 0, 350)
-        local function UpdateFilterPanelWithTitanic()
+        function UpdateFilterPanelWithTitanic()
             UpdateFilterPanel()
             HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
             HighestLuckToggle.Size = UDim2.new(1, 0, 0, AutoBreakControlLayout.Height)
@@ -2055,7 +2055,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 LastAutomationProgressAt = os.clock()
             end
         end
-        local function WaitForCharacterAndParts(timeout, isValid)
+        function WaitForCharacterAndParts(timeout, isValid)
             local deadline = os.clock() + timeout
             while not Runtime.Stopped and not ScriptShuttingDown and os.clock() < deadline do
                 if isValid and not isValid() then return nil end
@@ -2069,7 +2069,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nil
         end
-        local function ParseWeightKg(value)
+        function ParseWeightKg(value)
             if typeof(value) == "number" then
                 return value
             end
@@ -2089,7 +2089,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if scale then return number * scale end
             return nil
         end
-        local function GetPickupWeightKg(pickup)
+        function GetPickupWeightKg(pickup)
             if not pickup then return nil end
             local animalPickups = workspace:FindFirstChild("AnimalPickups")
             local animal = pickup
@@ -2121,7 +2121,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nil
         end
-        local function IsKGFilterMatch(pickup)
+        function IsKGFilterMatch(pickup)
             if KGThresholdAmount <= 0 then return false, nil end
             local weight = GetPickupWeightKg(pickup)
             local scale = 1
@@ -2140,7 +2140,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AddDebugLog("[KG] " .. pickup.Name .. " detected=" .. tostring(weight) .. " KG | minimum=" .. tostring(threshold) .. " KG | match=" .. tostring(matches))
             return matches, weight
         end
-        local function GetAnimalWeightKg(animal)
+        function GetAnimalWeightKg(animal)
             if not animal then return nil end
             local names = {"WeightKg", "WeightKG", "weightKg", "weightKG", "Weight", "weight"}
             for _, name in ipairs(names) do
@@ -2165,7 +2165,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local FlingTargetWeightKg
         local HitEventConnection
         local SetTrackerStatus
-        local function SetPickupPhase(phase, message)
+        function SetPickupPhase(phase, message)
             PickupPhase = phase
             TouchAutomationProgress("PICKUP:" .. tostring(phase))
             if message then SetTrackerStatus("PICKUP LOCK [" .. phase .. "]: " .. message) end
@@ -2228,7 +2228,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 ShutdownAutomation()
             end
         end
-        local function ClearPickupLock(token)
+        function ClearPickupLock(token)
             if token and token ~= PickupGeneration then return false end
             PickupRequested = false
             ActivePickup = nil
@@ -2239,7 +2239,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local HitEvent = game:GetService("ReplicatedStorage"):WaitForChild("EggHitConfirmed")
         local AnimalPickups = workspace:FindFirstChild("AnimalPickups")
         local BaseReturnPosition = Vector3.new(-29.243687, 3.5, -14.755682)
-        local function EquipHotbarOne()
+        function EquipHotbarOne()
             local Players = game:GetService("Players")
             local currentPlayer = LocalPlayer or Players.LocalPlayer
             if not currentPlayer then
@@ -2291,7 +2291,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return true
         end
         local AnimalBankEquipConnections = {}
-        local function BindAnimalBankEquip(remote)
+        function BindAnimalBankEquip(remote)
             if not remote:IsA("RemoteEvent") or AnimalBankEquipConnections[remote] then return end
             local remoteName = remote.Name:lower():gsub("[^%a]", "")
             if not remoteName:find("animalbank", 1, true) and not remoteName:find("bankanimal", 1, true) then return end
@@ -2310,7 +2310,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ReplicatedStorage.DescendantAdded:Connect(function(instance)
             BindAnimalBankEquip(instance)
         end)
-        local function ReturnToPickup(reason)
+        function ReturnToPickup(reason)
             if FlingRecoveryActive or ReturningAfterPickup then return end
             local useZoneDrop = DropInZone1Enabled == true
             ClearPickupLock()
@@ -2497,7 +2497,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 ReturnMovementConnection = connection
             end)
         end
-        local function IsTargetReference(reference, target)
+        function IsTargetReference(reference, target)
             if typeof(reference) ~= "Instance" or typeof(target) ~= "Instance" then
                 return false
             end
@@ -2540,7 +2540,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end)
             end
         end)
-        local function GetPetRarity(pickup)
+        function GetPetRarity(pickup)
             local rarity = pickup:FindFirstChild("Rarity", true)
             if rarity and rarity:IsA("StringValue") then
                 return rarity.Value
@@ -2551,7 +2551,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local attribute = pickup:GetAttribute("Rarity")
             return attribute and tostring(attribute) or nil
         end
-        local function GetDroppedAnimalSignature(pickup, weight)
+        function GetDroppedAnimalSignature(pickup, weight)
             if not pickup then return nil end
             for _, key in ipairs({"AnimalId", "AnimalID", "UniqueId", "UUID", "Id"}) do
                 local value = pickup:GetAttribute(key)
@@ -2562,7 +2562,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nil
         end
-        local function IsRecentlyDroppedAnimal(pickup)
+        function IsRecentlyDroppedAnimal(pickup)
             if not pickup then return false end
             local signature = GetDroppedAnimalSignature(pickup, GetAnimalWeightKg(pickup))
             if signature and DroppedAnimalSignatures[signature] then
@@ -2574,7 +2574,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return false
         end
-        local function GetPickupZone(pickup)
+        function GetPickupZone(pickup)
             local zone = pickup:FindFirstChild("ZoneId", true)
             if zone and zone:IsA("ValueBase") then
                 return tostring(zone.Value)
@@ -2582,7 +2582,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local attribute = pickup:GetAttribute("ZoneId")
             return attribute and tostring(attribute) or nil
         end
-        local function ParseCPS(display)
+        function ParseCPS(display)
             if type(display) ~= "string" then return -1 end
             local cleaned = display:gsub(",", ""):gsub("%s+", ""):gsub("%$", "")
             cleaned = cleaned:gsub("/[sS]$", "")
@@ -2595,7 +2595,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return -1
         end
-        local function GetPetCPS(pickup)
+        function GetPetCPS(pickup)
             if not pickup or not pickup:IsA("Model") then
                 return -1, "CPS unavailable: animal model missing"
             end
@@ -2634,7 +2634,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return -1, "CPS unavailable: no CashPerSecond node found in animal model"
         end
-        local function IsRarityAllowed(pickup)
+        function IsRarityAllowed(pickup)
             local selectedCount = 0
             for _, selected in pairs(SelectedRarities) do
                 if selected then selectedCount += 1 end
@@ -2652,7 +2652,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return false
         end
-        local function GetLowestPlacedCPS()
+        function GetLowestPlacedCPS()
             local plots = workspace:FindFirstChild("Plots")
             if not plots then return -1 end
             for _, base in ipairs(plots:GetChildren()) do
@@ -2673,7 +2673,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return -1
         end
-        local function RejectPickupAndRestart(message)
+        function RejectPickupAndRestart(message)
             if PickupRequested then
                 SetTrackerStatus(message .. " | candidate rejected; active pickup remains in control.")
                 return
@@ -2697,7 +2697,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end)
         end
-        local function SetPickupTracking(pickup, status, cpsText)
+        function SetPickupTracking(pickup, status, cpsText)
             if not pickup or not pickup.Parent then return end
             pickup:SetAttribute("BASAE_CPSCheckStatus", tostring(status or "Not checked"))
             if cpsText ~= nil then
@@ -2705,7 +2705,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             pickup:SetAttribute("BASAE_CPSCheckedAt", os.time())
         end
-        local function GetIndexNameLabel(animalName)
+        function GetIndexNameLabel(animalName)
             local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
             local mainGui = playerGui and playerGui:FindFirstChild("MainGUI")
             local frames = mainGui and mainGui:FindFirstChild("Frames")
@@ -2731,7 +2731,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nil
         end
-        local function EvaluateUnindexedStatus(pickup)
+        function EvaluateUnindexedStatus(pickup)
             local label = GetIndexNameLabel(pickup.Name)
             for attempt = 1, 8 do
                 if label and label.Parent then break end
@@ -2754,7 +2754,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return false, displayName
         end
-        local function EvaluatePickup(pickup)
+        function EvaluatePickup(pickup)
             local function evaluationCancelled()
                 return ScriptShuttingDown or not AutoPickupEnabled or not pickup.Parent
             end
@@ -3414,7 +3414,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 ReturnToPickup("Pickup confirmed. Returning straight to base.")
             end)
         end
-        local function QueuePendingAnimalPickup(pickup)
+        function QueuePendingAnimalPickup(pickup)
             if not pickup or not pickup.Parent or PendingAnimalPickupSet[pickup] then return end
             PendingAnimalPickupSet[pickup] = true
             table.insert(PendingAnimalPickups, pickup)
@@ -3444,7 +3444,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 PendingAnimalPickupWorker = false
             end)
         end
-        local function BindAnimalPickups(folder)
+        function BindAnimalPickups(folder)
             if not folder or not folder:IsA("Folder") and not folder:IsA("Model") then return end
             AnimalPickups = folder
             folder.ChildAdded:Connect(function(pickup)
