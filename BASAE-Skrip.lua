@@ -1175,8 +1175,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local SelectedKGThresholds = {}
         local KGFilterList = Create("ScrollingFrame", {
             Name = "KGFilterContainer",
-            Parent = Main,
-            Position = UDim2.fromOffset(0, 0),
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 177),
             Size = UDim2.fromOffset(160, 155),
             CanvasSize = UDim2.new(0, 0, 0, 0),
             ScrollBarThickness = 3,
@@ -1263,8 +1263,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ZoneFilterOpen = false
             EggFilterOpen = false
             if KGFilterOpen then
-                KGFilterList.Position = UDim2.fromOffset(KGFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, KGFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + KGFilterButton.AbsoluteSize.Y + 4)
-                KGFilterList.Size = UDim2.fromOffset(math.max(150, KGFilterButton.AbsoluteSize.X), 155)
+                KGFilterList.Position = UDim2.new(0, KGFilterButton.Position.X.Offset, 0, KGFilterButton.Position.Y.Offset + KGFilterButton.AbsoluteSize.Y + 4)
+                KGFilterList.Size = UDim2.new(1, -22, 0, 155)
             end
             KGFilterList.Visible = KGFilterOpen
             RarityList.Visible = false
