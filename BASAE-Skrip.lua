@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.195 -- 0xMoldy"
+local testver = "Test v1.196 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -2818,19 +2818,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end
             local kgPriorityPickup, pickupWeightKg = false, nil
+            local aboveLowestPriorityPickup = false
+            local cpsPriorityPickup = false
+            local rarityPriorityPickup = false
+            local cps, cpsText = -1, "CPS skipped for unindexed animal"
+            local pickupPriority = 5
             if not forceUnindexedPickup then
                 kgPriorityPickup, pickupWeightKg = IsKGFilterMatch(pickup)
                 if kgPriorityPickup then
-                    SetPickupTracking(pickup, "KG filter match", tostring(pickupWeightKg) .. " KG")
+                    SetPickupTracking(pickup, "KG threshold matched", tostring(pickupWeightKg) .. " KG")
                 end
-                if not IsRarityAllowed(pickup) then
-                    SetPickupTracking(pickup, "Rejected: rarity filter")
-                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown"))
-                    return
-                end
-            end
-            local cps, cpsText = -1, "CPS skipped for unindexed animal"
-            if not forceUnindexedPickup then
+                rarityPriorityPickup = IsRarityAllowed(pickup)
                 SetPickupTracking(pickup, "CPS scan 1/2: warming up")
                 local _, firstScanText = GetPetCPS(pickup)
                 if evaluationCancelled() or not pickup.Parent then
@@ -2855,42 +2853,61 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end
                 SetPickupTracking(pickup, cps >= 0 and "CPS checked (second scan)" or "CPS read failed", cpsText)
-                if CPSFilter.amount > 0 then
+                if CPSFilter.amount > 0 and cps >= 0 then
                     local scales = {K = 1e3, M = 1e6, B = 1e9, T = 1e12}
                     local minimumCPS = CPSFilter.amount * (scales[CPSFilter.unit] or 1)
-                    if cps < 0 then
-                        SetPickupTracking(pickup, "Rejected: Coins/second unavailable", cpsText)
-                        RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | Coins/second could not be read safely: " .. tostring(cpsText))
-                        return
-                    elseif cps < minimumCPS then
-                        SetPickupTracking(pickup, "Rejected: below Coins/second threshold", cpsText)
-                        RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. tostring(cps) .. " is below minimum " .. tostring(minimumCPS) .. ".")
-                        return
-                    end
+                    cpsPriorityPickup = cps >= minimumCPS
                 end
-                if HighestCashEnabled and not kgPriorityPickup and cps < 0 then
-                    SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
-                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
-                    return
-                end
-                if HighestCashEnabled and not kgPriorityPickup then
+                if HighestCashEnabled and cps >= 0 then
                     local lowestPlaced = GetLowestPlacedCPS()
-                    if lowestPlaced >= 0 and cps <= lowestPlaced then
-                        SetPickupTracking(pickup, "Rejected: below lowest placed CPS", cpsText)
-                        RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS " .. cpsText
-                            .. " is not above your lowest placed CPS (" .. tostring(lowestPlaced) .. ").")
-                        return
-                    end
+                    aboveLowestPriorityPickup = lowestPlaced >= 0 and cps > lowestPlaced
                 end
             end
             if evaluationCancelled() or not pickup.Parent then
                 SetPickupTracking(pickup, "Cancelled: automation toggled")
                 return
             end
+            local qualified = forceUnindexedPickup or aboveLowestPriorityPickup
+                or kgPriorityPickup or cpsPriorityPickup or rarityPriorityPickup
+            if not qualified then
+                local reason = "no enabled pickup rule matched"
+                if HighestCashEnabled and cps < 0 then
+                    reason = "CPS unavailable for Above Lowest $/s"
+                elseif CPSFilter.amount > 0 and cps < 0 then
+                    reason = "CPS unavailable for minimum CPS"
+                elseif not rarityPriorityPickup then
+                    reason = "rarity mismatch and no CPS/KG priority matched"
+                end
+                SetPickupTracking(pickup, "Rejected: " .. reason, cpsText)
+                RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | " .. reason .. ".")
+                return
+            end
+            if forceUnindexedPickup then
+                pickupPriority = 1
+            elseif aboveLowestPriorityPickup then
+                pickupPriority = 2
+            elseif kgPriorityPickup then
+                pickupPriority = 3
+            elseif cpsPriorityPickup then
+                pickupPriority = 4
+            else
+                pickupPriority = 5
+            end
+            pickup:SetAttribute("BASAE_Priority", pickupPriority)
             pickup:SetAttribute("BASAE_Qualified", true)
             if PickupRequested then
-                if forceUnindexedPickup or kgPriorityPickup or (HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS) then
-                    SetPickupTracking(pickup, "Replacing lower-CPS pickup", cpsText)
+                local activePriority = ActivePickup and ActivePickup.Parent and (ActivePickup:GetAttribute("BASAE_Priority") or 5) or math.huge
+                local activeWeight = ActivePickup and ActivePickup.Parent and GetPickupWeightKg(ActivePickup) or nil
+                local shouldPreempt = pickupPriority < activePriority
+                if pickupPriority == activePriority then
+                    if pickupPriority == 2 or pickupPriority == 4 then
+                        shouldPreempt = cps > ActivePickupCPS
+                    elseif pickupPriority == 3 then
+                        shouldPreempt = pickupWeightKg ~= nil and (activeWeight == nil or pickupWeightKg > activeWeight)
+                    end
+                end
+                if shouldPreempt then
+                    SetPickupTracking(pickup, "Replacing lower-priority pickup (priority " .. tostring(pickupPriority) .. ")", cpsText)
                     PickupGeneration += 1
                     PickupRequested = false
                     if PickupMovementConnection then
@@ -2898,14 +2915,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         PickupMovementConnection = nil
                     end
                     local oldPickupName = ActivePickup and ActivePickup.Name or "none"
-                    SetTrackerStatus(string.format("PICKUP LOCK PREEMPT: %s (%.2f CPS) replaces %s (%.2f CPS) during phase %s.", pickup.Name, cps, oldPickupName, ActivePickupCPS, PickupPhase))
+                    SetTrackerStatus(string.format("PICKUP LOCK PREEMPT: %s (priority %d, %.2f CPS) replaces %s (priority %s, %.2f CPS) during phase %s.", pickup.Name, pickupPriority, cps, oldPickupName, tostring(activePriority), ActivePickupCPS, PickupPhase))
                     local oldCharacter = LocalPlayer.Character
                     local oldHumanoid = oldCharacter and oldCharacter:FindFirstChildOfClass("Humanoid")
                     if oldHumanoid then oldHumanoid:Move(Vector3.zero, false) end
                     task.wait()
                 else
                     SetPickupTracking(pickup, "Checked: another pickup has priority", cpsText)
-                    SetTrackerStatus(string.format("Eligible pet %s ignored while %s is locked (CPS %.2f vs %.2f).", pickup.Name, tostring(ActivePickup and ActivePickup.Name or "another pickup"), cps, ActivePickupCPS))
+                    SetTrackerStatus(string.format("Eligible pet %s ignored while %s is locked (priority %s vs %d; CPS %.2f vs %.2f).", pickup.Name, tostring(ActivePickup and ActivePickup.Name or "another pickup"), tostring(activePriority), pickupPriority, cps, ActivePickupCPS))
                     return
                 end
             end
@@ -2948,6 +2965,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end)
             ActivePickupCPS = cps
+            ActivePickup:SetAttribute("BASAE_Priority", pickupPriority)
             PickupPhase = "ANIMAL_APPROACH"
             SetPickupTracking(pickup, "Selected for pickup", cpsText)
             PickupRequested = true
