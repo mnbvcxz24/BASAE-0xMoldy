@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.185 -- 0xMoldy"
+local testver = "Test v1.186 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1011,13 +1011,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoRow = Create("Frame", {
             Name = "AutoControlsRow",
             Parent = Page,
-            Size = UDim2.new(1, 0, 0, 286),
+            Size = UDim2.new(1, 0, 0, 350),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 1
         })
         local Card1 = CreateCard(AutoRow, "⚡  Auto Break", "")
-        Card1.Position = UDim2.new(0, 0, 0, 0)
+        Card1.Position = UDim2.new(0.5, 6, 0, 0)
         Card1.Size = UDim2.new(0.5, -6, 0, 190)
         local StartAutoBreak
         local StopAutoBreak
@@ -1062,7 +1062,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoBreakTitle = Card1:FindFirstChildWhichIsA("TextLabel")
         if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
-        AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
+        AutoPickupCard.Position = UDim2.new(0, 0, 0, 0)
         AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 264)
         local AutoPickupEnabled = false
         local PickupMonitorSeen = setmetatable({}, {__mode = "k"})
@@ -1079,13 +1079,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AntiFuseRow = Create("Frame", {
             Name = "AntiFuseRow",
             Parent = Page,
-            Size = UDim2.new(1, 0, 0, 150),
+            Size = UDim2.new(1, 0, 0, 0),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 2
         })
-        local AutoFuseCard = CreateCard(AntiFuseRow, "⚙️  Auto Fuse", "TEST MODE • Testing enabled")
-        AutoFuseCard.Position = UDim2.new(0, 0, 0, 0)
+        local AutoFuseCard = CreateCard(AutoRow, "⚙️  Auto Fuse", "TEST MODE • Testing enabled")
+        AutoFuseCard.Position = UDim2.new(0.5, 6, 0, 196)
         AutoFuseCard.Size = UDim2.new(0.5, -6, 0, 150)
         local AutoFuseEnabled = false
         local AutoFuseGeneration = 0
@@ -1930,7 +1930,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         SetAutoBreakControl(TitanicPriorityToggle, AutoBreakControlLayout.TitanicY)
         Card1.Size = UDim2.new(0.5, -6, 0, 190)
         AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
-        AutoRow.Size = UDim2.new(1, 0, 0, 190)
+        AutoRow.Size = UDim2.new(1, 0, 0, 350)
         local function UpdateFilterPanelWithTitanic()
             UpdateFilterPanel()
             HighestLuckToggle.Position = UDim2.fromOffset(0, 0)
