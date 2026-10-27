@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.177 -- 0xMoldy"
+local testver = "Test v1.178 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1883,6 +1883,26 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nil
         end
+        local function ParseWeightKg(value)
+            if typeof(value) == "number" then
+                return value
+            end
+            if value == nil then return nil end
+            local textValue = tostring(value):gsub(",", ""):match("^%s*(.-)%s*$")
+            if textValue == "" then return nil end
+            local numberText, suffix = textValue:match("^([%d%.]+)%s*([%a]*)")
+            local number = tonumber(numberText)
+            if not number then return tonumber(textValue) end
+            suffix = (suffix or ""):lower()
+            local scales = {
+                k = 1e3, m = 1e6, b = 1e9, t = 1e12,
+                qa = 1e15, qi = 1e18, kg = 1
+            }
+            if suffix == "" then return number end
+            local scale = scales[suffix]
+            if scale then return number * scale end
+            return nil
+        end
         local function GetPickupWeightKg(pickup)
             if not pickup then return nil end
             local animalPickups = workspace:FindFirstChild("AnimalPickups")
@@ -1890,16 +1910,34 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             while animal and animalPickups and animal.Parent ~= animalPickups do
                 animal = animal.Parent
             end
-            if animal and animalPickups and animal.Parent == animalPickups then
-                local weight = tonumber(animal:GetAttribute("WeightKg"))
+            if not animal or not animalPickups or animal.Parent ~= animalPickups then
+                animal = pickup
+            end
+            local names = {"WeightKg", "WeightKG", "weightKg", "weightKG", "Weight", "weight"}
+            for _, name in ipairs(names) do
+                local weight = ParseWeightKg(animal:GetAttribute(name))
                 if weight then return weight end
             end
-            return tonumber(pickup:GetAttribute("WeightKg"))
+            for _, node in ipairs(animal:GetDescendants()) do
+                for _, name in ipairs(names) do
+                    local weight = ParseWeightKg(node:GetAttribute(name))
+                    if weight then return weight end
+                    if node.Name == name then
+                        if node:IsA("ValueBase") then
+                            weight = ParseWeightKg(node.Value)
+                            if weight then return weight end
+                        elseif node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox") then
+                            weight = ParseWeightKg(node.Text)
+                            if weight then return weight end
+                        end
+                    end
+                end
+            end
+            return nil
         end
         local function IsKGFilterMatch(pickup)
             if KGThresholdAmount <= 0 then return false, nil end
             local weight = GetPickupWeightKg(pickup)
-            if not weight then return false, nil end
             local scale = 1
             if KGThresholdUnit == "K" then scale = 1e3
             elseif KGThresholdUnit == "M" then scale = 1e6
@@ -1907,7 +1945,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             elseif KGThresholdUnit == "T" then scale = 1e12
             elseif KGThresholdUnit == "Qa" then scale = 1e15
             elseif KGThresholdUnit == "Qi" then scale = 1e18 end
-            return weight >= KGThresholdAmount * scale, weight
+            local threshold = KGThresholdAmount * scale
+            if not weight then
+                AddDebugLog("[KG] " .. pickup.Name .. " weight not detected; threshold=" .. tostring(threshold) .. " KG.")
+                return false, nil
+            end
+            local matches = weight >= threshold
+            AddDebugLog("[KG] " .. pickup.Name .. " detected=" .. tostring(weight) .. " KG | minimum=" .. tostring(threshold) .. " KG | match=" .. tostring(matches))
+            return matches, weight
         end
         local function GetAnimalWeightKg(animal)
             if not animal then return nil end
