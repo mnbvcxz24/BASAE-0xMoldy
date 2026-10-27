@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.187 -- 0xMoldy"
+local testver = "Test v1.188 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1223,14 +1223,26 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         RarityFilterButton.Size = UDim2.new(1, -22, 0, 22)
         local KGThresholdAmount = 0
         local KGThresholdUnit = "K"
+        Create("TextLabel", {
+            Name = "KGThresholdLabel",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 69),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Minimum Pickup Weight (KG)",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
         local KGThresholdInput = Create("TextBox", {
             Name = "KGThresholdInput",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 69),
-            Size = UDim2.new(1, -22, 0, 25),
+            Position = UDim2.fromOffset(11, 84),
+            Size = UDim2.new(1, -112, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
-            PlaceholderText = "Pickup weight threshold (blank = off)",
+            PlaceholderText = "Enter minimum weight (blank = off)",
             PlaceholderColor3 = Theme.Gray,
             TextColor3 = Theme.Text,
             Font = Enum.Font.Gotham,
@@ -1242,7 +1254,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddStroke(KGThresholdInput, Theme.Border, 1)
         local KGUnitButton
         local KGUnitState = {options = {"K", "M", "B", "T"}, open = false, list = nil}
-        KGUnitButton = CreateButton(AutoPickupCard, "Unit: K ▼", function()
+        KGUnitButton = CreateButton(AutoPickupCard, "KG Unit: K ▼", function()
             KGUnitState.open = not KGUnitState.open
             RarityFilterOpen = false
             ZoneFilterOpen = false
@@ -1251,16 +1263,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if ZoneList then ZoneList.Visible = false end
             if EggFilterList then EggFilterList.Visible = false end
             if KGUnitState.list then KGUnitState.list.Visible = KGUnitState.open end
-            KGUnitButton.Text = KGUnitState.open and "Unit: " .. KGThresholdUnit .. " ▲" or "Unit: " .. KGThresholdUnit .. " ▼"
+            KGUnitButton.Text = KGUnitState.open and "KG: " .. KGThresholdUnit .. " ▲" or "KG: " .. KGThresholdUnit .. " ▼"
         end)
         KGUnitButton.Name = "KGUnitFilterButton"
-        KGUnitButton.Position = UDim2.fromOffset(11, 97)
-        KGUnitButton.Size = UDim2.new(1, -22, 0, 22)
+        KGUnitButton.Position = UDim2.new(1, -93, 0, 84)
+        KGUnitButton.Size = UDim2.fromOffset(82, 25)
         KGUnitState.list = Create("Frame", {
             Name = "KGUnitFilterList",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 123),
-            Size = UDim2.new(1, -22, 0, #KGUnitState.options * 24 + 8),
+            Position = UDim2.new(1, -93, 0, 111),
+            Size = UDim2.fromOffset(82, #KGUnitState.options * 24 + 8),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             Visible = false,
@@ -1298,7 +1310,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AddCorner(unitButton, 4)
             unitButton.MouseButton1Click:Connect(function()
                 KGThresholdUnit = unit
-                KGUnitButton.Text = "Unit: " .. unit .. " ▼"
+                KGUnitButton.Text = "KG: " .. unit .. " ▼"
                 KGUnitState.open = false
                 KGUnitState.list.Visible = false
                 for _, child in ipairs(KGUnitState.list:GetChildren()) do
@@ -1318,14 +1330,26 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 or "[Auto Pickup] KG priority filter OFF.")
         end)
         local CPSFilter = {amount = 0, unit = "K", options = {"K", "M", "B", "T"}, open = false}
+        Create("TextLabel", {
+            Name = "CPSFilterLabel",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 112),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Minimum Coins per Second",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
         CPSFilter.input = Create("TextBox", {
             Name = "CPSFilterInput",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 125),
-            Size = UDim2.new(1, -22, 0, 25),
+            Position = UDim2.fromOffset(11, 127),
+            Size = UDim2.new(1, -112, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
-            PlaceholderText = "Coins/second minimum (blank = off)",
+            PlaceholderText = "Enter minimum CPS (blank = off)",
             PlaceholderColor3 = Theme.Gray,
             TextColor3 = Theme.Text,
             Font = Enum.Font.Gotham,
@@ -1336,7 +1360,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         AddCorner(CPSFilter.input, 5)
         AddStroke(CPSFilter.input, Theme.Border, 1)
-        CPSFilter.button = CreateButton(AutoPickupCard, "Coins/s Unit: K ▼", function()
+        CPSFilter.button = CreateButton(AutoPickupCard, "Unit: K ▼", function()
             CPSFilter.open = not CPSFilter.open
             RarityFilterOpen = false
             ZoneFilterOpen = false
@@ -1346,16 +1370,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if EggFilterList then EggFilterList.Visible = false end
             if KGUnitState.list then KGUnitState.list.Visible = false; KGUnitState.open = false end
             CPSFilter.list.Visible = CPSFilter.open
-            CPSFilter.button.Text = CPSFilter.open and "Coins/s Unit: " .. CPSFilter.unit .. " ▲" or "Coins/s Unit: " .. CPSFilter.unit .. " ▼"
+            CPSFilter.button.Text = CPSFilter.open and "Unit: " .. CPSFilter.unit .. " ▲" or "Unit: " .. CPSFilter.unit .. " ▼"
         end)
         CPSFilter.button.Name = "CPSUnitFilterButton"
-        CPSFilter.button.Position = UDim2.fromOffset(11, 153)
-        CPSFilter.button.Size = UDim2.new(1, -22, 0, 22)
+        CPSFilter.button.Position = UDim2.new(1, -93, 0, 127)
+        CPSFilter.button.Size = UDim2.fromOffset(82, 25)
         CPSFilter.list = Create("Frame", {
             Name = "CPSUnitFilterList",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 179),
-            Size = UDim2.new(1, -22, 0, #CPSFilter.options * 24 + 8),
+            Position = UDim2.new(1, -93, 0, 154),
+            Size = UDim2.fromOffset(82, #CPSFilter.options * 24 + 8),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
             Visible = false,
@@ -1389,7 +1413,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AddCorner(unitButton, 4)
             unitButton.MouseButton1Click:Connect(function()
                 CPSFilter.unit = unit
-                CPSFilter.button.Text = "Coins/s Unit: " .. unit .. " ▼"
+                CPSFilter.button.Text = "Unit: " .. unit .. " ▼"
                 CPSFilter.open = false
                 CPSFilter.list.Visible = false
                 for _, child in ipairs(CPSFilter.list:GetChildren()) do
