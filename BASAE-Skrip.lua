@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.196 -- 0xMoldy"
+local testver = "Test v1.197 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -2656,7 +2656,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, selected in pairs(SelectedRarities) do
                 if selected then selectedCount += 1 end
             end
-            if selectedCount == 0 then return true end
+            if selectedCount == 0 then return false end
             local rarity = GetPetRarity(pickup)
             if not rarity then
                 SetTrackerStatus("Cannot filter " .. pickup.Name .. ": Rarity value not found.")
@@ -2867,8 +2867,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetPickupTracking(pickup, "Cancelled: automation toggled")
                 return
             end
-            local qualified = forceUnindexedPickup or aboveLowestPriorityPickup
-                or kgPriorityPickup or cpsPriorityPickup or rarityPriorityPickup
+            local selectedRarityCount = 0
+            for _, selected in pairs(SelectedRarities) do
+                if selected then selectedRarityCount += 1 end
+            end
+            local anyPickupFilterEnabled = UnindexedOnlyEnabled or HighestCashEnabled
+                or KGThresholdAmount > 0 or CPSFilter.amount > 0 or selectedRarityCount > 0
+            local qualified = not anyPickupFilterEnabled or forceUnindexedPickup
+                or aboveLowestPriorityPickup or kgPriorityPickup or cpsPriorityPickup or rarityPriorityPickup
             if not qualified then
                 local reason = "no enabled pickup rule matched"
                 if HighestCashEnabled and cps < 0 then
