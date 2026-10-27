@@ -2567,7 +2567,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local signature = GetDroppedAnimalSignature(pickup, GetAnimalWeightKg(pickup))
             if signature and DroppedAnimalSignatures[signature] then
                 DroppedAnimalSignatures[signature] = nil
-                SetPickupTracking(pickup, "Skipped: just dropped in Zone 1", tostring(GetPetRarity(pickup) or "Unknown"))
+                SetPickupTracking(pickup, "Skipped: just dropped in Zone 1")
+                pickup:SetAttribute("BASAE_Rarity", tostring(GetPetRarity(pickup) or "Unknown"))
                 SetTrackerStatus("Skipped recently dropped animal: " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "Unknown"))
                 return true
             end
@@ -3449,7 +3450,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             folder.ChildAdded:Connect(function(pickup)
                 PickupMonitorSeen[pickup] = nil
                 local pickupRarity = tostring(GetPetRarity(pickup) or "Unknown")
-                SetPickupTracking(pickup, "Detected", pickupRarity)
+                SetPickupTracking(pickup, "Detected")
+                pickup:SetAttribute("BASAE_Rarity", pickupRarity)
                 if not AutoPickupEnabled then
                     SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | rarity=" .. pickupRarity .. " | monitoring waits until Auto Pickup is ON.")
                     return
