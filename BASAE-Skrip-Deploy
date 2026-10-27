@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Deploy v1.171 -- 0xMoldy"
+local testver = "Deploy v1.172 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -3258,7 +3258,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
             if targetWeightKg == nil then
                 SetTrackerStatus("FLING RECOVERY waiting for WeightKg on " .. tostring(targetAnimalName) .. "...")
-                local identityDeadline = os.clock() + 10
+                local identityDeadline = os.clock() + (carriedAnimalLost and 3 or 10)
                 local identityAttempts = 0
                 local lastIdentityLog = 0
                 while not Runtime.Stopped and FlingRecoveryActive and PickupGeneration == recoverySearchToken
@@ -3297,7 +3297,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         lastIdentityLog = now
                         SetTrackerStatus("FLING RECOVERY searching AnimalPickups | animal=" .. tostring(targetAnimalName) .. " | WeightKg=waiting | attempts=" .. tostring(identityAttempts))
                     end
-                    if targetWeightKg == nil then task.wait(0.25) end
+                    if targetWeightKg == nil then task.wait(carriedAnimalLost and 0.1 or 0.25) end
                 end
             end
             if not FlingRecoveryActive or PickupGeneration ~= recoverySearchToken then
@@ -3381,6 +3381,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     return
                 end
                 local recoveryPosition = getTrackedAnimalPosition()
+                if carriedAnimalLost and not recoveryPosition then
+                    local animalWaitDeadline = os.clock() + 2.5
+                    repeat
+                        task.wait(0.1)
+                        recoveryPosition = getTrackedAnimalPosition()
+                    until recoveryPosition or os.clock() >= animalWaitDeadline
+                        or Runtime.Stopped or PickupGeneration ~= flingToken or not FlingRecoveryActive
+                end
                 if not recoveryPosition then
                     PickupRequested = false
                     SetTrackerStatus("FLING RECOVERY cancelled: no unique AnimalPickups match for " .. tostring(targetAnimalName) .. " + WeightKg=" .. tostring(targetWeightKg) .. ".")
