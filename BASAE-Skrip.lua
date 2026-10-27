@@ -1146,9 +1146,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
-        for _, rarityName in ipairs(RarityOptions) do
-            SelectedRarities[rarityName] = true
-        end
         local RarityList
         local RarityFilterButton
         local ZoneFilterOpen = false
@@ -1160,8 +1157,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ZoneFilterOpen = false
             EggFilterOpen = false
             if RarityFilterOpen then
-                RarityList.Position = UDim2.fromOffset(RarityFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, RarityFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + RarityFilterButton.AbsoluteSize.Y + 4)
-                RarityList.Size = UDim2.fromOffset(math.max(150, RarityFilterButton.AbsoluteSize.X), 155)
+                RarityList.Position = UDim2.new(0, RarityFilterButton.Position.X.Offset, 0, RarityFilterButton.Position.Y.Offset + RarityFilterButton.AbsoluteSize.Y + 4)
+                RarityList.Size = UDim2.new(1, -22, 0, 155)
             end
             RarityFilterButton.Text = RarityFilterOpen and "Rarity Filter  ▲" or "Rarity Filter  ▼"
             RarityList.Visible = RarityFilterOpen
@@ -1291,8 +1288,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 28)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
-            Parent = Main,
-            Position = UDim2.fromOffset(0, 0),
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 75),
             Size = UDim2.fromOffset(160, 155),
             CanvasSize = UDim2.new(0, 0, 0, 0),
             ScrollBarThickness = 3,
@@ -1322,37 +1319,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, item in ipairs(RarityList:GetChildren()) do
                 if item:IsA("TextButton") then item:Destroy() end
             end
-            local allSelected = #RarityOptions > 0
-            for _, name in ipairs(RarityOptions) do
-                if SelectedRarities[name] ~= true then allSelected = false break end
-            end
-            local SelectAllRarities = Create("TextButton", {
-                Name = "SelectAllRarities", Parent = RarityList,
-                Size = UDim2.new(1, -4, 0, 22),
-                BackgroundColor3 = allSelected and Theme.Selected or Theme.Card,
-                Text = "", BorderSizePixel = 0, LayoutOrder = 0,
-                AutoButtonColor = false, ZIndex = 101
-            })
-            AddCorner(SelectAllRarities, 4)
-            Create("TextLabel", {
-                Parent = SelectAllRarities, Position = UDim2.fromOffset(7, 0),
-                Size = UDim2.new(1, -28, 1, 0), BackgroundTransparency = 1,
-                Text = allSelected and "All Rarities Selected" or "Select All",
-                TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
-                TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 102
-            })
-            Create("TextLabel", {
-                Parent = SelectAllRarities, Position = UDim2.new(1, -23, 0, 0),
-                Size = UDim2.fromOffset(20, 22), BackgroundTransparency = 1,
-                Text = allSelected and "✓" or "○",
-                TextColor3 = allSelected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
-                Font = Enum.Font.GothamBold, TextSize = 11, ZIndex = 102
-            })
-            SelectAllRarities.MouseButton1Click:Connect(function()
-                local selectEverything = not allSelected
-                for _, name in ipairs(RarityOptions) do SelectedRarities[name] = selectEverything end
-                RefreshRarityList()
-            end)
             for rarityIndex, rarityName in ipairs(RarityOptions) do
                 local selected = SelectedRarities[rarityName] == true
                 local RarityButton = Create("TextButton", {
@@ -1400,12 +1366,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             RarityList.Visible = RarityFilterOpen
             SortFrame.Visible = true
             if ZoneFilterOpen then
-                ZoneList.Position = UDim2.fromOffset(ZoneFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, ZoneFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + ZoneFilterButton.AbsoluteSize.Y + 4)
-                ZoneList.Size = UDim2.fromOffset(math.max(130, ZoneFilterButton.AbsoluteSize.X), 150)
+                ZoneList.Position = UDim2.new(0, ZoneFilterButton.Position.X.Offset, 0, ZoneFilterButton.Position.Y.Offset + ZoneFilterButton.AbsoluteSize.Y + 4)
+                ZoneList.Size = UDim2.new(0.5, -17, 0, 150)
             end
             if EggFilterOpen then
-                EggFilterList.Position = UDim2.fromOffset(EggFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, EggFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + EggFilterButton.AbsoluteSize.Y + 4)
-                EggFilterList.Size = UDim2.fromOffset(math.max(130, EggFilterButton.AbsoluteSize.X), 150)
+                EggFilterList.Position = UDim2.new(0, EggFilterButton.Position.X.Offset, 0, EggFilterButton.Position.Y.Offset + EggFilterButton.AbsoluteSize.Y + 4)
+                EggFilterList.Size = UDim2.new(0.5, -17, 0, 150)
             end
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
@@ -1429,8 +1395,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         EggFilterButton.Size = UDim2.new(0.5, -17, 0, 28)
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
-            Parent = Main,
-            Position = UDim2.fromOffset(0, 0),
+            Parent = Card1,
+            Position = UDim2.fromOffset(11, 76),
             Size = UDim2.fromOffset(140, 150),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
@@ -1456,8 +1422,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         EggFilterList = Create("ScrollingFrame", {
             Name = "EggFilterList",
-            Parent = Main,
-            Position = UDim2.fromOffset(0, 0),
+            Parent = Card1,
+            Position = UDim2.fromOffset(11, 76),
             Size = UDim2.fromOffset(140, 150),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
