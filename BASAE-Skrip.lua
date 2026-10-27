@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.179 -- 0xMoldy"
+local testver = "Test v1.180 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1065,8 +1065,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
         AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
         local AutoPickupEnabled = false
+        local PickupMonitorSeen = setmetatable({}, {__mode = "k"})
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
+            table.clear(PickupMonitorSeen)
             AddDebugLog("[Auto Pickup] " .. (enabled and "Monitoring ON." or "Monitoring OFF."))
             if not enabled and StopPickupAutomation then StopPickupAutomation("Auto Pickup disabled") end
         end)
@@ -2243,35 +2245,22 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 .. " | counter=" .. tostring(hitCounter)
                 .. " | health=" .. tostring(health))
             if numericHealth and numericHealth <= 0 then
-                TouchAutomationProgress("WAITING_FOR_ANIMAL")
+                TouchAutomationProgress("EGG_BROKEN")
                 CompletedEggs[target] = true
-                WaitingForPickup = true
+                WaitingForPickup = false
                 ArrivedAtTarget = false
-                if MovementConnection then
-                    MovementConnection:Disconnect()
-                    MovementConnection = nil
-                end
+                if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
                 local character = LocalPlayer.Character
                 local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                if humanoid then
-                    humanoid:Move(Vector3.zero, false)
-                end
-                if not AutoPickupEnabled then
-                    WaitingForPickup = false
-                    SetTrackerStatus("Target egg reached 0 HP; Auto Pickup is OFF, continuing to the next eligible egg.")
-                    task.defer(function()
-                        if StopAutoBreak then
-                            StopAutoBreak("Egg broken; Auto Pickup is OFF, selecting the next eligible egg.")
-                        end
-                        task.wait(0.2)
-                        if AutoBreakEnabled and not AutoPickupEnabled and not PickupRequested
-                            and not ReturningAfterPickup and not ScriptShuttingDown and StartAutoBreak then
-                            StartAutoBreak()
-                        end
-                    end)
-                else
-                    SetTrackerStatus("Target egg reached 0 HP (including while travelling); movement stopped and watching AnimalPickups.")
-                end
+                if humanoid and not PickupRequested and not ReturningAfterPickup then humanoid:Move(Vector3.zero, false) end
+                SetTrackerStatus("Egg broken; Auto Break will continue while Auto Pickup monitors AnimalPickups.")
+                task.defer(function()
+                    task.wait(0.15)
+                    if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup
+                        and not FlingRecoveryActive and not ScriptShuttingDown and StartAutoBreak then
+                        StartAutoBreak(true)
+                    end
+                end)
             end
         end)
         local function GetPetRarity(pickup)
@@ -2466,9 +2455,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return false, displayName
         end
         local function EvaluatePickup(pickup)
-            local evaluationGeneration = AutoBreakGeneration
             local function evaluationCancelled()
-                return ScriptShuttingDown or evaluationGeneration ~= AutoBreakGeneration or not AutoPickupEnabled
+                return ScriptShuttingDown or not AutoPickupEnabled or not pickup.Parent
             end
             pickup:SetAttribute("BASAE_Qualified", false)
             SetPickupTracking(pickup, "Checking")
@@ -2520,14 +2508,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if not IsRarityAllowed(pickup) then
                     SetPickupTracking(pickup, "Rejected: rarity filter")
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown"))
-                    return
-                end
-                local petZone = GetPickupZone(pickup)
-                local targetZone = CurrentTarget and CurrentTarget.Parent and CurrentTarget.Parent.Parent
-                local targetZoneName = targetZone and targetZone.Name
-                if petZone and targetZoneName and petZone:lower() ~= targetZoneName:lower() then
-                    SetPickupTracking(pickup, "Rejected: zone mismatch")
-                    RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | zone=" .. petZone .. " (target zone " .. targetZoneName .. ")")
                     return
                 end
             end
@@ -2877,7 +2857,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 ActivePickupCPS = -1
                 SetTrackerStatus("Eligible pet " .. pickup.Name
                     .. " but pickup prompt unavailable after 5s: " .. promptState .. ".")
-                if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                task.delay(2, function()
+                    if pickup.Parent and AutoPickupEnabled then PickupMonitorSeen[pickup] = nil end
+                end)
+                if AutoBreakEnabled and StartAutoBreak then StartAutoBreak(true) end
                 return
             end
             SetPickupPhase("PROMPT_APPROACH", pickup.Name .. " | moving to matching StealPrompt; target and movement remain locked.")
@@ -3054,53 +3037,60 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 local pickupConfirmed = false
                 local activationErrors = {}
-                for activationAttempt = 1, 2 do
-                    if PickupGeneration ~= pickupToken or not PickupRequested then return end
-                    if not prompt.Parent or not prompt.Enabled then break end
-                    local currentPromptPosition = getPromptPosition(prompt)
-                    local currentPromptDistance = currentPromptPosition and (currentPromptPosition - root.Position).Magnitude or math.huge
-                    if currentPromptDistance > prompt.MaxActivationDistance then
-                        SetTrackerStatus(string.format("StealPrompt activation attempt %d skipped: %.1f studs away (range %.1f).", activationAttempt, currentPromptDistance, prompt.MaxActivationDistance))
-                        break
-                    end
-                    local holdOk, holdErr = pcall(function()
-                        if typeof(fireproximityprompt) == "function" then
-                            fireproximityprompt(prompt)
-                            if prompt.HoldDuration > 0 then
-                                task.wait(prompt.HoldDuration + 0.15)
+                local activationDeadline = os.clock() + 15
+                local activationAttempt = 0
+                while not pickupConfirmed and os.clock() < activationDeadline do
+                    if PickupGeneration ~= pickupToken or not PickupRequested or not AutoPickupEnabled then return end
+                    if not pickup.Parent then pickupConfirmed = true; break end
+                    if not prompt.Parent or not prompt.Enabled then
+                        task.wait(0.25)
+                    else
+                        activationAttempt += 1
+                        local currentPromptPosition = getPromptPosition(prompt)
+                        local currentPromptDistance = currentPromptPosition and (currentPromptPosition - root.Position).Magnitude or math.huge
+                        if currentPromptDistance <= prompt.MaxActivationDistance then
+                            local holdOk, holdErr = pcall(function()
+                                if typeof(fireproximityprompt) == "function" then
+                                    fireproximityprompt(prompt)
+                                    if prompt.HoldDuration > 0 then task.wait(prompt.HoldDuration + 0.15) end
+                                else
+                                    prompt:InputHoldBegin()
+                                    task.wait(prompt.HoldDuration + 0.1)
+                                    prompt:InputHoldEnd()
+                                end
+                            end)
+                            if not holdOk then
+                                table.insert(activationErrors, tostring(holdErr))
+                                pcall(function() prompt:InputHoldEnd() end)
+                            end
+                            local confirmDeadline = os.clock() + 0.75
+                            while not Runtime.Stopped and os.clock() < confirmDeadline
+                                and PickupGeneration == pickupToken and PickupRequested and pickup.Parent do
+                                task.wait(0.05)
+                            end
+                            if not pickup.Parent then pickupConfirmed = true
+                            elseif activationAttempt == 1 or activationAttempt % 3 == 0 then
+                                SetTrackerStatus("StealPrompt still unchecked for " .. pickup.Name .. "; retry " .. tostring(activationAttempt) .. ".")
                             end
                         else
-                            prompt:InputHoldBegin()
-                            task.wait(prompt.HoldDuration + 0.1)
-                            prompt:InputHoldEnd()
+                            SetTrackerStatus(string.format("Waiting for StealPrompt range for %s (%.1f/%.1f studs).",
+                                pickup.Name, currentPromptDistance, prompt.MaxActivationDistance))
+                            task.wait(0.25)
                         end
-                    end)
-                    if not holdOk then
-                        table.insert(activationErrors, tostring(holdErr))
-                        pcall(function() prompt:InputHoldEnd() end)
                     end
-                    local pickupDeadline = os.clock() + 1.25
-                    while not Runtime.Stopped and os.clock() < pickupDeadline and PickupGeneration == pickupToken do
-                        if not pickup.Parent then
-                            pickupConfirmed = true
-                            break
-                        end
-                        task.wait(0.05)
-                    end
-                    if pickupConfirmed then break end
-                    if activationAttempt == 1 and prompt.Parent and prompt.Enabled then
-                        SetTrackerStatus("StealPrompt did not collect the animal on first attempt; retrying hold.")
-                        task.wait(0.2)
-                    end
+                    if not pickupConfirmed then task.wait(0.2) end
                 end
                 if PickupGeneration ~= pickupToken then return end
                 if not pickupConfirmed then
                     PickupRequested = false
                     ActivePickup = nil
                     ActivePickupCPS = -1
+                    PickupPhase = "IDLE"
                     local detail = #activationErrors > 0 and (" Activation error: " .. table.concat(activationErrors, " | ")) or ""
-                    SetTrackerStatus("StealPrompt activation did not collect " .. pickup.Name .. "; check prompt range/requirements." .. detail)
-                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
+                    SetPickupTracking(pickup, "Retry timeout: steal not confirmed", detail)
+                    SetTrackerStatus("StealPrompt retry window expired for " .. pickup.Name .. "; released pickup lock." .. detail)
+                    PickupMonitorSeen[pickup] = nil
+                    if AutoBreakEnabled and StartAutoBreak then StartAutoBreak(true) end
                     return
                 end
                 SetPickupTracking(pickup, "Collected", cpsText)
@@ -3141,59 +3131,37 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end)
         end
         local function BindAnimalPickups(folder)
-            if not folder or not folder:IsA("Folder") and not folder:IsA("Model") then
-                return
-            end
+            if not folder or not folder:IsA("Folder") and not folder:IsA("Model") then return end
             AnimalPickups = folder
-            for _, existing in ipairs(folder:GetChildren()) do
-                BaselinePickups[existing] = true
-            end
             folder.ChildAdded:Connect(function(pickup)
-                if BaselinePickups[pickup] then return end
+                PickupMonitorSeen[pickup] = nil
                 if not AutoPickupEnabled then
-                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | Auto Pickup is OFF; ignored.")
+                    SetTrackerStatus("NEW ANIMAL: " .. pickup.Name .. " | monitoring waits until Auto Pickup is ON.")
                     return
                 end
-                if ReturningAfterPickup or PickupRequested or FlingRecoveryActive then
-                    QueuePendingAnimalPickup(pickup)
-                    return
-                end
-                SetTrackerStatus("NEW ANIMAL detected: " .. pickup.Name .. " | pausing Auto Break and checking filters/priority.")
-                if AutoPickupEnabled and not PickupRequested and not ReturningAfterPickup then
-                    if StopAutoBreak then StopAutoBreak("Auto Break paused: evaluating new animal pickup.", true) end
-                end
-                task.defer(function()
-                    if not pickup.Parent or not AutoPickupEnabled or ReturningAfterPickup or PickupRequested or FlingRecoveryActive then
-                        if pickup.Parent and AutoPickupEnabled then QueuePendingAnimalPickup(pickup) end
-                        return
-                    end
-                    local ok, err = xpcall(function()
-                        EvaluatePickup(pickup)
-                    end, debug.traceback)
-                    if not ok then
-                        warn("[BASAE-Skrip] EvaluatePickup failed for " .. pickup.Name .. ": " .. tostring(err))
-                        if PickupRequested then
-                            PickupGeneration += 1
-                            PickupRequested = false
-                            ActivePickup = nil
-                            ActivePickupCPS = -1
-                            local character = LocalPlayer.Character
-                            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-                            if humanoid then humanoid:Move(Vector3.zero, false) end
-                        end
-                        SetTrackerStatus("Pickup evaluation error for " .. pickup.Name .. ": " .. tostring(err):gsub("[%r\n]+", " "):sub(1, 220))
-                        if AutoBreakEnabled and AutoPickupEnabled and not ReturningAfterPickup and StartAutoBreak then
-                            task.wait(0.2)
-                            StartAutoBreak()
-                        end
-                    end
-                end)
+                PickupMonitorSeen[pickup] = true
+                QueuePendingAnimalPickup(pickup)
             end)
-            SetTrackerStatus("AnimalPickups folder detected and connected.")
+            folder.ChildRemoved:Connect(function(pickup)
+                PickupMonitorSeen[pickup] = nil
+                PendingAnimalPickupSet[pickup] = nil
+            end)
+            SetTrackerStatus("AnimalPickups folder detected; continuous monitoring is ready.")
         end
-        if AnimalPickups then
-            BindAnimalPickups(AnimalPickups)
-        end
+        if AnimalPickups then BindAnimalPickups(AnimalPickups) end
+        task.spawn(function()
+            while not Runtime.Stopped and not ScriptShuttingDown do
+                if AutoPickupEnabled and AnimalPickups and AnimalPickups.Parent then
+                    for _, pickup in ipairs(AnimalPickups:GetChildren()) do
+                        if pickup.Parent == AnimalPickups and not PickupMonitorSeen[pickup] then
+                            PickupMonitorSeen[pickup] = true
+                            QueuePendingAnimalPickup(pickup)
+                        end
+                    end
+                end
+                task.wait(0.3)
+            end
+        end)
         local CatchFlingRemote = game:GetService("ReplicatedStorage"):WaitForChild("CatchFlingRemote")
         HandleFlingRecovery = function(action, flingPosition, duration, strength, carriedAnimalLost)
             if tostring(action):lower() ~= "fling" then return end
