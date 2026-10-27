@@ -1028,10 +1028,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoBreakGeneration = 0
         local RefreshTitanicPriority
         local AutoBreakControlLayout = {
-            ZoneY = 44,
-            EggY = 70,
-            HighLuckY = 96,
-            TitanicY = 122,
+            ZoneY = 42,
+            EggY = 81,
+            HighLuckY = 109,
+            TitanicY = 135,
             Height = 22,
             SidePadding = 11
         }
@@ -1219,6 +1219,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if ZoneList then ZoneList.Visible = false end
             if EggFilterList then EggFilterList.Visible = false end
         end)
+        Create("TextLabel", {
+            Name = "RarityFilterLabel",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 27),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Rarity Filter",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
         RarityFilterButton.Size = UDim2.new(1, -22, 0, 22)
         local KGThresholdAmount = 0
@@ -1229,7 +1241,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Position = UDim2.fromOffset(11, 69),
             Size = UDim2.new(1, -22, 0, 13),
             BackgroundTransparency = 1,
-            Text = "Minimum Pickup Weight (KG)",
+            Text = "Weight Threshold (KG) · Unit",
             TextColor3 = Theme.Gray,
             Font = Enum.Font.GothamMedium,
             TextSize = 9,
@@ -1242,7 +1254,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Size = UDim2.new(1, -112, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
-            PlaceholderText = "Enter minimum weight (blank = off)",
+            PlaceholderText = "e.g. 100",
             PlaceholderColor3 = Theme.Gray,
             TextColor3 = Theme.Text,
             Font = Enum.Font.Gotham,
@@ -1336,7 +1348,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Position = UDim2.fromOffset(11, 112),
             Size = UDim2.new(1, -22, 0, 13),
             BackgroundTransparency = 1,
-            Text = "Minimum Coins per Second",
+            Text = "Coins per Second Threshold · Unit",
             TextColor3 = Theme.Gray,
             Font = Enum.Font.GothamMedium,
             TextSize = 9,
@@ -1349,7 +1361,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             Size = UDim2.new(1, -112, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
-            PlaceholderText = "Enter minimum CPS (blank = off)",
+            PlaceholderText = "e.g. 100",
             PlaceholderColor3 = Theme.Gray,
             TextColor3 = Theme.Text,
             Font = Enum.Font.Gotham,
@@ -1544,6 +1556,30 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
             RarityFilterButton.Text = RarityFilterOpen and "Rarity ▲" or "Rarity ▼"
         end
+        Create("TextLabel", {
+            Name = "ZoneFilterLabel",
+            Parent = Card1,
+            Position = UDim2.fromOffset(11, 27),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Zone Filter",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        Create("TextLabel", {
+            Name = "EggFilterLabel",
+            Parent = Card1,
+            Position = UDim2.fromOffset(11, 66),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Egg Filter",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
         ZoneFilterButton = CreateButton(Card1, "Zones ▼", function()
             ZoneFilterOpen = not ZoneFilterOpen
             EggFilterOpen = false
