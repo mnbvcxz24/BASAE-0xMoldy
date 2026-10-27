@@ -4561,7 +4561,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local row = Create("TextLabel", {
                     Parent = PickupList, Size = UDim2.new(1, -8, 0, 42),
                     BackgroundColor3 = Theme.Card, BorderSizePixel = 0,
-                    Text = "  " .. record.name .. "  |  " .. record.cps .. " $/s  |  " .. record.kg .. " KG  |  Qualified = " .. record.qualified,
+                    Text = "  " .. record.name .. "  |  " .. record.cps .. " |  " .. record.kg .. " KG  |  Qualified = " .. record.qualified,
                     TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
                     TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
                     TextWrapped = true, TextTruncate = Enum.TextTruncate.None,
