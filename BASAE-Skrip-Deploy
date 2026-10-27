@@ -1090,7 +1090,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local AutoFuseToggle
         AutoFuseToggle = CreateToggle(AutoFuseCard, "", false, function(enabled)
-            AutoFuseEnabled = enabled
+            if enabled then
+                AutoFuseEnabled = false
+                AutoFuseGeneration += 1
+                local controller = ToggleControllers[AutoFuseToggle]
+                if controller then controller.SetEnabled(false, false) end
+                return
+            end
+            AutoFuseEnabled = false
             AutoFuseGeneration += 1
             local generation = AutoFuseGeneration
             AutoFuseStatus.Text = enabled and "Status: ON • Checking Backpack" or "Status: OFF"
@@ -1142,6 +1149,38 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 task.wait(1)
             end
         end)
+        local autoFuseDescription = AutoFuseCard:FindFirstChildWhichIsA("TextLabel")
+        if autoFuseDescription then
+            autoFuseDescription.Visible = false
+        end
+        AutoFuseCard.BackgroundColor3 = Color3.fromRGB(35, 39, 43)
+        local autoFuseStroke = AutoFuseCard:FindFirstChildWhichIsA("UIStroke")
+        if autoFuseStroke then autoFuseStroke.Color = Color3.fromRGB(68, 74, 80) end
+        local autoFuseTitle = AutoFuseCard:FindFirstChildWhichIsA("TextLabel")
+        if autoFuseTitle then autoFuseTitle.TextColor3 = Color3.fromRGB(145, 151, 157) end
+        local AutoFuseTag = Create("TextLabel", {
+            Name = "UnderDevelopmentTag",
+            Parent = AutoFuseCard,
+            Position = UDim2.fromOffset(11, 31),
+            Size = UDim2.fromOffset(112, 18),
+            BackgroundColor3 = Color3.fromRGB(54, 59, 64),
+            BorderSizePixel = 0,
+            Text = "UNDER DEVELOPMENT",
+            TextColor3 = Color3.fromRGB(170, 176, 182),
+            Font = Enum.Font.GothamBold,
+            TextSize = 7,
+            TextXAlignment = Enum.TextXAlignment.Center
+        })
+        AddCorner(AutoFuseTag, 4)
+        AutoFuseStatus.Position = UDim2.fromOffset(11, 54)
+        AutoFuseStatus.Text = "Auto Fuse is incomplete."
+        AutoFuseStatus.TextColor3 = Color3.fromRGB(145, 151, 157)
+        for _, requirementLabel in ipairs(AutoFuseRequirementLabels) do
+            requirementLabel.Position = UDim2.fromOffset(11, requirementLabel.Position.Y.Offset + 8)
+            requirementLabel.TextColor3 = Color3.fromRGB(145, 151, 157)
+        end
+        AutoFuseToggle.Active = false
+        AutoFuseToggle.AutoButtonColor = false
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
@@ -4049,7 +4088,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
     elseif index == 2 then
         local CandyCard = CreateCard(Page, "🍬  Auto collect candies", "")
-        CandyCard.Size = UDim2.new(1, 0, 0, 110)
+        CandyCard.Size = UDim2.new(0.5, -6, 0, 110)
         CandyCard.BackgroundColor3 = Color3.fromRGB(35, 39, 43)
         local candyStroke = CandyCard:FindFirstChildWhichIsA("UIStroke")
         if candyStroke then candyStroke.Color = Color3.fromRGB(68, 74, 80) end
@@ -4085,7 +4124,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
     elseif index == 3 then
         local ESPCard = CreateCard(Page, "🥚  Egg ESP", "")
-        ESPCard.Size = UDim2.new(1, 0, 0, 125)
+        ESPCard.Size = UDim2.new(0.5, -6, 0, 125)
         local ESPStatus = Create("TextLabel", {
             Parent = ESPCard,
             Position = UDim2.fromOffset(15, 43),
