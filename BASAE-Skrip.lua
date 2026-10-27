@@ -40,7 +40,6 @@ local function SendStartupWebhook()
     end)
 end
 task.spawn(SendStartupWebhook)
-local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
