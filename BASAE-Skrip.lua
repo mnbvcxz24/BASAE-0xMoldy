@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.181 -- 0xMoldy"
+local testver = "Test v1.182 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1011,7 +1011,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoRow = Create("Frame", {
             Name = "AutoControlsRow",
             Parent = Page,
-            Size = UDim2.new(1, 0, 0, 220),
+            Size = UDim2.new(1, 0, 0, 260),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 1
@@ -1029,10 +1029,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local RefreshTitanicPriority
         local AutoBreakControlLayout = {
             ZoneY = 44,
-            EggY = 78,
-            HighLuckY = 112,
-            TitanicY = 146,
-            Height = 28,
+            EggY = 70,
+            HighLuckY = 96,
+            TitanicY = 122,
+            Height = 22,
             SidePadding = 11
         }
         local function SetAutoBreakControl(control, y)
@@ -1063,7 +1063,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
         AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 238)
         local AutoPickupEnabled = false
         local PickupMonitorSeen = setmetatable({}, {__mode = "k"})
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
@@ -1212,7 +1212,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             EggFilterOpen = false
             if RarityFilterOpen then
                 RarityList.Position = UDim2.fromOffset(11, RarityFilterButton.Position.Y.Offset + RarityFilterButton.AbsoluteSize.Y + 4)
-                RarityList.Size = UDim2.new(1, -22, 0, 155)
+                RarityList.Size = UDim2.new(1, -22, 0, 140)
             end
             RarityFilterButton.Text = RarityFilterOpen and "Rarity ▲" or "Rarity ▼"
             RarityList.Visible = RarityFilterOpen
@@ -1220,13 +1220,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if EggFilterList then EggFilterList.Visible = false end
         end)
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
-        RarityFilterButton.Size = UDim2.new(1, -22, 0, 28)
+        RarityFilterButton.Size = UDim2.new(1, -22, 0, 22)
         local KGThresholdAmount = 0
         local KGThresholdUnit = "K"
         local KGThresholdInput = Create("TextBox", {
             Name = "KGThresholdInput",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 77),
+            Position = UDim2.fromOffset(11, 69),
             Size = UDim2.new(1, -22, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
@@ -1249,8 +1249,91 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AddDebugLog("[Auto Pickup] KG threshold unit set to " .. KGThresholdUnit .. ".")
         end)
         KGUnitButton.Name = "KGUnitFilterButton"
-        KGUnitButton.Position = UDim2.fromOffset(11, 106)
+        KGUnitButton.Position = UDim2.fromOffset(11, 97)
         KGUnitButton.Size = UDim2.new(1, -22, 0, 22)
+        local KGPresetOptions = {
+            {label = "Off", amount = 0},
+            {label = "5K+", amount = 5},
+            {label = "10K+", amount = 10},
+            {label = "15K+", amount = 15},
+            {label = "20K+", amount = 20},
+            {label = "40K+", amount = 40},
+            {label = "60K+", amount = 60},
+            {label = "100K+", amount = 100}
+        }
+        local KGPresetOpen = false
+        local KGPresetList
+        local KGPresetButton
+        KGPresetButton = CreateButton(AutoPickupCard, "KG Filter: Off ▼", function()
+            KGPresetOpen = not KGPresetOpen
+            RarityFilterOpen = false
+            ZoneFilterOpen = false
+            EggFilterOpen = false
+            RarityList.Visible = false
+            if ZoneList then ZoneList.Visible = false end
+            if EggFilterList then EggFilterList.Visible = false end
+            if KGPresetList then KGPresetList.Visible = KGPresetOpen end
+            KGPresetButton.Text = KGPresetOpen and "KG Filter ▲" or ("KG Filter: " .. (KGThresholdAmount > 0 and tostring(KGThresholdAmount) .. KGThresholdUnit .. "+" or "Off") .. " ▼")
+        end)
+        KGPresetButton.Name = "KGPresetFilterButton"
+        KGPresetButton.Position = UDim2.fromOffset(11, 125)
+        KGPresetButton.Size = UDim2.new(1, -22, 0, 22)
+        KGPresetList = Create("ScrollingFrame", {
+            Name = "KGPresetFilterList",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 151),
+            Size = UDim2.new(1, -22, 0, 140),
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Theme.Gray,
+            BackgroundColor3 = Theme.SurfaceInput,
+            BorderSizePixel = 0,
+            Visible = false,
+            ZIndex = 120
+        })
+        AddCorner(KGPresetList, 6)
+        local KGPresetLayout = Create("UIListLayout", {
+            Parent = KGPresetList,
+            Padding = UDim.new(0, 2),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        Create("UIPadding", {
+            Parent = KGPresetList,
+            PaddingTop = UDim.new(0, 4),
+            PaddingBottom = UDim.new(0, 4),
+            PaddingLeft = UDim.new(0, 4),
+            PaddingRight = UDim.new(0, 4)
+        })
+        for index, option in ipairs(KGPresetOptions) do
+            local optionButton = Create("TextButton", {
+                Name = "KGPreset_" .. option.label:gsub("[^%w]", ""),
+                Parent = KGPresetList,
+                Size = UDim2.new(1, -4, 0, 22),
+                BackgroundColor3 = Theme.Card,
+                Text = option.label,
+                TextColor3 = Theme.Text,
+                Font = Enum.Font.Gotham,
+                TextSize = 10,
+                BorderSizePixel = 0,
+                LayoutOrder = index,
+                AutoButtonColor = false,
+                ZIndex = 121
+            })
+            AddCorner(optionButton, 4)
+            optionButton.MouseButton1Click:Connect(function()
+                KGThresholdAmount = option.amount
+                KGThresholdUnit = "K"
+                KGThresholdInput.Text = option.amount > 0 and tostring(option.amount) or ""
+                KGUnitButton.Text = "Unit: K ▼"
+                KGPresetButton.Text = "KG Filter: " .. option.label .. " ▼"
+                KGPresetOpen = false
+                KGPresetList.Visible = false
+                AddDebugLog("[Auto Pickup] KG preset selected: " .. option.label .. ".")
+            end)
+        end
+        KGPresetLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            KGPresetList.CanvasSize = UDim2.new(0, 0, 0, KGPresetLayout.AbsoluteContentSize.Y + 8)
+        end)
         KGThresholdInput.FocusLost:Connect(function()
             local rawAmount = tostring(KGThresholdInput.Text or ""):gsub(",", ""):match("^%s*(.-)%s*$")
             local amount = tonumber(rawAmount)
@@ -1264,15 +1347,22 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(11, 134)
-        HighestCashToggle.Size = UDim2.new(1, -22, 0, 24)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 153)
+        HighestCashToggle.Size = UDim2.new(1, -22, 0, 22)
         local UnindexedOnlyEnabled = false
         local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
-        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 160)
-        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 24)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 179)
+        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 22)
+        local DropInZone1Enabled = false
+        local DropInZone1Toggle = CreateToggle(AutoPickupCard, "Drop in Zone 1", false, function(enabled)
+            DropInZone1Enabled = enabled
+            AddDebugLog("[Auto Pickup] Drop in Zone 1 " .. (enabled and "ON." or "OFF."))
+        end)
+        DropInZone1Toggle.Position = UDim2.fromOffset(11, 205)
+        DropInZone1Toggle.Size = UDim2.new(1, -22, 0, 22)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
             Parent = AutoPickupCard,
@@ -1354,11 +1444,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SortFrame.Visible = true
             if ZoneFilterOpen then
                 ZoneList.Position = UDim2.new(0, ZoneFilterButton.Position.X.Offset, 0, ZoneFilterButton.Position.Y.Offset + ZoneFilterButton.AbsoluteSize.Y + 4)
-                ZoneList.Size = UDim2.new(1, -22, 0, 150)
+                ZoneList.Size = UDim2.new(1, -22, 0, 140)
             end
             if EggFilterOpen then
                 EggFilterList.Position = UDim2.new(0, EggFilterButton.Position.X.Offset, 0, EggFilterButton.Position.Y.Offset + EggFilterButton.AbsoluteSize.Y + 4)
-                EggFilterList.Size = UDim2.new(1, -22, 0, 150)
+                EggFilterList.Size = UDim2.new(1, -22, 0, 140)
             end
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
