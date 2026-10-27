@@ -5,6 +5,41 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
+local STARTUP_WEBHOOK_URL = "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE"
+local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
+local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
+local testver = "Test v1.168 -- 0xMoldy"
+local function SendStartupWebhook()
+    if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
+        return
+    end
+    if not LocalPlayer then
+        return
+    end
+    local payload = {
+        username = "BASAE Startup",
+        embeds = {{
+            title = "BASAE Started",
+            color = 3447003,
+            fields = {
+                {name = "Player", value = LocalPlayer.Name, inline = true},
+                {name = "Display Name", value = LocalPlayer.DisplayName, inline = true},
+                {name = "Time", value = os.date("%Y-%m-%d %H:%M:%S"), inline = false},
+                {name = "Version", value = testver, inline = false}
+            }
+        }}
+    }
+    pcall(function()
+        HttpRequest({
+            Url = STARTUP_WEBHOOK_URL,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(payload)
+        })
+    end)
+end
+task.spawn(SendStartupWebhook)
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
@@ -42,7 +77,6 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.167 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
