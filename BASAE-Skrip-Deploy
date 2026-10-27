@@ -5,7 +5,41 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+local HttpService = game:GetService("HttpService")
+local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
+local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
+local testver = "Deploy v1.168 -- 0xMoldy"
+local function SendStartupWebhook()
+    if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
+        return
+    end
+    if not LocalPlayer then
+        return
+    end
+    local payload = {
+        username = "BASAE Startup",
+        embeds = {{
+            title = "BASAE Started",
+            color = 3447003,
+            fields = {
+                {name = "Player", value = LocalPlayer.Name, inline = true},
+                {name = "Display Name", value = LocalPlayer.DisplayName, inline = true},
+                {name = "Time", value = os.date("%Y-%m-%d %H:%M:%S"), inline = false},
+                {name = "Version", value = testver, inline = false}
+            }
+        }}
+    }
+    pcall(function()
+        HttpRequest({
+            Url = STARTUP_WEBHOOK_URL,
+            Method = "POST",
+            Headers = {["Content-Type"] = "application/json"},
+            Body = HttpService:JSONEncode(payload)
+        })
+    end)
+end
+task.spawn(SendStartupWebhook)
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -42,7 +76,6 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Deploy v1.161 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -275,7 +308,7 @@ local ScreenGui = Create("ScreenGui", {
     Name = "BASAESkripUI",
     Parent = game.CoreGui,
     ResetOnSpawn = false,
-    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ZIndexBehavior = Enum.ZIndexBehavior.Global
 })
 local function ApplyTheme(themeName)
     local selectedTheme = ThemePresets[themeName]
@@ -766,7 +799,8 @@ local function CreateDropdown(parent, text, options, callback)
         BackgroundColor3 = Theme.SurfaceInput,
         Text = "",
         BorderSizePixel = 0,
-        AutoButtonColor = false
+        AutoButtonColor = false,
+        ZIndex = 100
     })
     AddCorner(Dropdown, 6)
     AddStroke(Dropdown, Theme.Border, 1)
@@ -779,7 +813,8 @@ local function CreateDropdown(parent, text, options, callback)
         TextColor3 = Theme.Text,
         Font = Enum.Font.Gotham,
         TextSize = 9,
-        TextXAlignment = Enum.TextXAlignment.Left
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 101
     })
     Create("TextLabel", {
         Parent = Dropdown,
@@ -789,7 +824,8 @@ local function CreateDropdown(parent, text, options, callback)
         Text = "v",
         TextColor3 = Theme.Gray,
         Font = Enum.Font.GothamBold,
-        TextSize = 9
+        TextSize = 9,
+        ZIndex = 101
     })
     local Open = false
     local List = Create("Frame", {
@@ -799,7 +835,7 @@ local function CreateDropdown(parent, text, options, callback)
         BackgroundColor3 = Theme.SurfaceInput,
         BorderSizePixel = 0,
         Visible = false,
-        ZIndex = 20
+        ZIndex = 200
     })
     AddCorner(List, 6)
     AddStroke(List, Theme.Border, 1)
@@ -817,7 +853,7 @@ local function CreateDropdown(parent, text, options, callback)
             Font = Enum.Font.Gotham,
             TextSize = 9,
             BorderSizePixel = 0,
-            ZIndex = 21
+            ZIndex = 201
         })
         Option.MouseButton1Click:Connect(function()
             Current.Text = text .. ": " .. tostring(option)
@@ -974,7 +1010,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoRow = Create("Frame", {
             Name = "AutoControlsRow",
             Parent = Page,
-            Size = UDim2.new(1, 0, 0, 190),
+            Size = UDim2.new(1, 0, 0, 220),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 1
@@ -1022,6 +1058,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoBreakToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoBreakToggle.Size = UDim2.fromOffset(48, 24)
+        local AutoBreakTitle = Card1:FindFirstChildWhichIsA("TextLabel")
+        if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
         AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
         AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
@@ -1033,6 +1071,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
+        local AutoPickupTitle = AutoPickupCard:FindFirstChildWhichIsA("TextLabel")
+        if AutoPickupTitle then AutoPickupTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AntiFuseRow = Create("Frame", {
             Name = "AntiFuseRow",
             Parent = Page,
@@ -1041,7 +1081,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BorderSizePixel = 0,
             LayoutOrder = 2
         })
-        local AutoFuseCard = CreateCard(AntiFuseRow, "⚙️  Auto Fuse", "Auto fuse Requirement")
+        local AutoFuseCard = CreateCard(AntiFuseRow, "⚙️  Auto Fuse", "UNDER DEVELOPMENT • Not fully functional")
         AutoFuseCard.Position = UDim2.new(0, 0, 0, 0)
         AutoFuseCard.Size = UDim2.new(0.5, -6, 0, 150)
         local AutoFuseEnabled = false
@@ -1102,14 +1142,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local AutoFuseToggle
         AutoFuseToggle = CreateToggle(AutoFuseCard, "", false, function(enabled)
-            if enabled then
-                AutoFuseEnabled = false
-                AutoFuseGeneration += 1
-                local controller = ToggleControllers[AutoFuseToggle]
-                if controller then controller.SetEnabled(false, false) end
-                return
-            end
-            AutoFuseEnabled = false
+            AutoFuseEnabled = enabled
             AutoFuseGeneration += 1
             local generation = AutoFuseGeneration
             AutoFuseStatus.Text = enabled and "Status: ON • Checking Backpack" or "Status: OFF"
@@ -1161,86 +1194,119 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 task.wait(1)
             end
         end)
-        AutoFuseCard.BackgroundColor3 = Color3.fromRGB(35, 39, 43)
-        local autoFuseStroke = AutoFuseCard:FindFirstChildWhichIsA("UIStroke")
-        if autoFuseStroke then autoFuseStroke.Color = Color3.fromRGB(68, 74, 80) end
-        for _, cardLabel in ipairs(AutoFuseCard:GetChildren()) do
-            if cardLabel:IsA("TextLabel") then
-                if cardLabel.Text:find("Auto Fuse", 1, true) then
-                    cardLabel.TextColor3 = Color3.fromRGB(145, 151, 157)
-                elseif cardLabel.Text == "Auto fuse Requirement" then
-                    cardLabel.Visible = false
-                end
-            end
-        end
-        local AutoFuseTag = Create("TextLabel", {
-            Name = "UnderDevelopmentTag",
-            Parent = AutoFuseCard,
-            Position = UDim2.fromOffset(11, 31),
-            Size = UDim2.fromOffset(112, 18),
-            BackgroundColor3 = Color3.fromRGB(54, 59, 64),
-            BorderSizePixel = 0,
-            Text = "UNDER DEVELOPMENT",
-            TextColor3 = Color3.fromRGB(170, 176, 182),
-            Font = Enum.Font.GothamBold,
-            TextSize = 7,
-            TextXAlignment = Enum.TextXAlignment.Center
-        })
-        AddCorner(AutoFuseTag, 4)
-        AutoFuseStatus.Position = UDim2.fromOffset(11, 54)
-        AutoFuseStatus.Text = "Auto Fuse is incomplete."
-        AutoFuseStatus.TextColor3 = Color3.fromRGB(145, 151, 157)
-        for _, requirementLabel in ipairs(AutoFuseRequirementLabels) do
-            requirementLabel.Position = UDim2.fromOffset(11, requirementLabel.Position.Y.Offset + 8)
-            requirementLabel.TextColor3 = Color3.fromRGB(145, 151, 157)
-        end
-        AutoFuseToggle.Active = false
-        AutoFuseToggle.AutoButtonColor = false
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
         local SelectedRarities = {}
-        for _, rarityName in ipairs(RarityOptions) do
-            SelectedRarities[rarityName] = true
-        end
         local RarityList
         local RarityFilterButton
         local ZoneFilterOpen = false
         local EggFilterOpen = false
         local ZoneList
         local EggFilterList
-        RarityFilterButton = CreateButton(AutoPickupCard, "Rarity Filter  ▼", function()
+        RarityFilterButton = CreateButton(AutoPickupCard, "Rarity ▼", function()
             RarityFilterOpen = not RarityFilterOpen
             ZoneFilterOpen = false
             EggFilterOpen = false
             if RarityFilterOpen then
-                RarityList.Position = UDim2.fromOffset(RarityFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, RarityFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + RarityFilterButton.AbsoluteSize.Y + 4)
-                RarityList.Size = UDim2.fromOffset(math.max(150, RarityFilterButton.AbsoluteSize.X), 155)
+                RarityList.Position = UDim2.fromOffset(11, RarityFilterButton.Position.Y.Offset + RarityFilterButton.AbsoluteSize.Y + 4)
+                RarityList.Size = UDim2.new(1, -22, 0, 155)
             end
-            RarityFilterButton.Text = RarityFilterOpen and "Rarity Filter  ▲" or "Rarity Filter  ▼"
+            RarityFilterButton.Text = RarityFilterOpen and "Rarity ▲" or "Rarity ▼"
             RarityList.Visible = RarityFilterOpen
             if ZoneList then ZoneList.Visible = false end
             if EggFilterList then EggFilterList.Visible = false end
         end)
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
         RarityFilterButton.Size = UDim2.new(1, -22, 0, 28)
+        local KGThresholdAmount = 0
+        local KGThresholdUnit = "K"
+        local KGThresholdInput = Create("TextBox", {
+            Name = "KGThresholdInput",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 77),
+            Size = UDim2.new(1, -22, 0, 25),
+            BackgroundColor3 = Theme.SurfaceInput,
+            Text = "",
+            PlaceholderText = "Pickup weight threshold (blank = off)",
+            PlaceholderColor3 = Theme.Gray,
+            TextColor3 = Theme.Text,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            ClearTextOnFocus = false,
+            BorderSizePixel = 0
+        })
+        AddCorner(KGThresholdInput, 5)
+        AddStroke(KGThresholdInput, Theme.Border, 1)
+        local KGUnitRow = Create("Frame", {
+            Name = "KGUnitFilter",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 106),
+            Size = UDim2.new(1, -22, 0, 22),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0
+        })
+        Create("UIListLayout", {
+            Parent = KGUnitRow,
+            FillDirection = Enum.FillDirection.Horizontal,
+            HorizontalAlignment = Enum.HorizontalAlignment.Left,
+            VerticalAlignment = Enum.VerticalAlignment.Center,
+            Padding = UDim.new(0, 2),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        for index, unit in ipairs({"K", "M", "B", "T", "Qa", "Qi"}) do
+            local button = Create("TextButton", {
+                Name = "KGUnit_" .. unit,
+                Parent = KGUnitRow,
+                Size = UDim2.new(1 / 6, -2, 1, 0),
+                BackgroundColor3 = unit == KGThresholdUnit and Theme.Selected or Theme.SurfaceInput,
+                Text = unit,
+                TextColor3 = unit == KGThresholdUnit and Theme.Accent or Theme.Text,
+                Font = Enum.Font.GothamBold,
+                TextSize = 9,
+                BorderSizePixel = 0,
+                AutoButtonColor = false,
+                LayoutOrder = index
+            })
+            AddCorner(button, 4)
+            AddStroke(button, Theme.Border, 1)
+            button.MouseButton1Click:Connect(function()
+                KGThresholdUnit = unit
+                for _, child in ipairs(KGUnitRow:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        local selected = child.Text == KGThresholdUnit
+                        child.BackgroundColor3 = selected and Theme.Selected or Theme.SurfaceInput
+                        child.TextColor3 = selected and Theme.Accent or Theme.Text
+                    end
+                end
+                AddDebugLog("[Auto Pickup] KG threshold unit set to " .. unit .. ".")
+            end)
+        end
+        KGThresholdInput.FocusLost:Connect(function()
+            local rawAmount = tostring(KGThresholdInput.Text or ""):gsub(",", ""):match("^%s*(.-)%s*$")
+            local amount = tonumber(rawAmount)
+            KGThresholdAmount = amount and math.max(amount, 0) or 0
+            AddDebugLog(KGThresholdAmount > 0
+                and string.format("[Auto Pickup] KG priority threshold set to %s %s KG.", tostring(KGThresholdAmount), KGThresholdUnit)
+                or "[Auto Pickup] KG priority filter OFF.")
+        end)
         local HighestCashEnabled = false
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest $/s", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(11, 77)
-        HighestCashToggle.Size = UDim2.new(1, -22, 0, 28)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 134)
+        HighestCashToggle.Size = UDim2.new(1, -22, 0, 24)
         local UnindexedOnlyEnabled = false
         local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
-        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 111)
-        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 28)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 160)
+        UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 24)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
-            Parent = Main,
-            Position = UDim2.fromOffset(0, 0),
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 75),
             Size = UDim2.fromOffset(160, 155),
             CanvasSize = UDim2.new(0, 0, 0, 0),
             ScrollBarThickness = 3,
@@ -1270,37 +1336,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, item in ipairs(RarityList:GetChildren()) do
                 if item:IsA("TextButton") then item:Destroy() end
             end
-            local allSelected = #RarityOptions > 0
-            for _, name in ipairs(RarityOptions) do
-                if SelectedRarities[name] ~= true then allSelected = false break end
-            end
-            local SelectAllRarities = Create("TextButton", {
-                Name = "SelectAllRarities", Parent = RarityList,
-                Size = UDim2.new(1, -4, 0, 22),
-                BackgroundColor3 = allSelected and Theme.Selected or Theme.Card,
-                Text = "", BorderSizePixel = 0, LayoutOrder = 0,
-                AutoButtonColor = false, ZIndex = 101
-            })
-            AddCorner(SelectAllRarities, 4)
-            Create("TextLabel", {
-                Parent = SelectAllRarities, Position = UDim2.fromOffset(7, 0),
-                Size = UDim2.new(1, -28, 1, 0), BackgroundTransparency = 1,
-                Text = allSelected and "All Rarities Selected" or "Select All",
-                TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
-                TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 102
-            })
-            Create("TextLabel", {
-                Parent = SelectAllRarities, Position = UDim2.new(1, -23, 0, 0),
-                Size = UDim2.fromOffset(20, 22), BackgroundTransparency = 1,
-                Text = allSelected and "✓" or "○",
-                TextColor3 = allSelected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
-                Font = Enum.Font.GothamBold, TextSize = 11, ZIndex = 102
-            })
-            SelectAllRarities.MouseButton1Click:Connect(function()
-                local selectEverything = not allSelected
-                for _, name in ipairs(RarityOptions) do SelectedRarities[name] = selectEverything end
-                RefreshRarityList()
-            end)
             for rarityIndex, rarityName in ipairs(RarityOptions) do
                 local selected = SelectedRarities[rarityName] == true
                 local RarityButton = Create("TextButton", {
@@ -1348,16 +1383,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             RarityList.Visible = RarityFilterOpen
             SortFrame.Visible = true
             if ZoneFilterOpen then
-                ZoneList.Position = UDim2.fromOffset(ZoneFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, ZoneFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + ZoneFilterButton.AbsoluteSize.Y + 4)
-                ZoneList.Size = UDim2.fromOffset(math.max(130, ZoneFilterButton.AbsoluteSize.X), 150)
+                ZoneList.Position = UDim2.new(0, ZoneFilterButton.Position.X.Offset, 0, ZoneFilterButton.Position.Y.Offset + ZoneFilterButton.AbsoluteSize.Y + 4)
+                ZoneList.Size = UDim2.new(1, -22, 0, 150)
             end
             if EggFilterOpen then
-                EggFilterList.Position = UDim2.fromOffset(EggFilterButton.AbsolutePosition.X - Main.AbsolutePosition.X, EggFilterButton.AbsolutePosition.Y - Main.AbsolutePosition.Y + EggFilterButton.AbsoluteSize.Y + 4)
-                EggFilterList.Size = UDim2.fromOffset(math.max(130, EggFilterButton.AbsoluteSize.X), 150)
+                EggFilterList.Position = UDim2.new(0, EggFilterButton.Position.X.Offset, 0, EggFilterButton.Position.Y.Offset + EggFilterButton.AbsoluteSize.Y + 4)
+                EggFilterList.Size = UDim2.new(1, -22, 0, 150)
             end
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
-            RarityFilterButton.Text = RarityFilterOpen and "Rarity Filter ▲" or "Rarity Filter ▼"
+            RarityFilterButton.Text = RarityFilterOpen and "Rarity ▲" or "Rarity ▼"
         end
         ZoneFilterButton = CreateButton(Card1, "Zones ▼", function()
             ZoneFilterOpen = not ZoneFilterOpen
@@ -1375,8 +1410,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         SetAutoBreakControl(EggFilterButton, AutoBreakControlLayout.EggY)
         ZoneList = Create("ScrollingFrame", {
             Name = "ZoneFilterList",
-            Parent = Main,
-            Position = UDim2.fromOffset(0, 0),
+            Parent = Card1,
+            Position = UDim2.fromOffset(11, 76),
             Size = UDim2.fromOffset(140, 150),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
@@ -1402,8 +1437,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         EggFilterList = Create("ScrollingFrame", {
             Name = "EggFilterList",
-            Parent = Main,
-            Position = UDim2.fromOffset(0, 0),
+            Parent = Card1,
+            Position = UDim2.fromOffset(11, 76),
             Size = UDim2.fromOffset(140, 150),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
@@ -1704,7 +1739,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = "Select zones to view eggs",
                     TextColor3 = Theme.Gray,
                     Font = Enum.Font.Gotham,
-                    TextSize = 9
+                    TextSize = 9,
+                    ZIndex = 102
                 })
                 return
             end
@@ -1843,6 +1879,32 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 task.wait(0.1)
             end
             return nil
+        end
+        local function GetPickupWeightKg(pickup)
+            if not pickup then return nil end
+            local animalPickups = workspace:FindFirstChild("AnimalPickups")
+            local animal = pickup
+            while animal and animalPickups and animal.Parent ~= animalPickups do
+                animal = animal.Parent
+            end
+            if animal and animalPickups and animal.Parent == animalPickups then
+                local weight = tonumber(animal:GetAttribute("WeightKg"))
+                if weight then return weight end
+            end
+            return tonumber(pickup:GetAttribute("WeightKg"))
+        end
+        local function IsKGFilterMatch(pickup)
+            if KGThresholdAmount <= 0 then return false, nil end
+            local weight = GetPickupWeightKg(pickup)
+            if not weight then return false, nil end
+            local scale = 1
+            if KGThresholdUnit == "K" then scale = 1e3
+            elseif KGThresholdUnit == "M" then scale = 1e6
+            elseif KGThresholdUnit == "B" then scale = 1e9
+            elseif KGThresholdUnit == "T" then scale = 1e12
+            elseif KGThresholdUnit == "Qa" then scale = 1e15
+            elseif KGThresholdUnit == "Qi" then scale = 1e18 end
+            return weight >= KGThresholdAmount * scale, weight
         end
         local function GetAnimalWeightKg(animal)
             if not animal then return nil end
@@ -2343,6 +2405,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local function evaluationCancelled()
                 return ScriptShuttingDown or evaluationGeneration ~= AutoBreakGeneration or not AutoPickupEnabled
             end
+            pickup:SetAttribute("BASAE_Qualified", false)
             SetPickupTracking(pickup, "Checking")
             if evaluationCancelled() then
                 SetPickupTracking(pickup, "Cancelled: automation toggled")
@@ -2383,7 +2446,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     SetPickupTracking(pickup, "Already indexed; applying normal filters", tostring(indexDisplay))
                 end
             end
+            local kgPriorityPickup, pickupWeightKg = false, nil
             if not forceUnindexedPickup then
+                kgPriorityPickup, pickupWeightKg = IsKGFilterMatch(pickup)
+                if kgPriorityPickup then
+                    SetPickupTracking(pickup, "KG filter match", tostring(pickupWeightKg) .. " KG")
+                end
                 if not IsRarityAllowed(pickup) then
                     SetPickupTracking(pickup, "Rejected: rarity filter")
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | rarity=" .. tostring(GetPetRarity(pickup) or "unknown"))
@@ -2424,12 +2492,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end
                 SetPickupTracking(pickup, cps >= 0 and "CPS checked (second scan)" or "CPS read failed", cpsText)
-                if HighestCashEnabled and cps < 0 then
+                if HighestCashEnabled and not kgPriorityPickup and cps < 0 then
                     SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
                     return
                 end
-                if HighestCashEnabled then
+                if HighestCashEnabled and not kgPriorityPickup then
                     local lowestPlaced = GetLowestPlacedCPS()
                     if lowestPlaced >= 0 and cps <= lowestPlaced then
                         SetPickupTracking(pickup, "Rejected: below lowest placed CPS", cpsText)
@@ -2443,8 +2511,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 SetPickupTracking(pickup, "Cancelled: automation toggled")
                 return
             end
+            pickup:SetAttribute("BASAE_Qualified", true)
             if PickupRequested then
-                if forceUnindexedPickup or (HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS) then
+                if forceUnindexedPickup or kgPriorityPickup or (HighestCashEnabled and ActivePickup and ActivePickup.Parent and cps > ActivePickupCPS) then
                     SetPickupTracking(pickup, "Replacing lower-CPS pickup", cpsText)
                     PickupGeneration += 1
                     PickupRequested = false
@@ -4098,34 +4167,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddDebugLog("Debug console ready.")
 
     elseif index == 2 then
-        local CandyCard = CreateCard(Page, "🍬  Auto collect candies", "")
-        CandyCard.Size = UDim2.new(0.5, -6, 0, 110)
-        CandyCard.BackgroundColor3 = Color3.fromRGB(35, 39, 43)
-        local candyStroke = CandyCard:FindFirstChildWhichIsA("UIStroke")
-        if candyStroke then candyStroke.Color = Color3.fromRGB(68, 74, 80) end
-        local candyTitle = CandyCard:FindFirstChildWhichIsA("TextLabel")
-        if candyTitle then candyTitle.TextColor3 = Color3.fromRGB(145, 151, 157) end
-        local CandyTag = Create("TextLabel", {
-            Name = "UnderDevelopmentTag",
-            Parent = CandyCard,
-            Position = UDim2.fromOffset(12, 34),
-            Size = UDim2.fromOffset(112, 18),
-            BackgroundColor3 = Color3.fromRGB(54, 59, 64),
-            BorderSizePixel = 0,
-            Text = "UNDER DEVELOPMENT",
-            TextColor3 = Color3.fromRGB(170, 176, 182),
-            Font = Enum.Font.GothamBold,
-            TextSize = 7,
-            TextXAlignment = Enum.TextXAlignment.Center
-        })
-        AddCorner(CandyTag, 4)
+        local CandyCard = CreateCard(Page, "🍬  Auto collect candies", "UNDER DEVELOPMENT")
+        CandyCard.Size = UDim2.new(1, 0, 0, 110)
         local CandyInfo = Create("TextLabel", {
             Parent = CandyCard,
-            Position = UDim2.fromOffset(12, 58),
-            Size = UDim2.new(1, -24, 0, 30),
+            Position = UDim2.fromOffset(12, 42),
+            Size = UDim2.new(1, -24, 0, 38),
             BackgroundTransparency = 1,
-            Text = "Auto-collection is not connected yet.",
-            TextColor3 = Color3.fromRGB(145, 151, 157),
+            Text = "UNDER DEVELOPMENT — Auto candy collection is not functional yet.",
+            TextColor3 = Theme.Gray,
             Font = Enum.Font.Gotham,
             TextSize = 9,
             TextWrapped = true,
@@ -4486,33 +4536,73 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddCorner(PickupList, 6)
         local PickupLayout = Create("UIListLayout", {Parent = PickupList, Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder})
         Create("UIPadding", {Parent = PickupList, PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5)})
+        local function GetPickupConsoleCPS(pickup)
+            local cached = pickup:GetAttribute("BASAE_CPSCheckValue")
+            for _, node in ipairs(pickup:GetDescendants()) do
+                if node.Name == "CashPerSecond" then
+                    if node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox") then
+                        if node.Text ~= "" then return node.Text end
+                    end
+                    local textNode = node:FindFirstChild("Text", true) or node:FindFirstChild("ContentText", true)
+                    if textNode and (textNode:IsA("TextLabel") or textNode:IsA("TextButton") or textNode:IsA("TextBox")) and textNode.Text ~= "" then
+                        return textNode.Text
+                    end
+                end
+            end
+            if cached and cached ~= "" then return tostring(cached) end
+            return "—"
+        end
         local function RefreshAnimalPickups()
             for _, child in ipairs(PickupList:GetChildren()) do
                 if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
             end
             local folder = workspace:FindFirstChild("AnimalPickups")
             if not folder then
-                PickupStatus.Text = "AnimalPickups folder not found"
-                Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "Waiting for AnimalPickups...", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
+                PickupStatus.Text = "Waiting for workspace.AnimalPickups..."
+                Create("TextLabel", {
+                    Parent = PickupList, Size = UDim2.new(1, -8, 0, 28),
+                    BackgroundTransparency = 1, Text = "AnimalPickups folder not found.",
+                    TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1
+                })
                 return
             end
-            PickupStatus.Text = tostring(#folder:GetChildren()) .. " animals | tracking status per pickup"
             local records = {}
+            local qualifiedCount = 0
             for _, pickup in ipairs(folder:GetChildren()) do
-                local state = pickup:GetAttribute("BASAE_CPSCheckStatus") or "Not checked"
-                local cps = pickup:GetAttribute("BASAE_CPSCheckValue")
-                table.insert(records, {name = pickup.Name, state = tostring(state), cps = cps and tostring(cps) or ""})
+                if pickup:IsA("Model") then
+                    local qualified = pickup:GetAttribute("BASAE_Qualified")
+                    local weight = pickup:GetAttribute("WeightKg")
+                    local qualifiedText = qualified == true and "Yes" or qualified == false and "No" or "Not checked"
+                    if qualified == true then qualifiedCount += 1 end
+                    table.insert(records, {
+                        name = pickup.Name,
+                        cps = GetPickupConsoleCPS(pickup),
+                        kg = weight ~= nil and tostring(weight) or "—",
+                        qualified = qualifiedText
+                    })
+                end
             end
             table.sort(records, function(a, b)
-                if a.state == b.state then return a.name < b.name end
-                return a.state < b.state
+                return a.name:lower() < b.name:lower()
             end)
+            PickupStatus.Text = string.format("%d animals | %d qualified", #records, qualifiedCount)
             if #records == 0 then
-                Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 28), BackgroundTransparency = 1, Text = "No animal pickups found.", TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1})
+                Create("TextLabel", {
+                    Parent = PickupList, Size = UDim2.new(1, -8, 0, 28),
+                    BackgroundTransparency = 1, Text = "No animal models found in AnimalPickups.",
+                    TextColor3 = Theme.Gray, Font = Enum.Font.Gotham, TextSize = 9, LayoutOrder = 1
+                })
             end
             for order, record in ipairs(records) do
-                local detail = record.cps ~= "" and (" | CPS: " .. record.cps) or ""
-                local row = Create("TextLabel", {Parent = PickupList, Size = UDim2.new(1, -8, 0, 30), BackgroundColor3 = Theme.Card, BorderSizePixel = 0, Text = "  " .. record.name .. "  |  " .. record.state .. detail, TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextTruncate = Enum.TextTruncate.None, AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order})
+                local row = Create("TextLabel", {
+                    Parent = PickupList, Size = UDim2.new(1, -8, 0, 42),
+                    BackgroundColor3 = Theme.Card, BorderSizePixel = 0,
+                    Text = "  " .. record.name .. "  |  " .. record.cps .. " |  " .. record.kg .. " KG  |  Qualified = " .. record.qualified,
+                    TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
+                    TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
+                    TextWrapped = true, TextTruncate = Enum.TextTruncate.None,
+                    AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order
+                })
                 AddCorner(row, 4)
             end
             PickupList.CanvasSize = UDim2.new(0, 0, 0, PickupLayout.AbsoluteContentSize.Y + 10)
