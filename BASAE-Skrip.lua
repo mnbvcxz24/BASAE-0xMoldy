@@ -2534,7 +2534,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end
                 SetPickupTracking(pickup, cps >= 0 and "CPS checked (second scan)" or "CPS read failed", cpsText)
-                if HighestCashEnabled and cps < 0 then
+                if HighestCashEnabled and not kgPriorityPickup and cps < 0 then
                     SetPickupTracking(pickup, "Rejected: CPS unavailable", cpsText)
                     RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | CPS could not be read safely: " .. tostring(cpsText))
                     return
