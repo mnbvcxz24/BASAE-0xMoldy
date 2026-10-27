@@ -767,7 +767,8 @@ local function CreateDropdown(parent, text, options, callback)
         BackgroundColor3 = Theme.SurfaceInput,
         Text = "",
         BorderSizePixel = 0,
-        AutoButtonColor = false
+        AutoButtonColor = false,
+        ZIndex = 100
     })
     AddCorner(Dropdown, 6)
     AddStroke(Dropdown, Theme.Border, 1)
@@ -780,7 +781,8 @@ local function CreateDropdown(parent, text, options, callback)
         TextColor3 = Theme.Text,
         Font = Enum.Font.Gotham,
         TextSize = 9,
-        TextXAlignment = Enum.TextXAlignment.Left
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ZIndex = 101
     })
     Create("TextLabel", {
         Parent = Dropdown,
@@ -790,7 +792,8 @@ local function CreateDropdown(parent, text, options, callback)
         Text = "v",
         TextColor3 = Theme.Gray,
         Font = Enum.Font.GothamBold,
-        TextSize = 9
+        TextSize = 9,
+        ZIndex = 101
     })
     local Open = false
     local List = Create("Frame", {
@@ -800,7 +803,7 @@ local function CreateDropdown(parent, text, options, callback)
         BackgroundColor3 = Theme.SurfaceInput,
         BorderSizePixel = 0,
         Visible = false,
-        ZIndex = 20
+        ZIndex = 200
     })
     AddCorner(List, 6)
     AddStroke(List, Theme.Border, 1)
@@ -818,7 +821,7 @@ local function CreateDropdown(parent, text, options, callback)
             Font = Enum.Font.Gotham,
             TextSize = 9,
             BorderSizePixel = 0,
-            ZIndex = 21
+            ZIndex = 201
         })
         Option.MouseButton1Click:Connect(function()
             Current.Text = text .. ": " .. tostring(option)
