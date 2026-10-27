@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Deploy v1.174 -- 0xMoldy"
+local testver = "Deploy v1.173 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1856,11 +1856,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         EggFilterButton.MouseButton1Click:Connect(UpdateFilterPanelWithTitanic)
         RefreshZoneList()
         RefreshEggList()
-        AutomationConnections.ZoneBuildAdded = ZoneBuilds.ChildAdded:Connect(function()
+        ZoneBuilds.ChildAdded:Connect(function()
             RefreshZoneList()
             RefreshEggList()
         end)
-        AutomationConnections.ZoneBuildRemoved = ZoneBuilds.ChildRemoved:Connect(function()
+        ZoneBuilds.ChildRemoved:Connect(function()
             RefreshZoneList()
             RefreshEggList()
         end)
@@ -1973,8 +1973,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local FlingTargetAnimalName
         local FlingTargetWeightKg
         local HitEventConnection
-        local AnimalBankEquipConnections = {}
-        local AutomationConnections = {}
         local SetTrackerStatus
         local function SetPickupPhase(phase, message)
             PickupPhase = phase
@@ -2030,14 +2028,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if AnimalFolderConnection then AnimalFolderConnection:Disconnect(); AnimalFolderConnection = nil end
             if CarriedAnimalWatch.childAdded then CarriedAnimalWatch.childAdded:Disconnect(); CarriedAnimalWatch.childAdded = nil end
             if CarriedAnimalWatch.childRemoved then CarriedAnimalWatch.childRemoved:Disconnect(); CarriedAnimalWatch.childRemoved = nil end
-            for remote, connection in pairs(AnimalBankEquipConnections) do
-                if connection then connection:Disconnect() end
-                AnimalBankEquipConnections[remote] = nil
-            end
-            for name, connection in pairs(AutomationConnections) do
-                if connection then connection:Disconnect() end
-                AutomationConnections[name] = nil
-            end
             local character = LocalPlayer.Character
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if humanoid then humanoid:Move(Vector3.zero, false) end
@@ -2109,6 +2099,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             SetTrackerStatus("Selected hotbar slot 1.")
             return true
         end
+        local AnimalBankEquipConnections = {}
         local function BindAnimalBankEquip(remote)
             if not remote:IsA("RemoteEvent") or AnimalBankEquipConnections[remote] then return end
             local remoteName = remote.Name:lower():gsub("[^%a]", "")
@@ -2125,7 +2116,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         for _, remote in ipairs(ReplicatedStorage:GetDescendants()) do
             BindAnimalBankEquip(remote)
         end
-        AutomationConnections.AnimalBankDescendantAdded = ReplicatedStorage.DescendantAdded:Connect(function(instance)
+        ReplicatedStorage.DescendantAdded:Connect(function(instance)
             BindAnimalBankEquip(instance)
         end)
         local function ReturnToPickup(reason)
@@ -4842,4 +4833,3 @@ UserInputService.InputEnded:Connect(function(input)
         Dragging = false
     end
 end)
-
