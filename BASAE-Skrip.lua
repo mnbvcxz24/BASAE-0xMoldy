@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.194 -- 0xMoldy"
+local testver = "Test v1.195 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -4985,6 +4985,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if qualified == true then qualifiedCount += 1 end
                     table.insert(records, {
                         name = pickup.Name,
+                        rarity = tostring(GetPetRarity(pickup) or "Unknown"),
                         cps = GetPickupConsoleCPS(pickup),
                         kg = weight ~= nil and tostring(weight) or "—",
                         qualified = qualifiedText
@@ -5004,9 +5005,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             for order, record in ipairs(records) do
                 local row = Create("TextLabel", {
-                    Parent = PickupList, Size = UDim2.new(1, -8, 0, 42),
+                    Parent = PickupList, Size = UDim2.new(1, -8, 0, 50),
                     BackgroundColor3 = Theme.Card, BorderSizePixel = 0,
-                    Text = "  " .. record.name .. "  |  " .. record.cps .. " |  " .. record.kg .. " KG  |  Qualified = " .. record.qualified,
+                    Text = "  " .. record.name .. "  |  " .. record.rarity .. "  |  " .. record.cps .. " |  " .. record.kg .. " KG  |  Qualified = " .. record.qualified,
                     TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
                     TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
                     TextWrapped = true, TextTruncate = Enum.TextTruncate.None,
