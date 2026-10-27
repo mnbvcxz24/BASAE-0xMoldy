@@ -42,7 +42,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         if oldESP then oldESP:Destroy() end
     end)
 end
-local testver = "Test v1.159 -- 0xMoldy"
+local testver = "Test v1.160 -- 0xMoldy"
 -- UI CONFIGURATION
 local UIConfig = {
     Title = "SKRIPNIBAI",
@@ -52,7 +52,7 @@ local UIConfig = {
     SidebarWidth = 108,
     SidebarNames = {
         "Main",
-        "ESP",
+        "Event",
         "Misc. feature",
         "Pickups",
         "Settings",
@@ -931,7 +931,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Parent = SidebarContainer,
         Size = UDim2.new(1, -2, 0, 34),
         BackgroundColor3 = Theme.Sidebar,
-        Text = ({"🏠", "🥚", "✨", "🐾", "⚙️", "🪲"})[index] .. "  " .. name,
+        Text = ({"🏠", "🎉", "✨", "🐾", "⚙️", "🪲"})[index] .. "  " .. name,
         TextColor3 = Theme.DarkGray,
         Font = Enum.Font.GothamMedium,
         TextSize = 9,
@@ -4049,6 +4049,23 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AddDebugLog("Debug console ready.")
 
     elseif index == 2 then
+        local CandyCard = CreateCard(Page, "🍬  Auto collect candies", "")
+        CandyCard.Size = UDim2.new(1, 0, 0, 110)
+        local CandyInfo = Create("TextLabel", {
+            Parent = CandyCard,
+            Position = UDim2.fromOffset(12, 42),
+            Size = UDim2.new(1, -24, 0, 38),
+            BackgroundTransparency = 1,
+            Text = "Candy auto-collection",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            TextWrapped = true,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top
+        })
+
+    elseif index == 3 then
         local ESPCard = CreateCard(Page, "🥚  Egg ESP", "")
         ESPCard.Size = UDim2.new(1, 0, 0, 125)
         local ESPStatus = Create("TextLabel", {
@@ -4189,7 +4206,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         ESPCard.Size = UDim2.new(1, 0, 0, 125)
 
-    elseif index == 3 then
         local MiscFeatureRow = Create("Frame", {
             Name = "MiscFeatureCardsRow",
             Parent = Page,
