@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.191 -- 0xMoldy"
+local testver = "Test v1.192 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -4137,10 +4137,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         .. " | readable candidates=" .. tostring(#luckCandidates)
                         .. " | ignored unreadable=" .. tostring(unreadableLuckCount))
                 else
-                    SetTrackerStatus("HIGHEST LUCK PRIORITY is ON, but no readable positive luck values were found. Auto Break paused instead of choosing a random egg.")
-                    AddDebugLog("[Auto Break] HighLuck found no readable positive luck values; normal egg fallback blocked.")
-                    TouchAutomationProgress("IDLE")
-                    return
+                    SetTrackerStatus("HIGHEST LUCK PRIORITY found no readable values; using the normal Egg Filter selection.")
+                    AddDebugLog("[Auto Break] HighLuck values unavailable; falling back to normal filtered egg selection.")
                 end
             end
             if not target then
