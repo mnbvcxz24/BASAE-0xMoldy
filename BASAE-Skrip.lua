@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.193 -- 0xMoldy"
+local testver = "Test v1.194 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -2541,13 +2541,30 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end)
         function GetPetRarity(pickup)
-            local rarity = pickup:FindFirstChild("Rarity", true)
-            if rarity and rarity:IsA("StringValue") then
-                return rarity.Value
+            if not pickup then return nil end
+
+            local rootPart = pickup:FindFirstChild("RootPart")
+            local attachment = rootPart and rootPart:FindFirstChild("AnimalOverheadAttachment")
+            local overhead = attachment and attachment:FindFirstChild("AnimalOverhead")
+            local rarity = overhead and overhead:FindFirstChild("Rarity")
+            local label = rarity and rarity:FindFirstChild("RarityLabel")
+
+            if label and (label:IsA("TextLabel") or label:IsA("TextButton")) then
+                local value = label.Text
+                if value and value ~= "" then
+                    return value
+                end
             end
-            if rarity and rarity:IsA("TextLabel") then
-                return rarity.Text
+
+            local rarityNode = pickup:FindFirstChild("Rarity", true)
+            if rarityNode then
+                if rarityNode:IsA("StringValue") then
+                    return rarityNode.Value
+                elseif rarityNode:IsA("TextLabel") or rarityNode:IsA("TextButton") then
+                    return rarityNode.Text
+                end
             end
+
             local attribute = pickup:GetAttribute("Rarity")
             return attribute and tostring(attribute) or nil
         end
