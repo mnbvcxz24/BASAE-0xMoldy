@@ -4542,7 +4542,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local humanoid = character and character:FindFirstChildOfClass("Humanoid")
                     if root and root:IsA("BasePart") and humanoid and humanoid.Health > 0 then
                         local distance = (root.Position - myRoot.Position).Magnitude
-                        if distance <= 15 then
+                        if distance <= 20 then
                             table.insert(nearby, {Name = targetPlayer.Name, Distance = distance})
                         end
                     end
@@ -4552,7 +4552,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return a.Distance < b.Distance
             end)
             if #nearby == 0 then
-                return nearby, "No players within 15 studs"
+                return nearby, "No players within 20 studs"
             end
             local names = {}
             for i = 1, math.min(#nearby, 2) do
@@ -4625,9 +4625,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AddDebugLog("[Aura ni Bai] Proximity tracking disabled.")
                 return
             end
-            AuraStatus.Text = "Tracking players within 15 studs..."
+            AuraStatus.Text = "Tracking players within 20 studs..."
             AuraStatus.TextColor3 = Theme.Accent
-            AddDebugLog("[Aura ni Bai] Proximity tracking enabled (15 studs).")
+            AddDebugLog("[Aura ni Bai] Proximity tracking enabled (20 studs).")
             task.spawn(function()
                 while AuraEnabled and not Runtime.Stopped and ScreenGui.Parent do
                     local nearby, nearbyText = GetNearbyPlayers()
@@ -4635,7 +4635,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         AuraStatus.Text = nearbyText
                         AuraStatus.TextColor3 = Theme.Accent
                         if not AuraWasNearby then
-                            AddDebugLog("[Aura ni Bai] Detected " .. nearby[1].Name .. " within 15 studs (" .. string.format("%.1f", nearby[1].Distance) .. " studs).")
+                            AddDebugLog("[Aura ni Bai] Detected " .. nearby[1].Name .. " within 20 studs (" .. string.format("%.1f", nearby[1].Distance) .. " studs).")
                             task.spawn(RunAuraNiBai, nearby[1].Name)
                         end
                         AuraWasNearby = true
