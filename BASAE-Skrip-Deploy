@@ -1149,15 +1149,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 task.wait(1)
             end
         end)
-        local autoFuseDescription = AutoFuseCard:FindFirstChildWhichIsA("TextLabel")
-        if autoFuseDescription then
-            autoFuseDescription.Visible = false
-        end
         AutoFuseCard.BackgroundColor3 = Color3.fromRGB(35, 39, 43)
         local autoFuseStroke = AutoFuseCard:FindFirstChildWhichIsA("UIStroke")
         if autoFuseStroke then autoFuseStroke.Color = Color3.fromRGB(68, 74, 80) end
-        local autoFuseTitle = AutoFuseCard:FindFirstChildWhichIsA("TextLabel")
-        if autoFuseTitle then autoFuseTitle.TextColor3 = Color3.fromRGB(145, 151, 157) end
+        for _, cardLabel in ipairs(AutoFuseCard:GetChildren()) do
+            if cardLabel:IsA("TextLabel") then
+                if cardLabel.Text:find("Auto Fuse", 1, true) then
+                    cardLabel.TextColor3 = Color3.fromRGB(145, 151, 157)
+                elseif cardLabel.Text == "Auto fuse Requirement" then
+                    cardLabel.Visible = false
+                end
+            end
+        end
         local AutoFuseTag = Create("TextLabel", {
             Name = "UnderDevelopmentTag",
             Parent = AutoFuseCard,
