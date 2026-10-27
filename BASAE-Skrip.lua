@@ -276,7 +276,7 @@ local ScreenGui = Create("ScreenGui", {
     Name = "BASAESkripUI",
     Parent = game.CoreGui,
     ResetOnSpawn = false,
-    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ZIndexBehavior = Enum.ZIndexBehavior.Global
 })
 local function ApplyTheme(themeName)
     local selectedTheme = ThemePresets[themeName]
@@ -1707,7 +1707,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Text = "Select zones to view eggs",
                     TextColor3 = Theme.Gray,
                     Font = Enum.Font.Gotham,
-                    TextSize = 9
+                    TextSize = 9,
+                    ZIndex = 102
                 })
                 return
             end
