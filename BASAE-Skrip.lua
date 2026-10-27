@@ -4199,7 +4199,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ESPCard.Size = UDim2.new(1, 0, 0, 120)
         local ESPStatus = Create("TextLabel", {
             Parent = ESPCard,
-            Position = UDim2.fromOffset(11, 54),
+            Position = UDim2.fromOffset(11, 61),
             Size = UDim2.new(1, -22, 0, 16),
             BackgroundTransparency = 1,
             Text = "ESP is off",
