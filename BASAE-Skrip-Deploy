@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Deploy v1.173 -- 0xMoldy"
+local testver = "Deploy v1.178 -- 0xMoldy"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1236,7 +1236,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end)
         local RarityFilterOpen = false
-        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega"}
+        local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega", "Spectral"}
         local SelectedRarities = {}
         local RarityList
         local RarityFilterButton
@@ -1923,6 +1923,26 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             return nil
         end
+        local function ParseWeightKg(value)
+            if typeof(value) == "number" then
+                return value
+            end
+            if value == nil then return nil end
+            local textValue = tostring(value):gsub(",", ""):match("^%s*(.-)%s*$")
+            if textValue == "" then return nil end
+            local numberText, suffix = textValue:match("^([%d%.]+)%s*([%a]*)")
+            local number = tonumber(numberText)
+            if not number then return tonumber(textValue) end
+            suffix = (suffix or ""):lower()
+            local scales = {
+                k = 1e3, m = 1e6, b = 1e9, t = 1e12,
+                qa = 1e15, qi = 1e18, kg = 1
+            }
+            if suffix == "" then return number end
+            local scale = scales[suffix]
+            if scale then return number * scale end
+            return nil
+        end
         local function GetPickupWeightKg(pickup)
             if not pickup then return nil end
             local animalPickups = workspace:FindFirstChild("AnimalPickups")
@@ -1930,16 +1950,34 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             while animal and animalPickups and animal.Parent ~= animalPickups do
                 animal = animal.Parent
             end
-            if animal and animalPickups and animal.Parent == animalPickups then
-                local weight = tonumber(animal:GetAttribute("WeightKg"))
+            if not animal or not animalPickups or animal.Parent ~= animalPickups then
+                animal = pickup
+            end
+            local names = {"WeightKg", "WeightKG", "weightKg", "weightKG", "Weight", "weight"}
+            for _, name in ipairs(names) do
+                local weight = ParseWeightKg(animal:GetAttribute(name))
                 if weight then return weight end
             end
-            return tonumber(pickup:GetAttribute("WeightKg"))
+            for _, node in ipairs(animal:GetDescendants()) do
+                for _, name in ipairs(names) do
+                    local weight = ParseWeightKg(node:GetAttribute(name))
+                    if weight then return weight end
+                    if node.Name == name then
+                        if node:IsA("ValueBase") then
+                            weight = ParseWeightKg(node.Value)
+                            if weight then return weight end
+                        elseif node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox") then
+                            weight = ParseWeightKg(node.Text)
+                            if weight then return weight end
+                        end
+                    end
+                end
+            end
+            return nil
         end
         local function IsKGFilterMatch(pickup)
             if KGThresholdAmount <= 0 then return false, nil end
             local weight = GetPickupWeightKg(pickup)
-            if not weight then return false, nil end
             local scale = 1
             if KGThresholdUnit == "K" then scale = 1e3
             elseif KGThresholdUnit == "M" then scale = 1e6
@@ -1947,7 +1985,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             elseif KGThresholdUnit == "T" then scale = 1e12
             elseif KGThresholdUnit == "Qa" then scale = 1e15
             elseif KGThresholdUnit == "Qi" then scale = 1e18 end
-            return weight >= KGThresholdAmount * scale, weight
+            local threshold = KGThresholdAmount * scale
+            if not weight then
+                AddDebugLog("[KG] " .. pickup.Name .. " weight not detected; threshold=" .. tostring(threshold) .. " KG.")
+                return false, nil
+            end
+            local matches = weight >= threshold
+            AddDebugLog("[KG] " .. pickup.Name .. " detected=" .. tostring(weight) .. " KG | minimum=" .. tostring(threshold) .. " KG | match=" .. tostring(matches))
+            return matches, weight
         end
         local function GetAnimalWeightKg(animal)
             if not animal then return nil end
@@ -3212,22 +3257,29 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             local function findTrackedAnimal()
                 local folder = workspace:FindFirstChild("AnimalPickups")
-                if not folder or targetAnimalName == nil or targetWeightKg == nil then return nil end
-                if flingAnimal and flingAnimal.Parent == folder
-                    and flingAnimal.Name == targetAnimalName
-                    and GetAnimalWeightKg(flingAnimal) == targetWeightKg then
+                if not folder or not targetAnimalName then return nil end
+                if flingAnimal and flingAnimal.Parent == folder and flingAnimal.Name == targetAnimalName then
                     return flingAnimal
                 end
-                local match
+                local character = LocalPlayer.Character
+                local root = character and character:FindFirstChild("HumanoidRootPart")
+                local bestMatch, bestDistance
                 for _, candidate in ipairs(folder:GetChildren()) do
-                    if candidate.Name == targetAnimalName
-                        and GetAnimalWeightKg(candidate) == targetWeightKg then
-                        if match then return nil end
-                        match = candidate
+                    if candidate.Name == targetAnimalName then
+                        local ok, position = pcall(function()
+                            if candidate:IsA("Model") then return candidate:GetPivot().Position end
+                            if candidate:IsA("BasePart") then return candidate.Position end
+                        end)
+                        if ok and position then
+                            local distance = root and (position - root.Position).Magnitude or 0
+                            if not bestDistance or distance < bestDistance then
+                                bestMatch, bestDistance = candidate, distance
+                            end
+                        end
                     end
                 end
-                if match then flingAnimal = match end
-                return match
+                if bestMatch then flingAnimal = bestMatch end
+                return bestMatch
             end
             local function getTrackedAnimalPosition()
                 local animal = findTrackedAnimal()
@@ -3258,63 +3310,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
 
             FlingRecoveryActive = true
             local recoverySearchToken = PickupGeneration
-            TouchAutomationProgress("FLING_RECOVERY:WAITING_FOR_IDENTITY")
-
-            if targetWeightKg == nil then
-                SetTrackerStatus("FLING RECOVERY waiting for WeightKg on " .. tostring(targetAnimalName) .. "...")
-                local identityDeadline = os.clock() + (carriedAnimalLost and 3 or 10)
-                local identityAttempts = 0
-                local lastIdentityLog = 0
-                while not Runtime.Stopped and FlingRecoveryActive and PickupGeneration == recoverySearchToken
-                    and os.clock() < identityDeadline and targetWeightKg == nil do
-                    identityAttempts += 1
-                    local identityFolder = workspace:FindFirstChild("AnimalPickups")
-                    if identityFolder then
-                        local uniqueNameMatch, uniqueNameWeight
-                        local ambiguousNameMatch = false
-                        for _, candidate in ipairs(identityFolder:GetChildren()) do
-                            if candidate.Name == targetAnimalName then
-                                local identity = GetAnimalWeightKg(candidate)
-                                if identity ~= nil then
-                                    if candidate == flingAnimal then
-                                        targetWeightKg = identity
-                                        break
-                                    elseif not uniqueNameMatch then
-                                        uniqueNameMatch = candidate
-                                        uniqueNameWeight = identity
-                                    else
-                                        ambiguousNameMatch = true
-                                    end
-                                end
-                            end
-                        end
-                        if targetWeightKg == nil and uniqueNameMatch and not ambiguousNameMatch then
-                            targetWeightKg = uniqueNameWeight
-                        end
-                        if targetWeightKg ~= nil then
-                            FlingTargetWeightKg = targetWeightKg
-                            SetTrackerStatus("Fling recovery captured identity: " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(targetWeightKg) .. " | attempts=" .. tostring(identityAttempts))
-                        end
-                    end
-                    local now = os.clock()
-                    if targetWeightKg == nil and now - lastIdentityLog >= 1 then
-                        lastIdentityLog = now
-                        SetTrackerStatus("FLING RECOVERY searching AnimalPickups | animal=" .. tostring(targetAnimalName) .. " | WeightKg=waiting | attempts=" .. tostring(identityAttempts))
-                    end
-                    if targetWeightKg == nil then task.wait(carriedAnimalLost and 0.1 or 0.25) end
-                end
-            end
+            TouchAutomationProgress("FLING_RECOVERY:FIND_DROPPED_ANIMAL")
             if not FlingRecoveryActive or PickupGeneration ~= recoverySearchToken then
-                return
-            end
-            if targetWeightKg == nil then
-                FlingRecoveryActive = false
-                PickupRequested = false
-                ActivePickup = nil
-                ActivePickupCPS = -1
-                TouchAutomationProgress("IDLE")
-                SetTrackerStatus("FLING RECOVERY stopped: WeightKg still missing after periodic searches for " .. tostring(targetAnimalName) .. ".")
-                if AutoBreakEnabled and StartAutoBreak then task.delay(0.2, function() if AutoBreakEnabled then StartAutoBreak(true) end end) end
                 return
             end
             if PickupMovementConnection then PickupMovementConnection:Disconnect(); PickupMovementConnection = nil end
@@ -3329,7 +3326,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if CurrentTarget then CompletedEggs[CurrentTarget] = true end
             if StopAutoBreak then StopAutoBreak() end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
-            SetTrackerStatus("Base return paused. FLING RECOVERY searching AnimalPickups for " .. tostring(targetAnimalName) .. " | WeightKg=" .. tostring(targetWeightKg) .. ".")
+            SetTrackerStatus("Base return paused. FLING RECOVERY locating dropped " .. tostring(targetAnimalName) .. " in AnimalPickups.")
             task.spawn(function()
                 local recoveryMoveBindName
                 local recoveryHumanoid
@@ -3396,13 +3393,48 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 if not recoveryPosition then
                     PickupRequested = false
-                    SetTrackerStatus("FLING RECOVERY cancelled: no unique AnimalPickups match for " .. tostring(targetAnimalName) .. " + WeightKg=" .. tostring(targetWeightKg) .. ".")
+                    SetTrackerStatus("FLING RECOVERY cancelled: dropped animal was not found in AnimalPickups (" .. tostring(targetAnimalName) .. ").")
                     finishFlingRecovery()
                     return
                 end
+                local function positionOf(candidate)
+                    local parent = candidate and candidate.Parent
+                    while parent and parent ~= workspace do
+                        if parent:IsA("Attachment") then return parent.WorldPosition end
+                        if parent:IsA("BasePart") then return parent.Position end
+                        if parent:IsA("Model") then return parent:GetPivot().Position end
+                        parent = parent.Parent
+                    end
+                    return nil
+                end
+                local function findNearbyStealPrompt()
+                    local anchor = workspace:FindFirstChild("PromptAnchor")
+                    if not anchor then return nil, nil end
+                    local nearest = math.huge
+                    local bestPrompt, bestPosition
+                    for _, candidate in ipairs(anchor:GetDescendants()) do
+                        if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
+                            local pos = positionOf(candidate)
+                            if pos then
+                                local distance = (pos - recoveryPosition).Magnitude
+                                if distance < nearest and distance <= 12 then
+                                    nearest, bestPrompt, bestPosition = distance, candidate, pos
+                                end
+                            end
+                        end
+                    end
+                    return bestPrompt, bestPosition
+                end
+                local prompt, promptPosition = findNearbyStealPrompt()
+                local promptLogged = prompt ~= nil
+                if prompt then
+                    SetTrackerStatus(string.format("FLING RECOVERY cached StealPrompt %.1f studs from animal; moving immediately.", (promptPosition - recoveryPosition).Magnitude))
+                else
+                    SetTrackerStatus("FLING RECOVERY: searching for StealPrompt while moving toward the animal.")
+                end
                 SetTrackerStatus(string.format(
-                    "FLING RECOVERY matched %s by name + WeightKg=%s at (%.3f, %.3f, %.3f).",
-                    tostring(flingAnimal and flingAnimal.Name or targetAnimalName or "animal"), tostring(targetWeightKg),
+                    "FLING RECOVERY found dropped %s in AnimalPickups at (%.3f, %.3f, %.3f).",
+                    tostring(flingAnimal and flingAnimal.Name or targetAnimalName or "animal"),
                     recoveryPosition.X, recoveryPosition.Y, recoveryPosition.Z
                 ))
                 local RunService = game:GetService("RunService")
@@ -3436,6 +3468,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                     local livePosition = getTrackedAnimalPosition()
                     if livePosition then recoveryPosition = livePosition end
+                    if not prompt then
+                        prompt, promptPosition = findNearbyStealPrompt()
+                        if prompt and not promptLogged then
+                            promptLogged = true
+                            SetTrackerStatus(string.format("FLING RECOVERY found StealPrompt while moving (%.1f studs from animal).", (promptPosition - recoveryPosition).Magnitude))
+                        end
+                    end
                     local offset = Vector3.new(recoveryPosition.X - root.Position.X, 0, recoveryPosition.Z - root.Position.Z)
                     local distance = offset.Magnitude
                     if distance <= 4 then break end
@@ -3488,42 +3527,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     finishFlingRecovery()
                     return
                 end
-                SetTrackerStatus(string.format("FLING RECOVERY location verified (%.1f studs); searching for the nearest animal StealPrompt.", arrivalDistance))
-                local anchor = workspace:FindFirstChild("PromptAnchor")
-                local prompt, promptPosition
-                local searchDeadline = os.clock() + 8
-                local function positionOf(candidate)
-                    local parent = candidate and candidate.Parent
-                    while parent and parent ~= workspace do
-                        if parent:IsA("Attachment") then return parent.WorldPosition end
-                        if parent:IsA("BasePart") then return parent.Position end
-                        if parent:IsA("Model") then return parent:GetPivot().Position end
-                        parent = parent.Parent
-                    end
-                    return nil
+                local searchDeadline = os.clock() + 1.5
+                if not prompt then
+                    SetTrackerStatus(string.format("FLING RECOVERY arrived near animal (%.1f studs); brief final StealPrompt check.", arrivalDistance))
+                    repeat
+                        local livePosition = getTrackedAnimalPosition()
+                        if livePosition then recoveryPosition = livePosition end
+                        prompt, promptPosition = findNearbyStealPrompt()
+                        if prompt then break end
+                        task.wait(0.1)
+                    until os.clock() >= searchDeadline or PickupGeneration ~= flingToken
                 end
-                repeat
-                    local livePosition = getTrackedAnimalPosition()
-                    if livePosition then recoveryPosition = livePosition end
-                    anchor = workspace:FindFirstChild("PromptAnchor")
-                    local nearest = math.huge
-                    prompt, promptPosition = nil, nil
-                    if anchor then
-                        for _, candidate in ipairs(anchor:GetDescendants()) do
-                            if candidate:IsA("ProximityPrompt") and candidate.Name == "StealPrompt" and candidate.Enabled then
-                                local pos = positionOf(candidate)
-                                if pos then
-                                    local distance = (pos - recoveryPosition).Magnitude
-                                    if distance < nearest and distance <= 12 then
-                                        nearest, prompt, promptPosition = distance, candidate, pos
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    if prompt then break end
-                    task.wait(0.2)
-                until os.clock() >= searchDeadline or PickupGeneration ~= flingToken
                 if PickupGeneration ~= flingToken then
                     finishFlingRecovery()
                     return
@@ -3635,7 +3649,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local targetStillExists = false
                     if folder then
                         for _, animal in ipairs(folder:GetChildren()) do
-                            if animal.Name == targetAnimalName and GetAnimalWeightKg(animal) == targetWeightKg then
+                            if animal.Name == targetAnimalName then
                                 targetStillExists = true
                                 break
                             end
