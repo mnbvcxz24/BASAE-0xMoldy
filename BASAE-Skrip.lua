@@ -975,14 +975,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoRow = Create("Frame", {
             Name = "AutoControlsRow",
             Parent = Page,
-            Size = UDim2.new(1, 0, 0, 220),
+            Size = UDim2.new(1, 0, 0, 190),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             LayoutOrder = 1
         })
         local Card1 = CreateCard(AutoRow, "⚡  Auto Break", "")
         Card1.Position = UDim2.new(0, 0, 0, 0)
-        Card1.Size = UDim2.new(0.5, -5, 0, 220)
+        Card1.Size = UDim2.new(0.5, -6, 0, 190)
         local StartAutoBreak
         local StopAutoBreak
         local StopPickupAutomation
@@ -1014,8 +1014,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local AutoBreakTitle = Card1:FindFirstChildWhichIsA("TextLabel")
         if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
-        AutoPickupCard.Position = UDim2.new(0.5, 5, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.5, -5, 0, 220)
+        AutoPickupCard.Position = UDim2.new(0.5, 6, 0, 0)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 190)
         local AutoPickupEnabled = false
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
@@ -1170,7 +1170,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if EggFilterList then EggFilterList.Visible = false end
         end)
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
-        RarityFilterButton.Size = UDim2.new(0.5, -16, 0, 28)
+        RarityFilterButton.Size = UDim2.new(1, -22, 0, 28)
         local KGFilterOpen = false
         local KGThresholdOptions = {5000, 10000, 15000, 20000, 40000, 60000, 100000}
         local SelectedKGThresholds = {}
@@ -1273,22 +1273,22 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if EggFilterList then EggFilterList.Visible = false end
             UpdateKGFilterButton()
         end)
-        KGFilterButton.Position = UDim2.new(0.5, 5, 0, 43)
-        KGFilterButton.Size = UDim2.new(0.5, -16, 0, 28)
+        KGFilterButton.Position = UDim2.fromOffset(11, 77)
+        KGFilterButton.Size = UDim2.new(1, -22, 0, 28)
         RefreshKGFilterList()
         local HighestCashEnabled = false
         local HighestCashToggle = CreateToggle(AutoPickupCard, "Above Lowest $/s", false, function(enabled)
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(11, 80)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 111)
         HighestCashToggle.Size = UDim2.new(1, -22, 0, 28)
         local UnindexedOnlyEnabled = false
         local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
-        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 114)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 145)
         UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 28)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
@@ -1379,7 +1379,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             ZoneFilterButton.Text = ZoneFilterOpen and "Zones ▲" or "Zones ▼"
             EggFilterButton.Text = EggFilterOpen and "Eggs ▲" or "Eggs ▼"
-            RarityFilterButton.Text = RarityFilterOpen and "Rarity Filter ▲" or "Rarity Filter ▼"
+            RarityFilterButton.Text = RarityFilterOpen and "Rarity ▲" or "Rarity ▼"
         end
         ZoneFilterButton = CreateButton(Card1, "Zones ▼", function()
             ZoneFilterOpen = not ZoneFilterOpen
@@ -1454,7 +1454,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         SortFrame = Create("Frame", {
             Name = "EggSortOptions",
             Parent = Card1,
-            Position = UDim2.fromOffset(15, 78),
+            Position = UDim2.fromOffset(11, 112),
             Size = UDim2.new(1, -30, 0, 28),
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
