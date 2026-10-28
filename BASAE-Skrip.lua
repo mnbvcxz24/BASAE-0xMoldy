@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.204"
+local testver = "Test v1.205"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1784,7 +1784,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 or GetEggDataValue(egg, "LuckMultiplier")
                 or GetEggDataValue(egg, "Luck")
             if rawLuck == nil or tostring(rawLuck):match("%S") == nil then return 0 end
-            local text = tostring(rawLuck):lower():gsub(",", ""):gsub("%s+", "")
+            local text = tostring(rawLuck):gsub("^%s*[xX×]%s*", ""):lower():gsub(",", ""):gsub("%s+", "")
             local suffixScale = {
                 k = 1e3, m = 1e6, b = 1e9, t = 1e12,
                 qa = 1e15, qd = 1e15, qi = 1e18,
