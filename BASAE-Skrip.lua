@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.209"
+local testver = "Test v1.210"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1235,7 +1235,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             EggFilterOpen = false
             if RarityFilterOpen then
                 RarityList.Position = UDim2.fromOffset(11, RarityFilterButton.Position.Y.Offset + RarityFilterButton.AbsoluteSize.Y + 4)
-                RarityList.Size = UDim2.new(0.5, -16, 0, 140)
+                RarityList.Size = UDim2.new(1, -22, 0, 140)
             end
             if PickupZoneList then PickupZoneList.Visible = false end
             RarityFilterButton.Text = RarityFilterOpen and "Rarity ▲" or "Rarity ▼"
@@ -1256,7 +1256,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             TextXAlignment = Enum.TextXAlignment.Left
         })
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
-        RarityFilterButton.Size = UDim2.new(0.5, -16, 0, 22)
+        RarityFilterButton.Size = UDim2.new(1, -22, 0, 22)
         PickupZoneButton = CreateButton(AutoPickupCard, "Zone: All ▼", function()
             ZoneFilterOpen = not ZoneFilterOpen
             RarityFilterOpen = false
