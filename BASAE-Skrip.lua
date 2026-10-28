@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.203"
+local testver = "Test v1.204"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1795,20 +1795,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             }
             local function parseLuckNumber(token)
                 if not token then return nil end
-                local numberText, suffix = token:lower():match("^(%d+%.?%d*)([a-z]*)$")
+                token = token:lower():gsub("^[x]", ""):gsub("^×", "")
+                local numberText, suffix = token:match("^(%d+%.?%d*)([a-z]*)$")
                 if not numberText then
-                    numberText, suffix = token:lower():match("^(%.%d+)([a-z]*)$")
+                    numberText, suffix = token:match("^(%.%d+)([a-z]*)$")
                 end
                 local number = tonumber(numberText)
                 if not number then return nil end
                 suffix = suffix or ""
                 if suffix == "" then return number end
-                local scale = suffixScale[suffix]
-                if not scale then return number end
-                return number * scale
+                return number * (suffixScale[suffix] or 1)
             end
-            local explicitToken = text:match("([%d%.]+[a-z]*)[x×]")
-                or text:match("[x×]([%d%.]+[a-z]*)")
+            local explicitToken = text:match("x([%d%.]+[a-z]*)")
+                or text:match("×([%d%.]+[a-z]*)")
+                or text:match("([%d%.]+[a-z]*)x$")
+                or text:match("([%d%.]+[a-z]*)×$")
             if explicitToken then
                 return parseLuckNumber(explicitToken) or 0
             end
@@ -1818,6 +1819,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             local lastToken
             for token in text:gmatch("%d+%.?%d*[a-z]*") do lastToken = token end
+            if not lastToken then
+                lastToken = text:match("%.(%d+[a-z]*)")
+                if lastToken then lastToken = "." .. lastToken end
+            end
             return parseLuckNumber(lastToken) or 0
         end
         function GetEggRecords()
