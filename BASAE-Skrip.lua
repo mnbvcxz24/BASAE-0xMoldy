@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.208"
+local testver = "Test v1.209"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1066,14 +1066,29 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
         AutoPickupCard.Position = UDim2.new(0, 0, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 264)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 290)
         local AutoPickupEnabled = false
         local PickupMonitorSeen = setmetatable({}, {__mode = "k"})
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
             table.clear(PickupMonitorSeen)
             AddDebugLog("[Auto Pickup] " .. (enabled and "Monitoring ON." or "Monitoring OFF."))
-            if not enabled and StopPickupAutomation then StopPickupAutomation("Auto Pickup disabled") end
+            if not enabled then
+                if StopPickupAutomation then StopPickupAutomation("Auto Pickup disabled") end
+                if CurrentTarget and IsEggConfirmedComplete(CurrentTarget) then
+                    CompletedEggs[CurrentTarget] = true
+                end
+                WaitingForPickup = false
+                ArrivedAtTarget = false
+                task.defer(function()
+                    task.wait(0.2)
+                    if AutoBreakEnabled and not AutoPickupEnabled and not PickupRequested
+                        and not ReturningAfterPickup and not FlingRecoveryActive and not ScriptShuttingDown
+                        and StartAutoBreak then
+                        StartAutoBreak(true)
+                    end
+                end)
+            end
         end)
         AutoPickupToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoPickupToggle.Size = UDim2.fromOffset(48, 24)
@@ -1248,8 +1263,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if ZoneList then ZoneList.Visible = false end
             if EggFilterList then EggFilterList.Visible = false end
             if PickupZoneList then
-                PickupZoneList.Position = UDim2.new(0.5, 3, 0, 69)
-                PickupZoneList.Size = UDim2.new(0.5, -16, 0, 140)
+                PickupZoneList.Position = UDim2.fromOffset(11, 111)
+                PickupZoneList.Size = UDim2.new(1, -22, 0, 140)
                 PickupZoneList.Visible = ZoneFilterOpen
             end
             local count = 0
@@ -1259,14 +1274,26 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             PickupZoneButton.Text = ZoneFilterOpen and "Zone ▲" or (count == 0 and "Zone: All ▼" or string.format("Zone: %d ▼", count))
         end)
         PickupZoneButton.Name = "AutoPickupZoneFilterButton"
-        PickupZoneButton.Position = UDim2.new(0.5, 5, 0, 43)
-        PickupZoneButton.Size = UDim2.new(0.5, -16, 0, 22)
+        PickupZoneButton.Position = UDim2.fromOffset(11, 85)
+        PickupZoneButton.Size = UDim2.new(1, -22, 0, 22)
         local KGThresholdAmount = 0
         local KGThresholdUnit = "K"
         Create("TextLabel", {
-            Name = "KGThresholdLabel",
+            Name = "ZoneFilterLabel",
             Parent = AutoPickupCard,
             Position = UDim2.fromOffset(11, 69),
+            Size = UDim2.new(1, -22, 0, 13),
+            BackgroundTransparency = 1,
+            Text = "Zone filter",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.GothamMedium,
+            TextSize = 9,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        Create("TextLabel", {
+            Name = "KGThresholdLabel",
+            Parent = AutoPickupCard,
+            Position = UDim2.fromOffset(11, 111),
             Size = UDim2.new(1, -22, 0, 13),
             BackgroundTransparency = 1,
             Text = "Weight Threshold (KG) · Unit",
@@ -1278,7 +1305,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local KGThresholdInput = Create("TextBox", {
             Name = "KGThresholdInput",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 84),
+            Position = UDim2.fromOffset(11, 126),
             Size = UDim2.new(1, -84, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
@@ -1306,12 +1333,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             KGUnitButton.Text = KGUnitState.open and "KG: " .. KGThresholdUnit .. " ▲" or "KG: " .. KGThresholdUnit .. " ▼"
         end)
         KGUnitButton.Name = "KGUnitFilterButton"
-        KGUnitButton.Position = UDim2.new(1, -63, 0, 84)
+        KGUnitButton.Position = UDim2.new(1, -63, 0, 126)
         KGUnitButton.Size = UDim2.fromOffset(52, 25)
         KGUnitState.list = Create("Frame", {
             Name = "KGUnitFilterList",
             Parent = AutoPickupCard,
-            Position = UDim2.new(1, -63, 0, 111),
+            Position = UDim2.new(1, -63, 0, 153),
             Size = UDim2.fromOffset(52, #KGUnitState.options * 24 + 8),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
@@ -1373,7 +1400,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         Create("TextLabel", {
             Name = "CPSFilterLabel",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 112),
+            Position = UDim2.fromOffset(11, 154),
             Size = UDim2.new(1, -22, 0, 13),
             BackgroundTransparency = 1,
             Text = "Coins per Second Threshold · Unit",
@@ -1385,7 +1412,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         CPSFilter.input = Create("TextBox", {
             Name = "CPSFilterInput",
             Parent = AutoPickupCard,
-            Position = UDim2.fromOffset(11, 127),
+            Position = UDim2.fromOffset(11, 169),
             Size = UDim2.new(1, -84, 0, 25),
             BackgroundColor3 = Theme.SurfaceInput,
             Text = "",
@@ -1413,12 +1440,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             CPSFilter.button.Text = CPSFilter.open and "Unit: " .. CPSFilter.unit .. " ▲" or "Unit: " .. CPSFilter.unit .. " ▼"
         end)
         CPSFilter.button.Name = "CPSUnitFilterButton"
-        CPSFilter.button.Position = UDim2.new(1, -63, 0, 127)
+        CPSFilter.button.Position = UDim2.new(1, -63, 0, 169)
         CPSFilter.button.Size = UDim2.fromOffset(52, 25)
         CPSFilter.list = Create("Frame", {
             Name = "CPSUnitFilterList",
             Parent = AutoPickupCard,
-            Position = UDim2.new(1, -63, 0, 154),
+            Position = UDim2.new(1, -63, 0, 196),
             Size = UDim2.fromOffset(52, #CPSFilter.options * 24 + 8),
             BackgroundColor3 = Theme.SurfaceInput,
             BorderSizePixel = 0,
@@ -1477,21 +1504,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             HighestCashEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Lowest placed CPS filter ON." or "Lowest placed CPS filter OFF."))
         end)
-        HighestCashToggle.Position = UDim2.fromOffset(11, 179)
+        HighestCashToggle.Position = UDim2.fromOffset(11, 205)
         HighestCashToggle.Size = UDim2.new(1, -22, 0, 22)
         local UnindexedOnlyEnabled = false
         local UnindexedOnlyToggle = CreateToggle(AutoPickupCard, "Unindexed Animals", false, function(enabled)
             UnindexedOnlyEnabled = enabled
             AddDebugLog("[Auto Pickup] " .. (enabled and "Unindexed-only verification ON." or "Unindexed-only verification OFF."))
         end)
-        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 205)
+        UnindexedOnlyToggle.Position = UDim2.fromOffset(11, 231)
         UnindexedOnlyToggle.Size = UDim2.new(1, -22, 0, 22)
         local DropInZone1Enabled = false
         local DropInZone1Toggle = CreateToggle(AutoPickupCard, "Drop in Zone 1", false, function(enabled)
             DropInZone1Enabled = enabled
             AddDebugLog("[Auto Pickup] Drop in Zone 1 " .. (enabled and "ON." or "OFF."))
         end)
-        DropInZone1Toggle.Position = UDim2.fromOffset(11, 231)
+        DropInZone1Toggle.Position = UDim2.fromOffset(11, 257)
         DropInZone1Toggle.Size = UDim2.new(1, -22, 0, 22)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
@@ -1510,8 +1537,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         PickupZoneList = Create("ScrollingFrame", {
             Name = "AutoPickupZoneFilterList",
             Parent = AutoPickupCard,
-            Position = UDim2.new(0.5, 3, 0, 69),
-            Size = UDim2.new(0.5, -16, 0, 140),
+            Position = UDim2.fromOffset(11, 111),
+            Size = UDim2.new(1, -22, 0, 140),
             CanvasSize = UDim2.new(0, 0, 0, 0),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             ScrollBarThickness = 3,
