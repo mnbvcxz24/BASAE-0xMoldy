@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.207"
+local testver = "Test v1.208"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1203,6 +1203,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega", "Spectral"}
         local SelectedRarities = {}
+        local SelectedPickupZones = {}
+        local PickupZoneList
+        local PickupZoneButton
         local RarityList
         local RarityFilterButton
         local ZoneFilterOpen = false
@@ -1215,8 +1218,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             EggFilterOpen = false
             if RarityFilterOpen then
                 RarityList.Position = UDim2.fromOffset(11, RarityFilterButton.Position.Y.Offset + RarityFilterButton.AbsoluteSize.Y + 4)
-                RarityList.Size = UDim2.new(1, -22, 0, 140)
+                RarityList.Size = UDim2.new(0.5, -16, 0, 140)
             end
+            if PickupZoneList then PickupZoneList.Visible = false end
             RarityFilterButton.Text = RarityFilterOpen and "Rarity ▲" or "Rarity ▼"
             RarityList.Visible = RarityFilterOpen
             if ZoneList then ZoneList.Visible = false end
@@ -1235,7 +1239,28 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             TextXAlignment = Enum.TextXAlignment.Left
         })
         RarityFilterButton.Position = UDim2.fromOffset(11, 43)
-        RarityFilterButton.Size = UDim2.new(1, -22, 0, 22)
+        RarityFilterButton.Size = UDim2.new(0.5, -16, 0, 22)
+        PickupZoneButton = CreateButton(AutoPickupCard, "Zone: All ▼", function()
+            ZoneFilterOpen = not ZoneFilterOpen
+            RarityFilterOpen = false
+            EggFilterOpen = false
+            RarityList.Visible = false
+            if ZoneList then ZoneList.Visible = false end
+            if EggFilterList then EggFilterList.Visible = false end
+            if PickupZoneList then
+                PickupZoneList.Position = UDim2.new(0.5, 3, 0, 69)
+                PickupZoneList.Size = UDim2.new(0.5, -16, 0, 140)
+                PickupZoneList.Visible = ZoneFilterOpen
+            end
+            local count = 0
+            for _, selected in pairs(SelectedPickupZones) do
+                if selected then count += 1 end
+            end
+            PickupZoneButton.Text = ZoneFilterOpen and "Zone ▲" or (count == 0 and "Zone: All ▼" or string.format("Zone: %d ▼", count))
+        end)
+        PickupZoneButton.Name = "AutoPickupZoneFilterButton"
+        PickupZoneButton.Position = UDim2.new(0.5, 5, 0, 43)
+        PickupZoneButton.Size = UDim2.new(0.5, -16, 0, 22)
         local KGThresholdAmount = 0
         local KGThresholdUnit = "K"
         Create("TextLabel", {
@@ -1482,6 +1507,33 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ZIndex = 100
         })
         AddCorner(RarityList, 6)
+        PickupZoneList = Create("ScrollingFrame", {
+            Name = "AutoPickupZoneFilterList",
+            Parent = AutoPickupCard,
+            Position = UDim2.new(0.5, 3, 0, 69),
+            Size = UDim2.new(0.5, -16, 0, 140),
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            AutomaticCanvasSize = Enum.AutomaticSize.Y,
+            ScrollBarThickness = 3,
+            ScrollBarImageColor3 = Theme.Gray,
+            BackgroundColor3 = Theme.SurfaceInput,
+            BorderSizePixel = 0,
+            Visible = false,
+            ZIndex = 110
+        })
+        AddCorner(PickupZoneList, 6)
+        local PickupZoneLayout = Create("UIListLayout", {
+            Parent = PickupZoneList,
+            Padding = UDim.new(0, 3),
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+        Create("UIPadding", {
+            Parent = PickupZoneList,
+            PaddingTop = UDim.new(0, 5),
+            PaddingBottom = UDim.new(0, 5),
+            PaddingLeft = UDim.new(0, 5),
+            PaddingRight = UDim.new(0, 5)
+        })
         local RarityLayout = Create("UIListLayout", {
             Parent = RarityList,
             Padding = UDim.new(0, 3),
@@ -1532,6 +1584,100 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         RefreshRarityList()
+        local function RefreshPickupZoneList()
+            for _, item in ipairs(PickupZoneList:GetChildren()) do
+                if item:IsA("TextButton") then item:Destroy() end
+            end
+            local build = workspace:FindFirstChild("Build")
+            local zoneBuilds = build and build:FindFirstChild("ZoneBuilds")
+            local zones = {}
+            if zoneBuilds then
+                for _, zone in ipairs(zoneBuilds:GetChildren()) do
+                    if zone:IsA("Model") then table.insert(zones, zone) end
+                end
+            end
+            table.sort(zones, function(a, b)
+                local an = tonumber(a.Name:match("%d+"))
+                local bn = tonumber(b.Name:match("%d+"))
+                if an and bn and an ~= bn then return an > bn end
+                if an and not bn then return true end
+                if bn and not an then return false end
+                return a.Name > b.Name
+            end)
+            local selectedCount = 0
+            for _, zone in ipairs(zones) do
+                if SelectedPickupZones[zone.Name] then selectedCount += 1 end
+            end
+            local allButton = Create("TextButton", {
+                Name = "PickupZone_All",
+                Parent = PickupZoneList,
+                Size = UDim2.new(1, -4, 0, 22),
+                BackgroundColor3 = selectedCount == 0 and Theme.Selected or Theme.Card,
+                Text = "",
+                BorderSizePixel = 0,
+                LayoutOrder = 0,
+                AutoButtonColor = false,
+                ZIndex = 111
+            })
+            AddCorner(allButton, 4)
+            Create("TextLabel", {
+                Parent = allButton, Position = UDim2.fromOffset(6, 0),
+                Size = UDim2.new(1, -24, 1, 0), BackgroundTransparency = 1,
+                Text = "All Zones (default)", TextColor3 = Theme.Text,
+                Font = Enum.Font.Gotham, TextSize = 9,
+                TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 112
+            })
+            Create("TextLabel", {
+                Parent = allButton, Position = UDim2.new(1, -20, 0, 0),
+                Size = UDim2.fromOffset(16, 22), BackgroundTransparency = 1,
+                Text = selectedCount == 0 and "✓" or "○",
+                TextColor3 = selectedCount == 0 and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                Font = Enum.Font.GothamBold, TextSize = 10, ZIndex = 112
+            })
+            allButton.MouseButton1Click:Connect(function()
+                table.clear(SelectedPickupZones)
+                RefreshPickupZoneList()
+                PickupZoneButton.Text = "Zone: All ▼"
+            end)
+            for index, zone in ipairs(zones) do
+                local zoneName = zone.Name
+                local selected = SelectedPickupZones[zoneName] == true
+                local item = Create("TextButton", {
+                    Name = "PickupZone_" .. zoneName,
+                    Parent = PickupZoneList,
+                    Size = UDim2.new(1, -4, 0, 22),
+                    BackgroundColor3 = selected and Theme.Selected or Theme.Card,
+                    Text = "", BorderSizePixel = 0, LayoutOrder = index,
+                    AutoButtonColor = false, ZIndex = 111
+                })
+                AddCorner(item, 4)
+                Create("TextLabel", {
+                    Parent = item, Position = UDim2.fromOffset(6, 0),
+                    Size = UDim2.new(1, -24, 1, 0), BackgroundTransparency = 1,
+                    Text = zoneName, TextColor3 = Theme.Text,
+                    Font = Enum.Font.Gotham, TextSize = 9,
+                    TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 112
+                })
+                Create("TextLabel", {
+                    Parent = item, Position = UDim2.new(1, -20, 0, 0),
+                    Size = UDim2.fromOffset(16, 22), BackgroundTransparency = 1,
+                    Text = selected and "✓" or "○",
+                    TextColor3 = selected and Color3.fromRGB(110, 205, 145) or Theme.Gray,
+                    Font = Enum.Font.GothamBold, TextSize = 10, ZIndex = 112
+                })
+                item.MouseButton1Click:Connect(function()
+                    SelectedPickupZones[zoneName] = selected and nil or true
+                    RefreshPickupZoneList()
+                    local count = 0
+                    for _, enabled in pairs(SelectedPickupZones) do
+                        if enabled then count += 1 end
+                    end
+                    PickupZoneButton.Text = count == 0 and "Zone: All ▼" or string.format("Zone: %d ▼", count)
+                end)
+            end
+            PickupZoneList.CanvasSize = UDim2.new(0, 0, 0, PickupZoneLayout.AbsoluteContentSize.Y + 10)
+        end
+        RefreshPickupZoneList()
         local SelectedZones = {}
         local SelectedEggs = {}
         local PreferredZoneName = nil
@@ -1542,6 +1688,57 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local SortLargestButton
         local SortSmallestButton
         local ZoneBuilds = workspace:WaitForChild("Build"):WaitForChild("ZoneBuilds")
+        function GetPickupZoneName(pickup)
+            if not pickup or not pickup.Parent then return nil end
+            local pickupPosition
+            local ok = pcall(function()
+                if pickup:IsA("Model") then
+                    pickupPosition = pickup:GetPivot().Position
+                elseif pickup:IsA("BasePart") then
+                    pickupPosition = pickup.Position
+                end
+            end)
+            if not ok or not pickupPosition then return nil end
+            local nearestZone, nearestDistance = nil, math.huge
+            for _, zone in ipairs(ZoneBuilds:GetChildren()) do
+                local eggsFolder = zone:FindFirstChild("Eggs")
+                if eggsFolder then
+                    for _, egg in ipairs(eggsFolder:GetChildren()) do
+                        if egg:IsA("Model") or egg:IsA("BasePart") then
+                            local eggPosition
+                            local eggOk = pcall(function()
+                                if egg:IsA("Model") then
+                                    eggPosition = egg:GetPivot().Position
+                                else
+                                    eggPosition = egg.Position
+                                end
+                            end)
+                            if eggOk and eggPosition then
+                                local distance = (pickupPosition - eggPosition).Magnitude
+                                if distance < nearestDistance then
+                                    nearestDistance = distance
+                                    nearestZone = zone.Name
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            return nearestZone
+        end
+        function IsPickupAllowedByZone(pickup)
+            local selectedCount = 0
+            for _, selected in pairs(SelectedPickupZones) do
+                if selected then selectedCount += 1 end
+            end
+            if selectedCount == 0 then return true end
+            local zoneName = GetPickupZoneName(pickup)
+            if not zoneName then
+                SetPickupTracking(pickup, "Rejected: pickup zone could not be determined")
+                return false, nil
+            end
+            return SelectedPickupZones[zoneName] == true, zoneName
+        end
         function UpdateFilterPanel()
             ZoneList.Visible = ZoneFilterOpen
             EggFilterList.Visible = EggFilterOpen
@@ -2892,6 +3089,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             if IsRecentlyDroppedAnimal(pickup) then return end
+            local zoneAllowed, pickupZoneName = IsPickupAllowedByZone(pickup)
+            if not zoneAllowed then
+                SetPickupTracking(pickup, "Rejected: outside selected pickup zones", tostring(pickupZoneName or "unknown zone"))
+                RejectPickupAndRestart("Filtered out " .. pickup.Name .. " | zone " .. tostring(pickupZoneName or "unknown") .. " is not selected.")
+                return
+            end
             if not AutoPickupEnabled then
                 SetPickupTracking(pickup, "Skipped: Auto Pickup OFF")
                 if CurrentTarget and IsEggConfirmedComplete(CurrentTarget) then CompletedEggs[CurrentTarget] = true end
