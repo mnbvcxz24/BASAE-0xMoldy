@@ -1666,7 +1666,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     Font = Enum.Font.GothamBold, TextSize = 10, ZIndex = 112
                 })
                 item.MouseButton1Click:Connect(function()
-                    SelectedPickupZones[zoneName] = selected and nil or true
+                    if SelectedPickupZones[zoneName] then
+                        SelectedPickupZones[zoneName] = nil
+                    else
+                        SelectedPickupZones[zoneName] = true
+                    end
                     RefreshPickupZoneList()
                     local count = 0
                     for _, enabled in pairs(SelectedPickupZones) do
