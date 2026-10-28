@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.206"
+local testver = "Test v1.207"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -94,19 +94,19 @@ local UIConfig = {
 }
 -- THEME
 local Theme = {
-    Background = Color3.fromRGB(16, 24, 32),
-    Sidebar = Color3.fromRGB(19, 31, 42),
-    Card = Color3.fromRGB(24, 38, 50),
-    Border = Color3.fromRGB(38, 56, 71),
-    Text = Color3.fromRGB(241, 245, 249),
-    DarkGray = Color3.fromRGB(199, 210, 222),
-    Gray = Color3.fromRGB(154, 170, 185),
-    LightGray = Color3.fromRGB(35, 52, 66),
-    SurfaceInput = Color3.fromRGB(26, 42, 55),
-    Selected = Color3.fromRGB(26, 55, 70),
-    SelectedText = Color3.fromRGB(241, 245, 249),
-    Accent = Color3.fromRGB(56, 214, 232),
-    AccentText = Color3.fromRGB(10, 27, 34)
+    Background = Color3.fromRGB(5, 5, 7),
+    Sidebar = Color3.fromRGB(10, 10, 12),
+    Card = Color3.fromRGB(17, 17, 19),
+    Border = Color3.fromRGB(48, 39, 25),
+    Text = Color3.fromRGB(250, 247, 239),
+    DarkGray = Color3.fromRGB(208, 201, 187),
+    Gray = Color3.fromRGB(153, 146, 132),
+    LightGray = Color3.fromRGB(28, 27, 24),
+    SurfaceInput = Color3.fromRGB(22, 21, 18),
+    Selected = Color3.fromRGB(70, 47, 18),
+    SelectedText = Color3.fromRGB(255, 248, 230),
+    Accent = Color3.fromRGB(255, 181, 55),
+    AccentText = Color3.fromRGB(35, 21, 3)
 }
 -- HELPER FUNCTIONS
 local function Create(className, properties)
@@ -303,7 +303,7 @@ local ThemePresets = {
         AccentText = Color3.fromRGB(19, 35, 4)
     }
 }
-local ActiveThemeName = "Midnight Blue + Cyan"
+local ActiveThemeName = "OLED Black + Amber"
 -- SCREEN GUI
 local ScreenGui = Create("ScreenGui", {
     Name = "BASAESkripUI",
