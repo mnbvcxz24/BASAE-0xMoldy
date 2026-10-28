@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.205"
+local testver = "Test v1.206"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1751,6 +1751,28 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local eggModel = egg and (egg:FindFirstChild("Egg") or egg)
             if not eggModel then return 0 end
             local info = eggModel:FindFirstChild("EggInfoUi", true)
+
+            local function isTextObject(node)
+                return node and (node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox"))
+            end
+
+            local function getNamedDisplayText(object, names)
+                if not object then return nil end
+                local nodes = {object}
+                for _, descendant in ipairs(object:GetDescendants()) do
+                    table.insert(nodes, descendant)
+                end
+                for _, name in ipairs(names) do
+                    for _, node in ipairs(nodes) do
+                        if node.Name == name and isTextObject(node) then
+                            local value = tostring(node.Text or "")
+                            if value:match("%S") then return value end
+                        end
+                    end
+                end
+                return nil
+            end
+
             local function getESPValue(object, names)
                 if not object then return nil end
                 local nodes = {object}
@@ -1759,32 +1781,48 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 for _, name in ipairs(names) do
                     for _, node in ipairs(nodes) do
+                        if node.Name == name then
+                            if isTextObject(node) and tostring(node.Text or ""):match("%S") then
+                                return tostring(node.Text)
+                            end
+                            local value = node:GetAttribute(name)
+                            if value ~= nil then return tostring(value) end
+                            if node:IsA("ValueBase") then return tostring(node.Value) end
+                        end
                         local value = node:GetAttribute(name)
                         if value ~= nil then return tostring(value) end
-                        if node.Name == name then
-                            if node:IsA("ValueBase") then return tostring(node.Value) end
-                            if (node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox")) and node.Text ~= "" then
-                                return node.Text
-                            end
-                        end
                     end
                 end
                 return nil
             end
-            local rawLuck = getESPValue(eggModel, {"LuckMulti", "Luck", "LuckMultiplier"})
-                or getESPValue(info, {"LuckMulti", "Luck", "LuckMultiplier"})
-            if not rawLuck and info then
+
+            -- Prefer the displayed multiplier (for example, "x500.2B") over
+            -- raw attributes that may contain only the unscaled number.
+            local rawLuck
+            if info then
                 local luckList = info:FindFirstChild("LuckMultiList", true)
                 local luckLabel = luckList and luckList:FindFirstChild("LuckMulti", true)
-                if luckLabel and (luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton") or luckLabel:IsA("TextBox")) then
+                if isTextObject(luckLabel) and tostring(luckLabel.Text or ""):match("%S") then
                     rawLuck = luckLabel.Text
                 end
+                rawLuck = rawLuck or getNamedDisplayText(info, {"LuckMulti", "LuckMultiplier", "Luck"})
             end
-            rawLuck = rawLuck or GetEggDataValue(egg, "LuckMulti")
+            rawLuck = rawLuck
+                or getNamedDisplayText(eggModel, {"LuckMulti", "LuckMultiplier", "Luck"})
+                or getESPValue(info, {"LuckMulti", "Luck", "LuckMultiplier"})
+                or getESPValue(eggModel, {"LuckMulti", "Luck", "LuckMultiplier"})
+                or GetEggDataValue(egg, "LuckMulti")
                 or GetEggDataValue(egg, "LuckMultiplier")
                 or GetEggDataValue(egg, "Luck")
+
             if rawLuck == nil or tostring(rawLuck):match("%S") == nil then return 0 end
-            local text = tostring(rawLuck):gsub("^%s*[xX×]%s*", ""):lower():gsub(",", ""):gsub("%s+", "")
+
+            local text = tostring(rawLuck)
+                :gsub("^%s*[xX×]%s*", "")
+                :lower()
+                :gsub(",", "")
+                :gsub("%s+", "")
+
             local suffixScale = {
                 k = 1e3, m = 1e6, b = 1e9, t = 1e12,
                 qa = 1e15, qd = 1e15, qi = 1e18,
@@ -1793,9 +1831,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 qag = 1e45, qig = 1e48, sxg = 1e51, spg = 1e54,
                 og = 1e57, ng = 1e60
             }
+
             local function parseLuckNumber(token)
                 if not token then return nil end
-                token = token:lower():gsub("^[x]", ""):gsub("^×", "")
+                token = token:lower():gsub("^[x×]", "")
                 local numberText, suffix = token:match("^(%d+%.?%d*)([a-z]*)$")
                 if not numberText then
                     numberText, suffix = token:match("^(%.%d+)([a-z]*)$")
@@ -1803,26 +1842,24 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local number = tonumber(numberText)
                 if not number then return nil end
                 suffix = suffix or ""
-                if suffix == "" then return number end
+                if suffix ~= "" and suffixScale[suffix] == nil then return nil end
                 return number * (suffixScale[suffix] or 1)
             end
-            local explicitToken = text:match("x([%d%.]+[a-z]*)")
-                or text:match("×([%d%.]+[a-z]*)")
-                or text:match("([%d%.]+[a-z]*)x$")
-                or text:match("([%d%.]+[a-z]*)×$")
-            if explicitToken then
-                return parseLuckNumber(explicitToken) or 0
-            end
+
             local ratioNumerator, ratioDenominator = text:match("^([%d%.]+[a-z]*)/([%d%.]+[a-z]*)$")
             if ratioNumerator and ratioDenominator then
                 return parseLuckNumber(ratioDenominator) or parseLuckNumber(ratioNumerator) or 0
             end
+
             local lastToken
-            for token in text:gmatch("%d+%.?%d*[a-z]*") do lastToken = token end
+            for token in text:gmatch("%d+%.?%d*[a-z]*") do
+                lastToken = token
+            end
             if not lastToken then
                 lastToken = text:match("%.(%d+[a-z]*)")
                 if lastToken then lastToken = "." .. lastToken end
             end
+
             return parseLuckNumber(lastToken) or 0
         end
         function GetEggRecords()
