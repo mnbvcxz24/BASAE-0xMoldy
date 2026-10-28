@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Deploy v1.201"
+local testver = "Deploy v1.206"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1064,6 +1064,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local CompletedEggs = {}
         local LastEggHPValue = nil
         local LastEggHPTarget = nil
+
         local AutoBreakToggleInitialized = false
         local AutoBreakEnabled = false
         local AutoBreakGeneration = 0
@@ -1790,31 +1791,116 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local eggModel = egg and (egg:FindFirstChild("Egg") or egg)
             if not eggModel then return 0 end
             local info = eggModel:FindFirstChild("EggInfoUi", true)
-            local luckLabel = info and info:FindFirstChild("LuckMultiList", true)
-            luckLabel = luckLabel and luckLabel:FindFirstChild("LuckMulti", true)
-            local rawLuck
-            if luckLabel then
-                rawLuck = (luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton")) and luckLabel.Text or nil
-                rawLuck = rawLuck or luckLabel:GetAttribute("LuckMulti")
+
+            local function isTextObject(node)
+                return node and (node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox"))
             end
-            rawLuck = rawLuck or GetEggDataValue(egg, "LuckMulti")
+
+            local function getNamedDisplayText(object, names)
+                if not object then return nil end
+                local nodes = {object}
+                for _, descendant in ipairs(object:GetDescendants()) do
+                    table.insert(nodes, descendant)
+                end
+                for _, name in ipairs(names) do
+                    for _, node in ipairs(nodes) do
+                        if node.Name == name and isTextObject(node) then
+                            local value = tostring(node.Text or "")
+                            if value:match("%S") then return value end
+                        end
+                    end
+                end
+                return nil
+            end
+
+            local function getESPValue(object, names)
+                if not object then return nil end
+                local nodes = {object}
+                for _, descendant in ipairs(object:GetDescendants()) do
+                    table.insert(nodes, descendant)
+                end
+                for _, name in ipairs(names) do
+                    for _, node in ipairs(nodes) do
+                        if node.Name == name then
+                            if isTextObject(node) and tostring(node.Text or ""):match("%S") then
+                                return tostring(node.Text)
+                            end
+                            local value = node:GetAttribute(name)
+                            if value ~= nil then return tostring(value) end
+                            if node:IsA("ValueBase") then return tostring(node.Value) end
+                        end
+                        local value = node:GetAttribute(name)
+                        if value ~= nil then return tostring(value) end
+                    end
+                end
+                return nil
+            end
+
+            -- Prefer the displayed multiplier (for example, "x500.2B") over
+            -- raw attributes that may contain only the unscaled number.
+            local rawLuck
+            if info then
+                local luckList = info:FindFirstChild("LuckMultiList", true)
+                local luckLabel = luckList and luckList:FindFirstChild("LuckMulti", true)
+                if isTextObject(luckLabel) and tostring(luckLabel.Text or ""):match("%S") then
+                    rawLuck = luckLabel.Text
+                end
+                rawLuck = rawLuck or getNamedDisplayText(info, {"LuckMulti", "LuckMultiplier", "Luck"})
+            end
+            rawLuck = rawLuck
+                or getNamedDisplayText(eggModel, {"LuckMulti", "LuckMultiplier", "Luck"})
+                or getESPValue(info, {"LuckMulti", "Luck", "LuckMultiplier"})
+                or getESPValue(eggModel, {"LuckMulti", "Luck", "LuckMultiplier"})
+                or GetEggDataValue(egg, "LuckMulti")
                 or GetEggDataValue(egg, "LuckMultiplier")
                 or GetEggDataValue(egg, "Luck")
+
             if rawLuck == nil or tostring(rawLuck):match("%S") == nil then return 0 end
-            local text = tostring(rawLuck):lower():gsub(",", ""):gsub("%s+", "")
-            local explicitMultiplier = text:match("[x×]([%d%.]+)") or text:match("([%d%.]+)[x×]")
-            if explicitMultiplier then
-                return tonumber(explicitMultiplier) or 0
+
+            local text = tostring(rawLuck)
+                :gsub("^%s*[xX×]%s*", "")
+                :lower()
+                :gsub(",", "")
+                :gsub("%s+", "")
+
+            local suffixScale = {
+                k = 1e3, m = 1e6, b = 1e9, t = 1e12,
+                qa = 1e15, qd = 1e15, qi = 1e18,
+                sx = 1e21, sp = 1e24, oc = 1e27, no = 1e30,
+                dc = 1e33, ud = 1e36, dd = 1e39, td = 1e42,
+                qag = 1e45, qig = 1e48, sxg = 1e51, spg = 1e54,
+                og = 1e57, ng = 1e60
+            }
+
+            local function parseLuckNumber(token)
+                if not token then return nil end
+                token = token:lower():gsub("^[x×]", "")
+                local numberText, suffix = token:match("^(%d+%.?%d*)([a-z]*)$")
+                if not numberText then
+                    numberText, suffix = token:match("^(%.%d+)([a-z]*)$")
+                end
+                local number = tonumber(numberText)
+                if not number then return nil end
+                suffix = suffix or ""
+                if suffix ~= "" and suffixScale[suffix] == nil then return nil end
+                return number * (suffixScale[suffix] or 1)
             end
-            local ratioDenominator = text:match("^%d+/(%d+%.?%d*)$")
-            if ratioDenominator then
-                return tonumber(ratioDenominator) or 0
+
+            local ratioNumerator, ratioDenominator = text:match("^([%d%.]+[a-z]*)/([%d%.]+[a-z]*)$")
+            if ratioNumerator and ratioDenominator then
+                return parseLuckNumber(ratioDenominator) or parseLuckNumber(ratioNumerator) or 0
             end
-            local lastNumber
-            for numberText in text:gmatch("%d+%.?%d*") do
-                lastNumber = numberText
+
+            local lastToken
+            for token in text:gmatch("%d+%.?%d*[a-z]*") do
+                lastToken = token
             end
-            return tonumber(lastNumber) or 0
+            if not lastToken then
+                lastToken = text:match("%.(%d+[a-z]*)")
+                if lastToken then lastToken = "." .. lastToken end
+            end
+
+            return parseLuckNumber(lastToken) or 0
         end
         function GetEggRecords()
             local records = {}
@@ -2759,14 +2845,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return
             end
             local hadTarget = CurrentTarget ~= nil and CurrentTarget.Parent ~= nil
-            if hadTarget and WaitingForPickup then
+            if hadTarget and WaitingForPickup and IsEggConfirmedComplete(CurrentTarget) then
                 CompletedEggs[CurrentTarget] = true
             end
             SetTrackerStatus(message .. (hadTarget and WaitingForPickup
                 and " | rejected animal; releasing egg wait and resuming Auto Break."
                 or " | rejected animal; checking whether Auto Break can resume."))
             task.defer(function()
-                if StopAutoBreak then StopAutoBreak("Recovering after rejected animal.", false) end
+                if StopAutoBreak then StopAutoBreak("Recovering after rejected animal.", CurrentTarget ~= nil and IsEggAvailable(CurrentTarget)) end
                 task.wait(0.2)
                 if AutoBreakEnabled and not PickupRequested and not ReturningAfterPickup and StartAutoBreak then
                     StartAutoBreak()
@@ -2848,11 +2934,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if IsRecentlyDroppedAnimal(pickup) then return end
             if not AutoPickupEnabled then
                 SetPickupTracking(pickup, "Skipped: Auto Pickup OFF")
-                if CurrentTarget then CompletedEggs[CurrentTarget] = true end
+                if CurrentTarget and IsEggConfirmedComplete(CurrentTarget) then CompletedEggs[CurrentTarget] = true end
                 WaitingForPickup = false
-                SetTrackerStatus("New pet detected (Auto Pickup OFF): " .. pickup.Name .. " | continuing to next egg.")
+                SetTrackerStatus("New pet detected (Auto Pickup OFF): " .. pickup.Name .. " | checking current egg HP before selecting another.")
                 task.defer(function()
-                    if StopAutoBreak then StopAutoBreak() end
+                    if StopAutoBreak then StopAutoBreak("Auto Pickup is OFF; checking current egg HP.", CurrentTarget ~= nil and IsEggAvailable(CurrentTarget)) end
                     task.wait(0.2)
                     if AutoBreakEnabled and StartAutoBreak then StartAutoBreak() end
                 end)
@@ -3053,7 +3139,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if watchdogHumanoid then watchdogHumanoid:Move(Vector3.zero, false) end
                 WaitingForPickup = false
                 ArrivedAtTarget = false
-                CurrentTarget = nil
                 task.spawn(function()
                     EquipHotbarOne()
                     task.wait(0.2)
@@ -3062,8 +3147,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
                 end)
             end)
-            if CurrentTarget then CompletedEggs[CurrentTarget] = true end
-            if StopAutoBreak then StopAutoBreak() end
+            if StopAutoBreak then StopAutoBreak("Auto Break paused while Auto Pickup handles " .. pickup.Name .. ".", CurrentTarget ~= nil and IsEggAvailable(CurrentTarget)) end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             local activeCharacter = LocalPlayer.Character
             local activeHumanoid = activeCharacter and activeCharacter:FindFirstChildOfClass("Humanoid")
@@ -3683,8 +3767,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ActivePickup = nil
             ActivePickupCPS = -1
             PickupRequested = true
-            if CurrentTarget then CompletedEggs[CurrentTarget] = true end
-            if StopAutoBreak then StopAutoBreak() end
+            if StopAutoBreak then StopAutoBreak("Auto Break paused for fling recovery.", CurrentTarget ~= nil and IsEggAvailable(CurrentTarget)) end
             if MovementConnection then MovementConnection:Disconnect(); MovementConnection = nil end
             SetTrackerStatus("Base return paused. FLING RECOVERY locating dropped " .. tostring(targetAnimalName) .. " in AnimalPickups.")
             task.spawn(function()
@@ -4149,7 +4232,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             table.sort(selectedZoneNames)
             local target = lockedTarget
-            if not target and TitanicPriorityEnabled then
+            if not target and TitanicPriorityEnabled and SortOrder ~= "Highest Luck" then
                 local weightCandidates = {}
                 for _, zoneName in ipairs(selectedZoneNames) do
                     local zone = ZoneBuilds:FindFirstChild(zoneName)
@@ -4224,7 +4307,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                 if SelectedEggs[eggName] ~= false then
                                     local luck = GetEggLuck(egg)
                                     if luck > 0 then
-                                        table.insert(luckCandidates, {egg = egg, luck = luck})
+                                        local weightBracket = GetEggWeightBracket(egg)
+                                        local weightKg = GetEggWeightKg(egg)
+                                        local bracketText = weightBracket ~= nil and tostring(weightBracket) or ""
+                                        local isTitanic = bracketText:lower():find("titanic", 1, true) ~= nil
+                                        table.insert(luckCandidates, {
+                                            egg = egg,
+                                            luck = luck,
+                                            weightKg = weightKg or 0,
+                                            isTitanic = isTitanic
+                                        })
                                     else
                                         unreadableLuckCount += 1
                                     end
@@ -4235,14 +4327,25 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 table.sort(luckCandidates, function(a, b)
                     if a.luck ~= b.luck then return a.luck > b.luck end
+                    if TitanicPriorityEnabled and a.isTitanic ~= b.isTitanic then
+                        return a.isTitanic
+                    end
+                    if TitanicPriorityEnabled and a.weightKg ~= b.weightKg then
+                        return a.weightKg > b.weightKg
+                    end
                     return a.egg.Name < b.egg.Name
                 end)
                 if #luckCandidates > 0 then
                     target = luckCandidates[1].egg
                     SetTrackerStatus("HIGHEST LUCK PRIORITY: selected " .. target.Name
                         .. " | Luck=" .. tostring(luckCandidates[1].luck)
+                        .. (TitanicPriorityEnabled and (" | Size tie-break: " .. (luckCandidates[1].isTitanic and "Titanic" or tostring(luckCandidates[1].weightKg) .. " KG")) or "")
                         .. " | readable candidates=" .. tostring(#luckCandidates)
                         .. " | ignored unreadable=" .. tostring(unreadableLuckCount))
+                    AddDebugLog("[Auto Break] Selected " .. target.Name .. " | luck=" .. tostring(luckCandidates[1].luck)
+                        .. " | sizeKG=" .. tostring(luckCandidates[1].weightKg)
+                        .. " | Titanic=" .. tostring(luckCandidates[1].isTitanic)
+                        .. " | candidates=" .. tostring(#luckCandidates))
                 else
                     SetTrackerStatus("HIGHEST LUCK PRIORITY found no readable values; using the normal Egg Filter selection.")
                     AddDebugLog("[Auto Break] HighLuck values unavailable; falling back to normal filtered egg selection.")
@@ -4338,9 +4441,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 if CurrentTarget ~= target or not IsEggAvailable(target) or not character.Parent
                 or humanoid.Health <= 0 then
-                    if CurrentTarget == target and (not IsEggAvailable(target) or humanoid.Health <= 0) then
+                    if CurrentTarget == target and not IsEggAvailable(target) then
                         CompletedEggs[target] = true
-                        SetTrackerStatus("Target egg is no longer available or is already broken; refreshing the egg list.")
+                        SetTrackerStatus("Target egg is no longer available or its HP reached 0; refreshing the egg list.")
                         StopAutoBreak()
                         task.defer(function()
                             task.wait(0.2)
@@ -4349,7 +4452,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             end
                         end)
                     else
-                        StopAutoBreak("Movement stopped: target/character unavailable.")
+                        StopAutoBreak("Movement stopped: target/character unavailable.", CurrentTarget == target and IsEggAvailable(target))
                     end
                     return
                 end
@@ -4424,7 +4527,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     if humanoid then humanoid:Move(Vector3.zero, false) end
                     WaitingForPickup = false
                     ArrivedAtTarget = false
-                    CurrentTarget = nil
                     FlingRecoveryActive = false
                     TouchAutomationProgress("WATCHDOG_RECOVERY")
                     task.spawn(function()
