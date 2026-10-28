@@ -9,7 +9,7 @@ local HttpService = game:GetService("HttpService")
 local STARTUP_WEBHOOK_URL = "https://discord.com/api/webhooks/1564522343496159355/1CV7odn-TbGQsEBixEbDXd2bTqPVjeClU6oi2XWCX-oQFM8h-UvitH8ycqDmXGqhZXgn"
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
 local HttpRequest = RuntimeEnv.request or RuntimeEnv.http_request or (type(RuntimeEnv.syn) == "table" and RuntimeEnv.syn.request)
-local testver = "Test v1.202"
+local testver = "Test v1.203"
 local function SendStartupWebhook()
     if not HttpRequest or STARTUP_WEBHOOK_URL == "" or STARTUP_WEBHOOK_URL == "PASTE_YOUR_DISCORD_WEBHOOK_URL_HERE" then
         return
@@ -1785,13 +1785,40 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 or GetEggDataValue(egg, "Luck")
             if rawLuck == nil or tostring(rawLuck):match("%S") == nil then return 0 end
             local text = tostring(rawLuck):lower():gsub(",", ""):gsub("%s+", "")
-            local explicitMultiplier = text:match("[x×]([%d%.]+)") or text:match("([%d%.]+)[x×]")
-            if explicitMultiplier then return tonumber(explicitMultiplier) or 0 end
-            local ratioDenominator = text:match("^%d+/(%d+%.?%d*)$")
-            if ratioDenominator then return tonumber(ratioDenominator) or 0 end
-            local lastNumber
-            for numberText in text:gmatch("%d+%.?%d*") do lastNumber = numberText end
-            return tonumber(lastNumber) or 0
+            local suffixScale = {
+                k = 1e3, m = 1e6, b = 1e9, t = 1e12,
+                qa = 1e15, qd = 1e15, qi = 1e18,
+                sx = 1e21, sp = 1e24, oc = 1e27, no = 1e30,
+                dc = 1e33, ud = 1e36, dd = 1e39, td = 1e42,
+                qag = 1e45, qig = 1e48, sxg = 1e51, spg = 1e54,
+                og = 1e57, ng = 1e60
+            }
+            local function parseLuckNumber(token)
+                if not token then return nil end
+                local numberText, suffix = token:lower():match("^(%d+%.?%d*)([a-z]*)$")
+                if not numberText then
+                    numberText, suffix = token:lower():match("^(%.%d+)([a-z]*)$")
+                end
+                local number = tonumber(numberText)
+                if not number then return nil end
+                suffix = suffix or ""
+                if suffix == "" then return number end
+                local scale = suffixScale[suffix]
+                if not scale then return number end
+                return number * scale
+            end
+            local explicitToken = text:match("([%d%.]+[a-z]*)[x×]")
+                or text:match("[x×]([%d%.]+[a-z]*)")
+            if explicitToken then
+                return parseLuckNumber(explicitToken) or 0
+            end
+            local ratioNumerator, ratioDenominator = text:match("^([%d%.]+[a-z]*)/([%d%.]+[a-z]*)$")
+            if ratioNumerator and ratioDenominator then
+                return parseLuckNumber(ratioDenominator) or parseLuckNumber(ratioNumerator) or 0
+            end
+            local lastToken
+            for token in text:gmatch("%d+%.?%d*[a-z]*") do lastToken = token end
+            return parseLuckNumber(lastToken) or 0
         end
         function GetEggRecords()
             local records = {}
