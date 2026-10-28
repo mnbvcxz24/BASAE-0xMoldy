@@ -1751,12 +1751,34 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local eggModel = egg and (egg:FindFirstChild("Egg") or egg)
             if not eggModel then return 0 end
             local info = eggModel:FindFirstChild("EggInfoUi", true)
-            local luckLabel = info and info:FindFirstChild("LuckMultiList", true)
-            luckLabel = luckLabel and luckLabel:FindFirstChild("LuckMulti", true)
-            local rawLuck
-            if luckLabel then
-                rawLuck = (luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton")) and luckLabel.Text or nil
-                rawLuck = rawLuck or luckLabel:GetAttribute("LuckMulti")
+            local function getESPValue(object, names)
+                if not object then return nil end
+                local nodes = {object}
+                for _, descendant in ipairs(object:GetDescendants()) do
+                    table.insert(nodes, descendant)
+                end
+                for _, name in ipairs(names) do
+                    for _, node in ipairs(nodes) do
+                        local value = node:GetAttribute(name)
+                        if value ~= nil then return tostring(value) end
+                        if node.Name == name then
+                            if node:IsA("ValueBase") then return tostring(node.Value) end
+                            if (node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox")) and node.Text ~= "" then
+                                return node.Text
+                            end
+                        end
+                    end
+                end
+                return nil
+            end
+            local rawLuck = getESPValue(eggModel, {"LuckMulti", "Luck", "LuckMultiplier"})
+                or getESPValue(info, {"LuckMulti", "Luck", "LuckMultiplier"})
+            if not rawLuck and info then
+                local luckList = info:FindFirstChild("LuckMultiList", true)
+                local luckLabel = luckList and luckList:FindFirstChild("LuckMulti", true)
+                if luckLabel and (luckLabel:IsA("TextLabel") or luckLabel:IsA("TextButton") or luckLabel:IsA("TextBox")) then
+                    rawLuck = luckLabel.Text
+                end
             end
             rawLuck = rawLuck or GetEggDataValue(egg, "LuckMulti")
                 or GetEggDataValue(egg, "LuckMultiplier")
@@ -1764,17 +1786,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if rawLuck == nil or tostring(rawLuck):match("%S") == nil then return 0 end
             local text = tostring(rawLuck):lower():gsub(",", ""):gsub("%s+", "")
             local explicitMultiplier = text:match("[x×]([%d%.]+)") or text:match("([%d%.]+)[x×]")
-            if explicitMultiplier then
-                return tonumber(explicitMultiplier) or 0
-            end
+            if explicitMultiplier then return tonumber(explicitMultiplier) or 0 end
             local ratioDenominator = text:match("^%d+/(%d+%.?%d*)$")
-            if ratioDenominator then
-                return tonumber(ratioDenominator) or 0
-            end
+            if ratioDenominator then return tonumber(ratioDenominator) or 0 end
             local lastNumber
-            for numberText in text:gmatch("%d+%.?%d*") do
-                lastNumber = numberText
-            end
+            for numberText in text:gmatch("%d+%.?%d*") do lastNumber = numberText end
             return tonumber(lastNumber) or 0
         end
         function GetEggRecords()
@@ -4107,7 +4123,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             table.sort(selectedZoneNames)
             local target = lockedTarget
-            if not target and TitanicPriorityEnabled then
+            if not target and TitanicPriorityEnabled and SortOrder ~= "Highest Luck" then
                 local weightCandidates = {}
                 for _, zoneName in ipairs(selectedZoneNames) do
                     local zone = ZoneBuilds:FindFirstChild(zoneName)
@@ -4182,7 +4198,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                 if SelectedEggs[eggName] ~= false then
                                     local luck = GetEggLuck(egg)
                                     if luck > 0 then
-                                        table.insert(luckCandidates, {egg = egg, luck = luck})
+                                        local weightBracket = GetEggWeightBracket(egg)
+                                        local weightKg = GetEggWeightKg(egg)
+                                        local bracketText = weightBracket ~= nil and tostring(weightBracket) or ""
+                                        local isTitanic = bracketText:lower():find("titanic", 1, true) ~= nil
+                                        table.insert(luckCandidates, {
+                                            egg = egg,
+                                            luck = luck,
+                                            weightKg = weightKg or 0,
+                                            isTitanic = isTitanic
+                                        })
                                     else
                                         unreadableLuckCount += 1
                                     end
@@ -4193,14 +4218,25 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
                 table.sort(luckCandidates, function(a, b)
                     if a.luck ~= b.luck then return a.luck > b.luck end
+                    if TitanicPriorityEnabled and a.isTitanic ~= b.isTitanic then
+                        return a.isTitanic
+                    end
+                    if TitanicPriorityEnabled and a.weightKg ~= b.weightKg then
+                        return a.weightKg > b.weightKg
+                    end
                     return a.egg.Name < b.egg.Name
                 end)
                 if #luckCandidates > 0 then
                     target = luckCandidates[1].egg
                     SetTrackerStatus("HIGHEST LUCK PRIORITY: selected " .. target.Name
                         .. " | Luck=" .. tostring(luckCandidates[1].luck)
+                        .. (TitanicPriorityEnabled and (" | Size tie-break: " .. (luckCandidates[1].isTitanic and "Titanic" or tostring(luckCandidates[1].weightKg) .. " KG")) or "")
                         .. " | readable candidates=" .. tostring(#luckCandidates)
                         .. " | ignored unreadable=" .. tostring(unreadableLuckCount))
+                    AddDebugLog("[Auto Break] Selected " .. target.Name .. " | luck=" .. tostring(luckCandidates[1].luck)
+                        .. " | sizeKG=" .. tostring(luckCandidates[1].weightKg)
+                        .. " | Titanic=" .. tostring(luckCandidates[1].isTitanic)
+                        .. " | candidates=" .. tostring(#luckCandidates))
                 else
                     SetTrackerStatus("HIGHEST LUCK PRIORITY found no readable values; using the normal Egg Filter selection.")
                     AddDebugLog("[Auto Break] HighLuck values unavailable; falling back to normal filtered egg selection.")
