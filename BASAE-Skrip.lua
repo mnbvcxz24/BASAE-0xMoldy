@@ -1068,6 +1068,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AutoPickupCard.Position = UDim2.new(0, 0, 0, 0)
         AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 290)
         local AutoPickupEnabled = false
+        local CurrentTarget, ArrivedAtTarget, WaitingForPickup
+        local PickupRequested, ReturningAfterPickup, FlingRecoveryActive, ScriptShuttingDown
         local PickupMonitorSeen = setmetatable({}, {__mode = "k"})
         local AutoPickupToggle = CreateToggle(AutoPickupCard, "", false, function(enabled)
             AutoPickupEnabled = enabled
@@ -2350,15 +2352,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         EggLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             EggFilterList.CanvasSize = UDim2.new(0, 0, 0, EggLayout.AbsoluteContentSize.Y + 8)
         end)
-        local CurrentTarget
-        local ArrivedAtTarget = false
-        local WaitingForPickup = false
+        CurrentTarget = nil
+        ArrivedAtTarget = false
+        WaitingForPickup = false
         local MovementConnection
         local PickupMovementConnection
         local ReturnMovementConnection
         local BaselinePickups = {}
-        local PickupRequested = false
-        local ReturningAfterPickup = false
+        PickupRequested = false
+        ReturningAfterPickup = false
         local ActivePickup
         local LastAnimalPickupPosition
         local ActivePickupCPS = -1
@@ -2369,10 +2371,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local PendingAnimalPickupWorker = false
         local DroppedAnimalSignatures = {}
         local LastEggHPProgressAt = 0
-        local ScriptShuttingDown = false
+        ScriptShuttingDown = false
         local AnimalFolderConnection
         local FlingRemoteConnection
-        local FlingRecoveryActive = false
+        FlingRecoveryActive = false
         local FlingAnimalTarget
         local HandleFlingRecovery
         local CarriedAnimalWatch = {}
