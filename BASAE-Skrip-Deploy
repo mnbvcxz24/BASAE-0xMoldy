@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Deploy v1.210"
+local testver = "Deploy v1.211"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -3889,9 +3889,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     firesignal(CatchFlingRemote.OnClientEvent, "release")
                 end)
                 if released then
-                    AddDebugLog("[Anti Palo] Fling release signal fired.")
+                    AddDebugLog("[Anti Knockback] Fling release signal fired.")
                 else
-                    AddDebugLog("[Anti Palo] Fling release failed: " .. tostring(releaseError))
+                    AddDebugLog("[Anti Knockback] Fling release failed: " .. tostring(releaseError))
                 end
             end
             if not AutoPickupEnabled or not AutoBreakEnabled then
@@ -5095,11 +5095,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                     local label = Instance.new("TextLabel")
                                     label.Name = "Info"
                                     label.Size = UDim2.fromScale(1, 1)
-                                    label.BackgroundColor3 = Color3.fromRGB(20, 22, 26)
-                                    label.BackgroundTransparency = 0.15
+                                    label.BackgroundTransparency = 1
+                                    label.BackgroundTransparency = 1
                                     label.BorderSizePixel = 0
                                     label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                                    label.TextStrokeTransparency = 0.45
+                                    label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                    label.TextStrokeTransparency = 0.25
                                     label.Font = Enum.Font.GothamBold
                                     label.TextSize = 11
                                     label.TextWrapped = true
@@ -5156,7 +5157,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BorderSizePixel = 0,
             LayoutOrder = 1
         })
-        local AntiPaloCard = CreateCard(MiscFeatureRow, "🛡️  Anti Palo", "Immortal si Bai")
+        local AntiPaloCard = CreateCard(MiscFeatureRow, "🛡️  Anti Knockback", "Prevents knockback and fling.")
         AntiPaloCard.Position = UDim2.new(0, 0, 0, 0)
         AntiPaloCard.Size = UDim2.new(0.5, -5, 0, 100)
         AntiPaloCard.LayoutOrder = 1
@@ -5183,7 +5184,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             AntiPaloEnabled = enabled
             AntiPaloStatus.Text = enabled and "Status: ON • Fling Release" or "Status: OFF"
             AntiPaloStatus.TextColor3 = enabled and Theme.Accent or Theme.Gray
-            AddDebugLog("[Anti Palo] Fling release " .. (enabled and "enabled" or "disabled") .. ".")
+            AddDebugLog("[Anti Knockback] Fling release " .. (enabled and "enabled" or "disabled") .. ".")
             task.delay(0.25, function()
                 AntiPaloBusy = false
             end)
@@ -5191,7 +5192,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         AntiPaloToggle.Position = UDim2.new(1, -58, 0, 7)
         AntiPaloToggle.Size = UDim2.fromOffset(48, 24)
 
-        local AuraCard = CreateCard(MiscFeatureRow, "⚔️  Aura ni Bai", "Auto boink")
+        local AuraCard = CreateCard(MiscFeatureRow, "⚔️  Auto Boink", "Boink any enemy nearby.")
         AuraCard.Position = UDim2.new(0.5, 5, 0, 0)
         AuraCard.Size = UDim2.new(0.5, -5, 0, 100)
         AuraCard.LayoutOrder = 2
@@ -5265,36 +5266,36 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local character = LocalPlayer.Character
             local humanoid = character and character:FindFirstChildOfClass("Humanoid")
             if not humanoid or humanoid.Health <= 0 then
-                AddDebugLog("[Aura ni Bai] Cannot boink: character or humanoid is unavailable.")
+                AddDebugLog("[Auto Boink] Cannot boink: character or humanoid is unavailable.")
                 return
             end
             local remote = game:GetService("ReplicatedStorage"):FindFirstChild("BatHitRequest", true)
             if not remote or not remote:IsA("RemoteEvent") then
-                AddDebugLog("[Aura ni Bai] BatHitRequest RemoteEvent not found.")
+                AddDebugLog("[Auto Boink] BatHitRequest RemoteEvent not found.")
                 return
             end
             local selectedTwo, selectTwoError = SelectAuraHotbarSlot(2)
             if selectedTwo then
-                AddDebugLog("[Aura ni Bai] Selected hotbar slot 2.")
+                AddDebugLog("[Auto Boink] Selected hotbar slot 2.")
                 task.wait(0.15)
             else
-                AddDebugLog("[Aura ni Bai] Could not select hotbar slot 2: " .. tostring(selectTwoError))
+                AddDebugLog("[Auto Boink] Could not select hotbar slot 2: " .. tostring(selectTwoError))
             end
             local fired, fireError = pcall(function()
                 remote:FireServer(game:GetService("Players"):FindFirstChild(targetName))
             end)
             if fired then
-                AddDebugLog("[Aura ni Bai] BatHitRequest:FireServer() called for " .. targetName .. ".")
+                AddDebugLog("[Auto Boink] BatHitRequest:FireServer() called for " .. targetName .. ".")
             else
-                AddDebugLog("[Aura ni Bai] BatHitRequest call failed: " .. tostring(fireError))
+                AddDebugLog("[Auto Boink] BatHitRequest call failed: " .. tostring(fireError))
             end
             task.wait(0.15)
             if LocalPlayer.Character == character then
                 local selectedOne, selectOneError = SelectAuraHotbarSlot(1)
                 if selectedOne then
-                    AddDebugLog("[Aura ni Bai] Returned to hotbar slot 1.")
+                    AddDebugLog("[Auto Boink] Returned to hotbar slot 1.")
                 else
-                    AddDebugLog("[Aura ni Bai] Could not return to hotbar slot 1: " .. tostring(selectOneError))
+                    AddDebugLog("[Auto Boink] Could not return to hotbar slot 1: " .. tostring(selectOneError))
                 end
             end
         end
@@ -5304,12 +5305,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 AuraWasNearby = false
                 AuraStatus.Text = "Status: OFF"
                 AuraStatus.TextColor3 = Theme.Gray
-                AddDebugLog("[Aura ni Bai] Proximity tracking disabled.")
+                AddDebugLog("[Auto Boink] Proximity tracking disabled.")
                 return
             end
             AuraStatus.Text = "Tracking players within 20 studs..."
             AuraStatus.TextColor3 = Theme.Accent
-            AddDebugLog("[Aura ni Bai] Proximity tracking enabled (20 studs).")
+            AddDebugLog("[Auto Boink] Proximity tracking enabled (20 studs).")
             task.spawn(function()
                 while AuraEnabled and not Runtime.Stopped and ScreenGui.Parent do
                     local nearby, nearbyText = GetNearbyPlayers()
@@ -5317,7 +5318,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         AuraStatus.Text = nearbyText
                         AuraStatus.TextColor3 = Theme.Accent
                         if not AuraWasNearby then
-                            AddDebugLog("[Aura ni Bai] Detected " .. nearby[1].Name .. " within 20 studs (" .. string.format("%.1f", nearby[1].Distance) .. " studs).")
+                            AddDebugLog("[Auto Boink] Detected " .. nearby[1].Name .. " within 20 studs (" .. string.format("%.1f", nearby[1].Distance) .. " studs).")
                             task.spawn(RunAuraNiBai, nearby[1].Name)
                         end
                         AuraWasNearby = true
