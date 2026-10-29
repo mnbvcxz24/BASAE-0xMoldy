@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.218"
+local testver = "Test v1.219"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5277,8 +5277,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             gui = Instance.new("BillboardGui")
                             gui.Name = "BackpackAnimalESP"
                             gui.Adornee = rootPart
-                            gui.Size = UDim2.fromOffset(125, 38)
-                            gui.StudsOffset = Vector3.new(2.2, 0.5, 0)
+                            gui.Size = UDim2.fromOffset(190, 58)
+                            gui.StudsOffset = Vector3.new(0, 3.2, 0)
                             gui.AlwaysOnTop = true
                             gui.MaxDistance = math.huge
                             gui.Parent = BackpackESPFolder
@@ -5289,17 +5289,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             label.BorderSizePixel = 0
                             label.TextColor3 = Color3.fromRGB(255, 255, 255)
                             label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                            label.TextStrokeTransparency = 0.2
+                            label.TextStrokeTransparency = 0.15
                             label.Font = Enum.Font.GothamBold
-                            label.TextSize = 11
-                            label.TextWrapped = true
+                            label.TextSize = 18
+                            label.TextWrapped = false
+                            label.RichText = true
                             label.Parent = gui
                             BackpackESPObjects[tool] = gui
                             BackpackToolTips[tool] = tool.ToolTip
                         end
                         local cps, weight = GetBackpackESPInfo(tool)
                         BackpackESPObjects[tool].Adornee = rootPart
-                        BackpackESPObjects[tool].Info.Text = "[" .. cps .. "]" .. string.char(10) .. "[" .. weight .. " KG]"
+                        BackpackESPObjects[tool].Info.Text = '<font color="#63FF91">[' .. cps .. ']</font>' .. string.char(10) .. '<font color="#FFFFFF">[' .. weight .. ' KG]</font>'
                         tool.ToolTip = "[" .. cps .. "]" .. string.char(10) .. "[" .. weight .. " KG]"
                     end
                 end
