@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Deploy v1.212"
+local testver = "Deploy v1.213"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -3894,8 +3894,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     AddDebugLog("[Anti Knockback] Fling release failed: " .. tostring(releaseError))
                 end
             end
-            if not AutoPickupEnabled or not AutoBreakEnabled then
-                SetTrackerStatus("Fling detected: recovery cancelled because Auto Break or Auto Pickup is OFF.")
+            if not AutoPickupEnabled then
+                SetTrackerStatus("Fling detected: recovery cancelled because Auto Pickup is OFF.")
                 return
             end
             if FlingRecoveryActive then
