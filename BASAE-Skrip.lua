@@ -5280,6 +5280,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if animalName and container then
                     local matches = animalsByName[animalName]
                     local match = matches and matches[1]
+                    if not match then
+                        for toolName, entries in pairs(animalsByName) do
+                            if toolName:find(animalName, 1, true) or animalName:find(toolName, 1, true) then
+                                match = entries[1]
+                                break
+                            end
+                        end
+                    end
                     if match then
                         seen[card] = true
                         count += 1
