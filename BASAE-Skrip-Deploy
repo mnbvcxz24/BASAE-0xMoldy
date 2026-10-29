@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Deploy v1.219"
+local testver = "Deploy v1.220"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -41,7 +41,21 @@ RuntimeEnv.__BASAESkripCleanup = function()
         local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
         for _, name in ipairs({"BASE_Skrip_EggESP", "BASE_Skrip_BackpackESP"}) do
             local oldESP = playerGui and playerGui:FindFirstChild(name)
-            if oldESP then oldESP:Destroy() end
+            if oldESP then
+                if name == "BASE_Skrip_BackpackESP" then
+                    for _, overlayRef in ipairs(oldESP:GetChildren()) do
+                        if overlayRef:IsA("ObjectValue") then
+                            local overlay = overlayRef.Value
+                            if overlay then
+                                pcall(function()
+                                    overlay:Destroy()
+                                end)
+                            end
+                        end
+                    end
+                end
+                oldESP:Destroy()
+            end
         end
     end)
 end
