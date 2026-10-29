@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.224"
+local testver = "Test v1.225"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -1037,7 +1037,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if AutoBreakTitle then AutoBreakTitle.Size = UDim2.new(1, -78, 0, 22) end
         local AutoPickupCard = CreateCard(AutoRow, "🐾  Auto Pickup", "")
         AutoPickupCard.Position = UDim2.new(0, 0, 0, 0)
-        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 290)
+        AutoPickupCard.Size = UDim2.new(0.5, -6, 0, 316)
         local AutoPickupEnabled = false
         local CurrentTarget, ArrivedAtTarget, WaitingForPickup
         local PickupRequested, ReturningAfterPickup, FlingRecoveryActive, ScriptShuttingDown
@@ -1493,6 +1493,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end)
         DropInZone1Toggle.Position = UDim2.fromOffset(11, 257)
         DropInZone1Toggle.Size = UDim2.new(1, -22, 0, 22)
+        local PickUpWithMutationEnabled = false
+        local PickUpWithMutationToggle = CreateToggle(AutoPickupCard, "Pick up with mutation", false, function(enabled)
+            PickUpWithMutationEnabled = enabled
+            AddDebugLog("[Auto Pickup] Pick up with mutation " .. (enabled and "ON." or "OFF."))
+        end)
+        PickUpWithMutationToggle.Position = UDim2.fromOffset(11, 283)
+        PickUpWithMutationToggle.Size = UDim2.new(1, -22, 0, 22)
         RarityList = Create("ScrollingFrame", {
             Name = "RarityFilterContainer",
             Parent = AutoPickupCard,
@@ -2882,6 +2889,32 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local attribute = pickup:GetAttribute("Rarity")
             return attribute and tostring(attribute) or nil
         end
+        function GetPickupMutation(pickup)
+            if not pickup then return "No Mutation" end
+            local rootPart = pickup:FindFirstChild("RootPart")
+            local attachment = rootPart and rootPart:FindFirstChild("AnimalOverheadAttachment")
+            local overhead = attachment and attachment:FindFirstChild("AnimalOverhead")
+            local mutation = overhead and overhead:FindFirstChild("Mutation")
+            if not mutation then return "No Mutation" end
+
+            local state = mutation:FindFirstChild("State", true)
+            local text = mutation:FindFirstChild("Text", true)
+            local function readText(node)
+                if node and (node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox")) then
+                    return tostring(node.Text or "")
+                end
+                return ""
+            end
+
+            if string.lower(readText(state)) == "idle" then
+                return "No Mutation"
+            end
+
+            local mutationText = string.lower(readText(text))
+            if mutationText == "gold" then return "Gold" end
+            if mutationText == "diamond" then return "Diamond" end
+            return "No Mutation"
+        end
         function GetDroppedAnimalSignature(pickup, weight)
             if not pickup then return nil end
             for _, key in ipairs({"AnimalId", "AnimalID", "UniqueId", "UUID", "Id"}) do
@@ -3193,8 +3226,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             local anyPickupFilterEnabled = UnindexedOnlyEnabled or HighestCashEnabled
                 or KGThresholdAmount > 0 or CPSFilter.amount > 0 or selectedRarityCount > 0
+            local mutationPickupMatch = PickUpWithMutationEnabled and GetPickupMutation(pickup) ~= "No Mutation"
             local qualified = not anyPickupFilterEnabled or forceUnindexedPickup
                 or aboveLowestPriorityPickup or kgPriorityPickup or cpsPriorityPickup or rarityPriorityPickup
+                or mutationPickupMatch
             if not qualified then
                 local reason = "no enabled pickup rule matched"
                 if HighestCashEnabled and cps < 0 then
@@ -5628,6 +5663,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     table.insert(records, {
                         name = pickup.Name,
                         rarity = tostring(GetPetRarity(pickup) or "Unknown"),
+                        mutation = GetPickupMutation(pickup),
                         cps = GetPickupConsoleCPS(pickup),
                         kg = weight ~= nil and tostring(weight) or "—",
                         qualified = qualifiedText
@@ -5649,7 +5685,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 local row = Create("TextLabel", {
                     Parent = PickupList, Size = UDim2.new(1, -8, 0, 50),
                     BackgroundColor3 = Theme.Card, BorderSizePixel = 0,
-                    Text = "  " .. record.name .. "  |  " .. record.rarity .. "  |  " .. record.cps .. " |  " .. record.kg .. " KG  |  Qualified = " .. record.qualified,
+                    Text = "  " .. record.name .. "  |  " .. record.rarity .. "  |  Mutation = " .. record.mutation .. "  |  " .. record.cps .. " |  " .. record.kg .. " KG  |  Qualified = " .. record.qualified,
                     TextColor3 = Theme.Text, Font = Enum.Font.Gotham, TextSize = 9,
                     TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Center,
                     TextWrapped = true, TextTruncate = Enum.TextTruncate.None,
