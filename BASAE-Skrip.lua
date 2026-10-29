@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.231"
+local testver = "Test v1.232"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5325,8 +5325,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
 
             local animals = {}
+            local totalTools = 0
             for _, tool in ipairs(backpack:GetChildren()) do
                 if tool:IsA("Tool") then
+                    totalTools += 1
                     local animalName = tool:GetAttribute("AnimalName")
                     local weight = ParseAnimalWeight(tool:GetAttribute("WeightKg"))
                     if animalName and weight then
@@ -5340,11 +5342,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end
             end
 
+            local inventoryCards = FindInventoryCards()
+            local parsedCards = 0
             local seen = {}
             local count = 0
-            for _, card in ipairs(FindInventoryCards()) do
+            for _, card in ipairs(inventoryCards) do
                 local animalName, weightText, container, cardWeight = GetInventoryCardInfo(card)
                 if animalName and container then
+                    parsedCards += 1
                     local cardKey = GetAnimalComparisonKey(animalName)
                     local match
                     for _, animal in ipairs(animals) do
@@ -5415,7 +5420,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     ClearBackpackESP(card)
                 end
             end
-            BackpackESPStatus.Text = "ESP " .. (BackpackESPEnabled and "ON" or "OFF") .. " | Cards: " .. count
+            BackpackESPStatus.Text = "ESP " .. (BackpackESPEnabled and "ON" or "OFF") .. " | Tools: " .. totalTools .. " | UI: " .. #inventoryCards .. " | Read: " .. parsedCards .. " | Matched: " .. count
         end
         CreateToggle(BackpackESPCard, "", false, function(enabled)
             BackpackESPEnabled = enabled
