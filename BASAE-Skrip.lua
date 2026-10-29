@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.216"
+local testver = "Test v1.217"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -4441,8 +4441,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
             table.sort(selectedZoneNames)
             local target = lockedTarget
-            if not target and TitanicPriorityEnabled and SortOrder ~= "Highest Luck" then
-                local weightCandidates = {}
+            if not target and TitanicPriorityEnabled then
+                local titanicCandidates = {}
                 for _, zoneName in ipairs(selectedZoneNames) do
                     local zone = ZoneBuilds:FindFirstChild(zoneName)
                     local eggsFolder = zone and zone:FindFirstChild("Eggs")
@@ -4453,52 +4453,25 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                                 and IsEggAvailable(egg) then
                                 local eggName = GetEggTypeName(egg.Name)
                                 if SelectedEggs[eggName] ~= false then
-                                    local weightBracket = GetEggWeightBracket(egg)
-                                    local hasWeightBracket = weightBracket ~= nil
-                                        and tostring(weightBracket):match("%S") ~= nil
-                                    local weightKg = nil
-                                    if not hasWeightBracket then
-                                        weightKg = GetEggWeightKg(egg)
-                                    end
-                                    if hasWeightBracket or weightKg then
-                                        table.insert(weightCandidates, {
-                                            egg = egg,
-                                            weightBracket = hasWeightBracket and tostring(weightBracket) or nil,
-                                            weightKg = weightKg,
-                                            hasWeightBracket = hasWeightBracket
-                                        })
+                                    local category = GetEggWeightBracket(egg)
+                                    if category ~= nil and tostring(category):lower():find("titanic", 1, true) then
+                                        table.insert(titanicCandidates, egg)
                                     end
                                 end
                             end
                         end
                     end
                 end
-                table.sort(weightCandidates, function(a, b)
-                    if a.hasWeightBracket ~= b.hasWeightBracket then
-                        return a.hasWeightBracket
-                    end
-                    if a.hasWeightBracket and b.hasWeightBracket then
-                        local aTitanic = a.weightBracket:lower():find("titanic", 1, true) ~= nil
-                        local bTitanic = b.weightBracket:lower():find("titanic", 1, true) ~= nil
-                        if aTitanic ~= bTitanic then return aTitanic end
-                        if a.weightBracket ~= b.weightBracket then
-                            return a.weightBracket < b.weightBracket
-                        end
-                    elseif a.weightKg ~= b.weightKg then
-                        return a.weightKg > b.weightKg
-                    end
-                    return a.egg.Name < b.egg.Name
+                table.sort(titanicCandidates, function(a, b)
+                    return a.Name < b.Name
                 end)
-                if #weightCandidates > 0 then
-                    local selected = weightCandidates[1]
-                    target = selected.egg
-                    local detail = selected.hasWeightBracket
-                        and ("WeightBracket=" .. selected.weightBracket)
-                        or ("WeightBracket blank; WeightKg=" .. tostring(selected.weightKg))
+                if #titanicCandidates > 0 then
+                    target = titanicCandidates[1]
                     SetTrackerStatus("TITANIC PRIORITY: selected " .. target.Name
-                        .. " | " .. detail .. " before the normal egg route.")
+                        .. " | category=TITANIC before the normal egg route.")
+                    AddDebugLog("[Auto Break] Titanic category detected: " .. target.Name .. "; prioritizing by category only.")
                 else
-                    SetTrackerStatus("TITANIC PRIORITY is ON, but no eligible egg with WeightBracket or fallback weightKg was found in the selected zones.")
+                    SetTrackerStatus("TITANIC PRIORITY is ON, but no eligible egg with TITANIC category was found in the selected zones.")
                 end
             end
             if not target and SortOrder == "Highest Luck" then
