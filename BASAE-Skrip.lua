@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.217"
+local testver = "Test v1.218"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -39,8 +39,10 @@ RuntimeEnv.__BASAESkripCleanup = function()
     end)
     pcall(function()
         local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-        local oldESP = playerGui and playerGui:FindFirstChild("BASE_Skrip_EggESP")
-        if oldESP then oldESP:Destroy() end
+        for _, name in ipairs({"BASE_Skrip_EggESP", "BASE_Skrip_BackpackESP"}) do
+            local oldESP = playerGui and playerGui:FindFirstChild(name)
+            if oldESP then oldESP:Destroy() end
+        end
     end)
 end
 -- UI CONFIGURATION
@@ -5024,8 +5026,18 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
 
     elseif index == 3 then
-        local ESPCard = CreateCard(Page, "🥚  Egg ESP", "Displays egg stats.")
-        ESPCard.Size = UDim2.new(1, 0, 0, 120)
+        local ESPCardsRow = Create("Frame", {
+            Name = "ESPFeatureCardsRow",
+            Parent = Page,
+            Size = UDim2.new(1, 0, 0, 120),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            LayoutOrder = 0
+        })
+        local ESPCard = CreateCard(ESPCardsRow, "🥚  Egg ESP", "Displays egg stats.")
+        ESPCard.Position = UDim2.new(0, 0, 0, 0)
+        ESPCard.Size = UDim2.new(0.5, -5, 0, 100)
+        ESPCard.LayoutOrder = 1
         local ESPStatus = Create("TextLabel", {
             Parent = ESPCard,
             Position = UDim2.fromOffset(11, 61),
@@ -5170,7 +5182,157 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local ESPTitle = ESPCard:FindFirstChildWhichIsA("TextLabel")
         if ESPTitle then ESPTitle.Size = UDim2.new(1, -78, 0, 22) end
-        ESPCard.Size = UDim2.new(1, 0, 0, 100)
+        ESPCard.Size = UDim2.new(0.5, -5, 0, 100)
+
+        local BackpackESPCard = CreateCard(ESPCardsRow, "Backpack ESP", "Shows $/s and weight KG.")
+        BackpackESPCard.Position = UDim2.new(0.5, 5, 0, 0)
+        BackpackESPCard.Size = UDim2.new(0.5, -5, 0, 100)
+        BackpackESPCard.LayoutOrder = 2
+        local BackpackESPStatus = Create("TextLabel", {
+            Parent = BackpackESPCard,
+            Position = UDim2.fromOffset(11, 61),
+            Size = UDim2.new(1, -22, 0, 22),
+            BackgroundTransparency = 1,
+            Text = "ESP is off",
+            TextColor3 = Theme.Gray,
+            Font = Enum.Font.Gotham,
+            TextSize = 9,
+            TextWrapped = true,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top
+        })
+        local BackpackESPEnabled = false
+        local BackpackESPObjects = {}
+        local BackpackToolTips = {}
+        local BackpackESPFolder = Create("Folder", {
+            Name = "BASE_Skrip_BackpackESP",
+            Parent = LocalPlayer:WaitForChild("PlayerGui")
+        })
+        local function ClearBackpackESP(tool)
+            local gui = BackpackESPObjects[tool]
+            if gui then
+                gui:Destroy()
+                BackpackESPObjects[tool] = nil
+            end
+            if tool and tool.Parent and tool:IsA("Tool") and BackpackToolTips[tool] ~= nil then
+                tool.ToolTip = BackpackToolTips[tool]
+            end
+            BackpackToolTips[tool] = nil
+        end
+        local function GetBackpackValue(object, names)
+            if not object then return nil end
+            for _, name in ipairs(names) do
+                local node = object:FindFirstChild(name, true)
+                if node then
+                    if node:IsA("ValueBase") then return tostring(node.Value) end
+                    if node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox") then
+                        if node.Text ~= "" then return node.Text end
+                    end
+                    local attr = node:GetAttribute(name)
+                    if attr ~= nil then return tostring(attr) end
+                end
+                local attr = object:GetAttribute(name)
+                if attr ~= nil then return tostring(attr) end
+            end
+            return nil
+        end
+        local function GetBackpackESPInfo(tool)
+            local weight = GetBackpackValue(tool, {"WeightKg", "WeightKG", "Weight"})
+            local animalModel = tool:FindFirstChild("AnimalModel", true)
+            local rootPart = animalModel and animalModel:FindFirstChild("RootPart", true)
+            local cashLabel = rootPart and rootPart:FindFirstChild("CashPerSecond", true)
+            local cashPerSecond = cashLabel and cashLabel:FindFirstChild("CashPerSecond", true)
+            local cps
+            if cashPerSecond then
+                if cashPerSecond:IsA("TextLabel") or cashPerSecond:IsA("TextButton") or cashPerSecond:IsA("TextBox") then
+                    cps = cashPerSecond.Text
+                elseif cashPerSecond:IsA("ValueBase") then
+                    cps = tostring(cashPerSecond.Value)
+                end
+            end
+            if not cps or cps == "" then
+                cps = GetBackpackValue(tool, {"CashPerSecond", "CPS"})
+            end
+            return cps or "?", weight or "?"
+        end
+        local function UpdateBackpackESP()
+            local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+            if not backpack then
+                BackpackESPStatus.Text = "Waiting for backpack..."
+                return
+            end
+            local seen = {}
+            local count = 0
+            for _, tool in ipairs(backpack:GetChildren()) do
+                if tool:IsA("Tool") then
+                    local animalModel = tool:FindFirstChild("AnimalModel", true)
+                    local rootPart = animalModel and animalModel:FindFirstChild("RootPart", true)
+                    if rootPart and rootPart:IsA("BasePart") then
+                        seen[tool] = true
+                        count += 1
+                        local gui = BackpackESPObjects[tool]
+                        if not gui or not gui.Parent then
+                            gui = Instance.new("BillboardGui")
+                            gui.Name = "BackpackAnimalESP"
+                            gui.Adornee = rootPart
+                            gui.Size = UDim2.fromOffset(125, 38)
+                            gui.StudsOffset = Vector3.new(2.2, 0.5, 0)
+                            gui.AlwaysOnTop = true
+                            gui.MaxDistance = math.huge
+                            gui.Parent = BackpackESPFolder
+                            local label = Instance.new("TextLabel")
+                            label.Name = "Info"
+                            label.Size = UDim2.fromScale(1, 1)
+                            label.BackgroundTransparency = 1
+                            label.BorderSizePixel = 0
+                            label.TextColor3 = Color3.fromRGB(255, 255, 255)
+                            label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                            label.TextStrokeTransparency = 0.2
+                            label.Font = Enum.Font.GothamBold
+                            label.TextSize = 11
+                            label.TextWrapped = true
+                            label.Parent = gui
+                            BackpackESPObjects[tool] = gui
+                            BackpackToolTips[tool] = tool.ToolTip
+                        end
+                        local cps, weight = GetBackpackESPInfo(tool)
+                        BackpackESPObjects[tool].Adornee = rootPart
+                        BackpackESPObjects[tool].Info.Text = "[" .. cps .. "]" .. string.char(10) .. "[" .. weight .. " KG]"
+                        tool.ToolTip = "[" .. cps .. "]" .. string.char(10) .. "[" .. weight .. " KG]"
+                    end
+                end
+            end
+            for tool in pairs(BackpackESPObjects) do
+                if not seen[tool] or not tool.Parent or tool.Parent ~= backpack then
+                    ClearBackpackESP(tool)
+                end
+            end
+            BackpackESPStatus.Text = "ESP " .. (BackpackESPEnabled and "ON" or "OFF") .. " | Tools: " .. count
+        end
+        CreateToggle(BackpackESPCard, "", false, function(enabled)
+            BackpackESPEnabled = enabled
+            if enabled then
+                BackpackESPStatus.Text = "Scanning backpack..."
+                task.spawn(function()
+                    while not Runtime.Stopped and BackpackESPEnabled and not ScriptShuttingDown do
+                        UpdateBackpackESP()
+                        task.wait(0.75)
+                    end
+                end)
+            else
+                for tool in pairs(BackpackESPObjects) do
+                    ClearBackpackESP(tool)
+                end
+                BackpackESPStatus.Text = "ESP is off"
+            end
+        end)
+        local BackpackESPToggle = BackpackESPCard:FindFirstChildWhichIsA("TextButton")
+        if BackpackESPToggle then
+            BackpackESPToggle.Position = UDim2.new(1, -61, 0, 5)
+            BackpackESPToggle.Size = UDim2.fromOffset(48, 24)
+        end
+        local BackpackESPTitle = BackpackESPCard:FindFirstChildWhichIsA("TextLabel")
+        if BackpackESPTitle then BackpackESPTitle.Size = UDim2.new(1, -78, 0, 22) end
 
         local MiscFeatureRow = Create("Frame", {
             Name = "MiscFeatureCardsRow",
