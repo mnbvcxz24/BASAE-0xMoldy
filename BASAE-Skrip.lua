@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.229"
+local testver = "Test v1.230"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5302,7 +5302,20 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local hotbar = mobile and mobile:FindFirstChild("HotBarUi")
             local inventory = hotbar and hotbar:FindFirstChild("Inventory")
             local scrolling = inventory and inventory:FindFirstChild("ScrollingFrame")
-            return scrolling and scrolling:GetChildren() or {}
+            if not scrolling then return {} end
+
+            local cards = {}
+            for _, descendant in ipairs(scrolling:GetDescendants()) do
+                if descendant:FindFirstChild("Container") then
+                    local container = descendant:FindFirstChild("Container")
+                    local infoList = container and container:FindFirstChild("InfoList")
+                    local nameLabel = infoList and infoList:FindFirstChild("Name")
+                    if nameLabel and (nameLabel:IsA("TextLabel") or nameLabel:IsA("TextButton") or nameLabel:IsA("TextBox")) then
+                        table.insert(cards, descendant)
+                    end
+                end
+            end
+            return cards
         end
         local function UpdateBackpackESP()
             local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
