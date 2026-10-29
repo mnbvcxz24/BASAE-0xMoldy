@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Deploy v1.213"
+local testver = "Deploy v1.214"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -3297,7 +3297,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             ActivePickup = pickup
             FlingAnimalTarget = pickup
             FlingTargetAnimalName = pickup.Name
-            FlingTargetWeightKg = nil
+            FlingTargetWeightKg = GetAnimalWeightKg(pickup)
+            if FlingTargetWeightKg ~= nil then
+                SetTrackerStatus("Pickup identity captured: " .. tostring(FlingTargetAnimalName) .. " | WeightKg=" .. tostring(FlingTargetWeightKg))
+            end
             task.spawn(function()
                 local identityDeadline = os.clock() + 12
                 local identityAttempts = 0
@@ -3917,28 +3920,57 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local function findTrackedAnimal()
                 local folder = workspace:FindFirstChild("AnimalPickups")
                 if not folder or not targetAnimalName then return nil end
+
+                local targetWeight = ParseWeightKg(targetWeightKg)
                 if flingAnimal and flingAnimal.Parent == folder and flingAnimal.Name == targetAnimalName then
-                    return flingAnimal
+                    local liveWeight = ParseWeightKg(GetAnimalWeightKg(flingAnimal))
+                    if targetWeight == nil or liveWeight == nil or math.abs(liveWeight - targetWeight) <= math.max(0.001, math.abs(targetWeight) * 0.000001) then
+                        return flingAnimal
+                    end
                 end
+
                 local character = LocalPlayer.Character
                 local root = character and character:FindFirstChild("HumanoidRootPart")
                 local bestMatch, bestDistance
+                local nearestNameMatch, nearestNameDistance
+                local hasReadableWeight = false
+
                 for _, candidate in ipairs(folder:GetChildren()) do
                     if candidate.Name == targetAnimalName then
+                        local candidateWeight = ParseWeightKg(GetAnimalWeightKg(candidate))
                         local ok, position = pcall(function()
                             if candidate:IsA("Model") then return candidate:GetPivot().Position end
                             if candidate:IsA("BasePart") then return candidate.Position end
                         end)
                         if ok and position then
                             local distance = root and (position - root.Position).Magnitude or 0
-                            if not bestDistance or distance < bestDistance then
-                                bestMatch, bestDistance = candidate, distance
+                            if not nearestNameDistance or distance < nearestNameDistance then
+                                nearestNameMatch, nearestNameDistance = candidate, distance
+                            end
+                            if candidateWeight ~= nil then
+                                hasReadableWeight = true
+                            end
+                            if targetWeight ~= nil and candidateWeight ~= nil then
+                                local tolerance = math.max(0.001, math.abs(targetWeight) * 0.000001)
+                                if math.abs(candidateWeight - targetWeight) <= tolerance then
+                                    if not bestDistance or distance < bestDistance then
+                                        bestMatch, bestDistance = candidate, distance
+                                    end
+                                end
                             end
                         end
                     end
                 end
-                if bestMatch then flingAnimal = bestMatch end
-                return bestMatch
+
+                if bestMatch then
+                    flingAnimal = bestMatch
+                    return bestMatch
+                end
+                if targetWeight ~= nil and hasReadableWeight then
+                    return nil
+                end
+                if nearestNameMatch then flingAnimal = nearestNameMatch end
+                return nearestNameMatch
             end
             local function getTrackedAnimalPosition()
                 local animal = findTrackedAnimal()
