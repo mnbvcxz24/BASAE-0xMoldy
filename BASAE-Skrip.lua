@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.234"
+local testver = "Test v1.235"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5283,7 +5283,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function NormalizeAnimalWeight(value)
             local weight = ParseAnimalWeight(value)
             if not weight then return nil end
-            return math.floor(weight + 0.5)
+            return math.floor(weight)
         end
         local function GetInventoryCardInfo(card)
             local container = card:FindFirstChild("Container")
