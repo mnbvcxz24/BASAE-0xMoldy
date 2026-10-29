@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.232"
+local testver = "Test v1.233"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5271,7 +5271,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return value:match("^%s*(.-)%s*$")
         end
         local function GetAnimalComparisonKey(value)
-            return NormalizeAnimalName(value):gsub("[%s_%-]", "")
+            return NormalizeAnimalName(value):gsub("[^%a%d]", "")
         end
         local function ParseAnimalWeight(value)
             if value == nil then return nil end
@@ -5328,10 +5328,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             local totalTools = 0
             for _, tool in ipairs(backpack:GetChildren()) do
                 if tool:IsA("Tool") then
-                    totalTools += 1
                     local animalName = tool:GetAttribute("AnimalName")
                     local weight = ParseAnimalWeight(tool:GetAttribute("WeightKg"))
-                    if animalName and weight then
+                    if typeof(animalName) == "string" and animalName ~= "" and weight then
+                        totalTools += 1
                         table.insert(animals, {
                             Tool = tool,
                             Key = GetAnimalComparisonKey(animalName),
@@ -5420,7 +5420,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     ClearBackpackESP(card)
                 end
             end
-            BackpackESPStatus.Text = "ESP " .. (BackpackESPEnabled and "ON" or "OFF") .. " | Tools: " .. totalTools .. " | UI: " .. #inventoryCards .. " | Read: " .. parsedCards .. " | Matched: " .. count
+            BackpackESPStatus.Text = "ESP " .. (BackpackESPEnabled and "ON" or "OFF") .. " | Matched: " .. count
         end
         CreateToggle(BackpackESPCard, "", false, function(enabled)
             BackpackESPEnabled = enabled
