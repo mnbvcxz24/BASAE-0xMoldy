@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.230"
+local testver = "Test v1.231"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5335,7 +5335,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             Key = GetAnimalComparisonKey(animalName),
                             Weight = weight,
                             CPS = GetBackpackESPInfo(tool),
-                            Used = false
                         })
                     end
                 end
@@ -5349,8 +5348,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local cardKey = GetAnimalComparisonKey(animalName)
                     local match
                     for _, animal in ipairs(animals) do
-                        if not animal.Used
-                            and animal.Key == cardKey
+                        if animal.Key == cardKey
                             and math.abs(animal.Weight - cardWeight) < 0.01 then
                             match = animal
                             break
@@ -5358,7 +5356,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     end
 
                     if match then
-                        match.Used = true
                         seen[card] = true
                         count += 1
                         local overlay = BackpackESPObjects[card]
