@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.226"
+local testver = "Test v1.227"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -691,9 +691,10 @@ end
 -- TOGGLE
 local ToggleControllers = setmetatable({}, {__mode = "k"})
 local function CreateToggle(parent, text, default, callback)
+    local Compact = text ~= ""
     local Toggle = Create("TextButton", {
         Parent = parent,
-        Size = UDim2.new(1, -30, 0, 28),
+        Size = UDim2.new(1, -30, 0, Compact and 22 or 28),
         Position = UDim2.fromOffset(15, 68),
         BackgroundTransparency = 1,
         Text = "",
@@ -701,18 +702,18 @@ local function CreateToggle(parent, text, default, callback)
     })
     local Label = Create("TextLabel", {
         Parent = Toggle,
-        Size = UDim2.new(1, -55, 1, 0),
+        Size = UDim2.new(1, Compact and -42 or -55, 1, 0),
         BackgroundTransparency = 1,
         Text = text,
         TextColor3 = Theme.Text,
         Font = Enum.Font.Gotham,
-        TextSize = 11,
+        TextSize = Compact and 9 or 11,
         TextXAlignment = Enum.TextXAlignment.Left
     })
     local Switch = Create("Frame", {
         Parent = Toggle,
-        Position = UDim2.new(1, -45, 0.5, -9),
-        Size = UDim2.fromOffset(38, 18),
+        Position = UDim2.new(1, Compact and -34 or -45, 0.5, Compact and -7 or -9),
+        Size = UDim2.fromOffset(Compact and 30 or 38, Compact and 14 or 18),
         BackgroundColor3 = Color3.fromRGB(49, 67, 82),
         BorderSizePixel = 0
     })
@@ -720,7 +721,7 @@ local function CreateToggle(parent, text, default, callback)
     local Circle = Create("Frame", {
         Parent = Switch,
         Position = UDim2.fromOffset(2, 2),
-        Size = UDim2.fromOffset(14, 14),
+        Size = UDim2.fromOffset(Compact and 10 or 14, Compact and 10 or 14),
         BackgroundColor3 = Color3.fromRGB(245, 250, 255),
         BorderSizePixel = 0
     })
@@ -732,7 +733,7 @@ local function CreateToggle(parent, text, default, callback)
                 BackgroundColor3 = Theme.Accent
             })
             Tween(Circle, {
-                Position = UDim2.new(1, -16, 0, 2)
+                Position = Compact and UDim2.new(1, -12, 0, 2) or UDim2.new(1, -16, 0, 2)
             })
         else
             Tween(Switch, {
