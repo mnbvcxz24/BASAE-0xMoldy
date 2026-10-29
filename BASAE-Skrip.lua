@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.222"
+local testver = "Test v1.223"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5233,8 +5233,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function NormalizeAnimalName(value)
             value = tostring(value or ""):lower()
             value = value:gsub("%s*%b()%s*$", "")
-            value = value:gsub("[%s_%-]", "")
-            return value
+            value = value:gsub("%s+", " ")
+            return value:match("^%s*(.-)%s*$")
+        end
+        local function GetAnimalComparisonKey(value)
+            return NormalizeAnimalName(value):gsub("[%s_%-]", "")
         end
         local function GetInventoryCardInfo(card)
             local container = card:FindFirstChild("Container")
@@ -5267,7 +5270,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 if tool:IsA("Tool") then
                     local cps = GetBackpackESPInfo(tool)
                     if cps and cps ~= "" then
-                        local key = NormalizeAnimalName(tool.Name)
+                        local key = GetAnimalComparisonKey(tool.Name)
                         animalsByName[key] = animalsByName[key] or {}
                         table.insert(animalsByName[key], {Tool = tool, CPS = cps})
                     end
@@ -5278,11 +5281,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, card in ipairs(FindInventoryCards()) do
                 local animalName, weight, container = GetInventoryCardInfo(card)
                 if animalName and container then
-                    local matches = animalsByName[animalName]
+                    local compareKey = GetAnimalComparisonKey(animalName)
+                    local matches = animalsByName[compareKey]
                     local match = matches and matches[1]
                     if not match then
                         for toolName, entries in pairs(animalsByName) do
-                            if toolName:find(animalName, 1, true) or animalName:find(toolName, 1, true) then
+                            if toolName:find(compareKey, 1, true) or compareKey:find(toolName, 1, true) then
                                 match = entries[1]
                                 break
                             end
