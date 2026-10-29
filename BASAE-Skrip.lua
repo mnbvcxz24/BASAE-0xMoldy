@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.236"
+local testver = "Test v1.237"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5293,7 +5293,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function NormalizeAnimalWeight(value)
             local weight = ParseAnimalWeight(value)
             if not weight then return nil end
-            return math.floor(weight)
+            return math.floor(weight + 0.5)
+        end
+        local function AnimalWeightMatches(actualValue, displayedValue)
+            local actualWeight = ParseAnimalWeight(actualValue)
+            local displayedWeight = ParseAnimalWeight(displayedValue)
+            if not actualWeight or not displayedWeight then return false end
+
+            local lowerWeight = math.floor(actualWeight)
+            local fraction = actualWeight - lowerWeight
+            if math.abs(fraction - 0.5) < 0.000001 then
+                return displayedWeight == lowerWeight or displayedWeight == lowerWeight + 1
+            end
+            return displayedWeight == math.floor(actualWeight + 0.5)
         end
         local function GetInventoryCardInfo(card)
             local container = card:FindFirstChild("Container")
@@ -5344,7 +5356,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, tool in ipairs(backpack:GetChildren()) do
                 if tool:IsA("Tool") then
                     local animalName = tool:GetAttribute("AnimalName")
-                    local weight = NormalizeAnimalWeight(tool:GetAttribute("WeightKg"))
+                    local weight = ParseAnimalWeight(tool:GetAttribute("WeightKg"))
                     if typeof(animalName) == "string" and animalName ~= "" and weight then
                         totalTools += 1
                         table.insert(animals, {
@@ -5368,10 +5380,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local cardKey = GetAnimalComparisonKey(animalName)
                     local match
                     for _, animal in ipairs(animals) do
-                        local normalizedCardWeight = NormalizeAnimalWeight(cardWeight)
                         if animal.Key == cardKey
-                            and normalizedCardWeight ~= nil
-                            and animal.Weight == normalizedCardWeight then
+                            and AnimalWeightMatches(animal.Weight, cardWeight) then
                             match = animal
                             break
                         end
