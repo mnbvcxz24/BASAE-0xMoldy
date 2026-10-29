@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.221"
+local testver = "Test v1.222"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5233,8 +5233,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function NormalizeAnimalName(value)
             value = tostring(value or ""):lower()
             value = value:gsub("%s*%b()%s*$", "")
-            value = value:gsub("%s+", " ")
-            return value:match("^%s*(.-)%s*$")
+            value = value:gsub("[%s_%-]", "")
+            return value
         end
         local function GetInventoryCardInfo(card)
             local container = card:FindFirstChild("Container")
