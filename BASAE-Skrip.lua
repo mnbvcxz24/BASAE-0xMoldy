@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.228"
+local testver = "Test v1.229"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5356,7 +5356,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             overlay.BorderSizePixel = 0
                             overlay.AnchorPoint = Vector2.new(0, 1)
                             overlay.Position = UDim2.new(0, 0, 1, 0)
-                            overlay.Size = UDim2.new(1, 0, 0, 34)
+                            overlay.Size = UDim2.new(1, 0, 0, 22)
                             overlay.ZIndex = 20
                             overlay.Parent = container
 
@@ -5364,10 +5364,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             cashText.Name = "CashPerSecond"
                             cashText.BackgroundTransparency = 1
                             cashText.BorderSizePixel = 0
-                            cashText.Position = UDim2.new(0, 2, 0, 0)
-                            cashText.Size = UDim2.new(1, -4, 0, 18)
-                            cashText.Font = Enum.Font.GothamBold
-                            cashText.TextSize = 13
+                            cashText.Position = UDim2.new(0, 1, 0, 0)
+                            cashText.Size = UDim2.new(1, -2, 0, 12)
+                            cashText.Font = Enum.Font.GothamMedium
+                            cashText.TextSize = 9
                             cashText.TextColor3 = Color3.fromRGB(99, 255, 145)
                             cashText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                             cashText.TextStrokeTransparency = 0.35
@@ -5380,10 +5380,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             weightLabel.Name = "Weight"
                             weightLabel.BackgroundTransparency = 1
                             weightLabel.BorderSizePixel = 0
-                            weightLabel.Position = UDim2.new(0, 2, 0, 17)
-                            weightLabel.Size = UDim2.new(1, -4, 0, 16)
-                            weightLabel.Font = Enum.Font.GothamBold
-                            weightLabel.TextSize = 13
+                            weightLabel.Position = UDim2.new(0, 1, 0, 11)
+                            weightLabel.Size = UDim2.new(1, -2, 0, 10)
+                            weightLabel.Font = Enum.Font.Gotham
+                            weightLabel.TextSize = 8
                             weightLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
                             weightLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                             weightLabel.TextStrokeTransparency = 0.35
@@ -5395,7 +5395,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                         end
 
                         overlay.CashPerSecond.Text = match.CPS ~= "" and tostring(match.CPS):gsub("[%$]", "") or "—"
-                        overlay.Weight.Text = weightText
+                        overlay.Weight.Text = weightText:gsub(",", ""):gsub("%s*[Kk][Gg]%s*$", "") .. "kg"
                     end
                 end
             end
