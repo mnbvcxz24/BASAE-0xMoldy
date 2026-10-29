@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.223"
+local testver = "Test v1.224"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5246,10 +5246,17 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not nameLabel or not (nameLabel:IsA("TextLabel") or nameLabel:IsA("TextButton") or nameLabel:IsA("TextBox")) then
                 return nil
             end
-            local text = nameLabel.Text
-            local animalName, weight = text:match("^(.-)%s*%((.-KG)%)$")
-            if not animalName then return nil end
-            return NormalizeAnimalName(animalName), weight, container
+            local text = tostring(nameLabel.Text or "")
+            local animalName, weight = text:match("^(.-)%s*%((.-)%)$")
+            if not animalName then
+                animalName = text
+            elseif not weight:lower():find("kg", 1, true) then
+                animalName = text
+                weight = nil
+            end
+            animalName = NormalizeAnimalName(animalName)
+            if animalName == "" then return nil end
+            return animalName, weight, container
         end
         local function FindInventoryCards()
             local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
@@ -5269,10 +5276,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, tool in ipairs(backpack:GetChildren()) do
                 if tool:IsA("Tool") then
                     local cps = GetBackpackESPInfo(tool)
-                    if cps and cps ~= "" then
-                        local key = GetAnimalComparisonKey(tool.Name)
+                    local key = GetAnimalComparisonKey(tool.Name)
+                    if key ~= "" then
                         animalsByName[key] = animalsByName[key] or {}
-                        table.insert(animalsByName[key], {Tool = tool, CPS = cps})
+                        table.insert(animalsByName[key], {Tool = tool, CPS = cps or ""})
                     end
                 end
             end
@@ -5338,8 +5345,8 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             weightText.Parent = overlay
                             BackpackESPObjects[card] = overlay
                         end
-                        overlay.CashPerSecond.Text = tostring(match.CPS):gsub("[%$]", "")
-                        overlay.Weight.Text = weight
+                        overlay.CashPerSecond.Text = match.CPS ~= "" and tostring(match.CPS):gsub("[%$]", "") or "—"
+                        overlay.Weight.Text = weight or ""
                     end
                 end
             end
