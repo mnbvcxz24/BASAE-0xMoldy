@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.235"
+local testver = "Test v1.236"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5242,11 +5242,21 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local BackpackESPEnabled = false
         local BackpackESPObjects = {}
         local BackpackESPConnections = {}
+        local BackpackESPFolder = Create("Folder", {
+            Name = "BASE_Skrip_BackpackESP",
+            Parent = LocalPlayer:WaitForChild("PlayerGui")
+        })
+        local BackpackESPRefs = {}
         local function ClearBackpackESP(card)
             local overlay = BackpackESPObjects[card]
             if overlay then
                 overlay:Destroy()
                 BackpackESPObjects[card] = nil
+            end
+            local overlayRef = BackpackESPRefs[card]
+            if overlayRef then
+                overlayRef:Destroy()
+                BackpackESPRefs[card] = nil
             end
         end
         local function GetBackpackESPInfo(tool)
@@ -5377,10 +5387,15 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             overlay.BackgroundTransparency = 1
                             overlay.BorderSizePixel = 0
                             overlay.AnchorPoint = Vector2.new(0, 1)
-                            overlay.Position = UDim2.new(0, 0, 1, 0)
+                            overlay.Position = UDim2.new(0, 0, 1, -4)
                             overlay.Size = UDim2.new(1, 0, 0, 22)
                             overlay.ZIndex = 20
                             overlay.Parent = container
+                            local overlayRef = Instance.new("ObjectValue")
+                            overlayRef.Name = "InventoryOverlay"
+                            overlayRef.Value = overlay
+                            overlayRef.Parent = BackpackESPFolder
+                            BackpackESPRefs[card] = overlayRef
 
                             local cashText = Instance.new("TextLabel")
                             cashText.Name = "CashPerSecond"
@@ -5388,7 +5403,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             cashText.BorderSizePixel = 0
                             cashText.Position = UDim2.new(0, 1, 0, 0)
                             cashText.Size = UDim2.new(1, -2, 0, 12)
-                            cashText.Font = Enum.Font.GothamMedium
+                            cashText.Font = Enum.Font.GothamBold
                             cashText.TextSize = 9
                             cashText.TextColor3 = Color3.fromRGB(99, 255, 145)
                             cashText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
@@ -5404,7 +5419,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             weightLabel.BorderSizePixel = 0
                             weightLabel.Position = UDim2.new(0, 1, 0, 11)
                             weightLabel.Size = UDim2.new(1, -2, 0, 10)
-                            weightLabel.Font = Enum.Font.Gotham
+                            weightLabel.Font = Enum.Font.GothamBold
                             weightLabel.TextSize = 8
                             weightLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
                             weightLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
@@ -5441,6 +5456,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 end)
             else
                 for card in pairs(BackpackESPObjects) do
+                    ClearBackpackESP(card)
+                end
+                for card in pairs(BackpackESPRefs) do
                     ClearBackpackESP(card)
                 end
                 BackpackESPStatus.Text = "ESP is off"
@@ -5792,8 +5810,13 @@ RestoreButton.MouseButton1Click:Connect(function()
 end)
 -- CLOSE
 CloseButton.MouseButton1Click:Connect(function()
-    if ShutdownAutomation then ShutdownAutomation() end
-    ScreenGui:Destroy()
+    Runtime.Stopped = true
+    if type(RuntimeEnv.__BASAESkripCleanup) == "function" then
+        RuntimeEnv.__BASAESkripCleanup()
+    else
+        if ShutdownAutomation then ShutdownAutomation() end
+        ScreenGui:Destroy()
+    end
 end)
 -- DRAGGING
 local Dragging = false
