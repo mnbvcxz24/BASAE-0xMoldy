@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.220"
+local testver = "Test v1.221"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5309,7 +5309,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             cashText.Position = UDim2.new(0, 2, 0, 0)
                             cashText.Size = UDim2.new(1, -4, 0, 18)
                             cashText.Font = Enum.Font.GothamBold
-                            cashText.TextSize = 15
+                            cashText.TextSize = 13
                             cashText.TextColor3 = Color3.fromRGB(99, 255, 145)
                             cashText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
                             cashText.TextStrokeTransparency = 0.35
@@ -5334,7 +5334,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             weightText.Parent = overlay
                             BackpackESPObjects[card] = overlay
                         end
-                        overlay.CashPerSecond.Text = match.CPS
+                        overlay.CashPerSecond.Text = tostring(match.CPS):gsub("[%$]", "")
                         overlay.Weight.Text = weight
                     end
                 end
