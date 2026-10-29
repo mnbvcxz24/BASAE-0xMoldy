@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.215"
+local testver = "Test v1.216"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -1874,7 +1874,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             return (name:gsub("^%d+:%s*", ""))
         end
         function GetEggDataValue(egg, variableName)
-            local eggModel = egg and (egg:FindFirstChild("Egg") or egg)
+            local eggModel = egg and (egg:FindFirstChild("Egg") or egg:FindFirstChild("Egg", true) or egg)
             if not eggModel then return nil end
             local function readFrom(object)
                 local attribute = object:GetAttribute(variableName)
@@ -4713,6 +4713,63 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 humanoid:Move(offset.Unit, false)
             end)
         end
+        task.spawn(function()
+            while not Runtime.Stopped and not ScriptShuttingDown do
+                task.wait(1.5)
+                if AutoBreakEnabled and SortOrder == "Highest Luck"
+                    and MovementConnection ~= nil and CurrentTarget
+                    and IsEggAvailable(CurrentTarget)
+                    and not FlingRecoveryActive and not PickupRequested
+                    and not ReturningAfterPickup and not WaitingForPickup
+                    and not ArrivedAtTarget then
+                    local currentLuck = GetEggLuck(CurrentTarget)
+                    local zoneNames = {}
+                    for zoneName, selected in pairs(SelectedZones) do
+                        if selected then
+                            table.insert(zoneNames, zoneName)
+                        end
+                    end
+                    if #zoneNames == 0 then
+                        for _, zone in ipairs(ZoneBuilds:GetChildren()) do
+                            if zone:IsA("Model") then
+                                table.insert(zoneNames, zone.Name)
+                            end
+                        end
+                    end
+                    table.sort(zoneNames)
+                    local bestEgg = nil
+                    local bestLuck = currentLuck
+                    for _, zoneName in ipairs(zoneNames) do
+                        local zone = ZoneBuilds:FindFirstChild(zoneName)
+                        local eggsFolder = zone and zone:FindFirstChild("Eggs")
+                        if eggsFolder then
+                            for _, egg in ipairs(eggsFolder:GetChildren()) do
+                                if egg ~= CurrentTarget
+                                    and (egg:IsA("Model") or egg:IsA("BasePart"))
+                                    and egg.Name:lower():find("egg", 1, true)
+                                    and IsEggAvailable(egg) then
+                                    local eggName = GetEggTypeName(egg.Name)
+                                    if SelectedEggs[eggName] ~= false then
+                                        local luck = GetEggLuck(egg)
+                                        if luck > bestLuck then
+                                            bestLuck = luck
+                                            bestEgg = egg
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    if bestEgg then
+                        AddDebugLog("[Auto Break] Higher luck egg found while moving: "
+                            .. bestEgg.Name .. " | Luck=" .. tostring(bestLuck)
+                            .. " > current=" .. tostring(currentLuck) .. "; switching target.")
+                        CurrentTarget = nil
+                        StartAutoBreak(true)
+                    end
+                end
+            end
+        end)
         task.spawn(function()
             while not Runtime.Stopped and not ScriptShuttingDown do
                 task.wait(1)
