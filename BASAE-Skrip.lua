@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.233"
+local testver = "Test v1.234"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5280,6 +5280,11 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             cleaned = cleaned:match("^%s*(.-)%s*$")
             return tonumber(cleaned)
         end
+        local function NormalizeAnimalWeight(value)
+            local weight = ParseAnimalWeight(value)
+            if not weight then return nil end
+            return math.floor(weight + 0.5)
+        end
         local function GetInventoryCardInfo(card)
             local container = card:FindFirstChild("Container")
             local infoList = container and container:FindFirstChild("InfoList")
@@ -5329,7 +5334,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             for _, tool in ipairs(backpack:GetChildren()) do
                 if tool:IsA("Tool") then
                     local animalName = tool:GetAttribute("AnimalName")
-                    local weight = ParseAnimalWeight(tool:GetAttribute("WeightKg"))
+                    local weight = NormalizeAnimalWeight(tool:GetAttribute("WeightKg"))
                     if typeof(animalName) == "string" and animalName ~= "" and weight then
                         totalTools += 1
                         table.insert(animals, {
@@ -5353,8 +5358,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     local cardKey = GetAnimalComparisonKey(animalName)
                     local match
                     for _, animal in ipairs(animals) do
+                        local normalizedCardWeight = NormalizeAnimalWeight(cardWeight)
                         if animal.Key == cardKey
-                            and math.abs(animal.Weight - cardWeight) < 0.01 then
+                            and normalizedCardWeight ~= nil
+                            and animal.Weight == normalizedCardWeight then
                             match = animal
                             break
                         end
