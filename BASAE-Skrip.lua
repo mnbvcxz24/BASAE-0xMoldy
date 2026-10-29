@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.227"
+local testver = "Test v1.228"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5250,21 +5250,19 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             end
         end
         local function GetBackpackESPInfo(tool)
-            local model = tool:FindFirstChild("AnimalModel", true)
-            local root = model and model:FindFirstChild("RootPart", true)
-            local overhead = root and root:FindFirstChild("AnimalOverheadAttachment", true)
-            overhead = overhead and overhead:FindFirstChild("AnimalOverhead", true)
+            local model = tool:FindFirstChild("AnimalModel")
+            local root = model and model:FindFirstChild("RootPart")
+            local attachment = root and root:FindFirstChild("AnimalOverheadAttachment")
+            local overhead = attachment and attachment:FindFirstChild("AnimalOverhead")
             local cashFolder = overhead and overhead:FindFirstChild("CashPerSecond")
             local cashLabel = cashFolder and cashFolder:FindFirstChild("CashPerSecond")
-            local cps
-            if cashLabel then
-                if cashLabel:IsA("TextLabel") or cashLabel:IsA("TextButton") or cashLabel:IsA("TextBox") then
-                    cps = cashLabel.Text
-                elseif cashLabel:IsA("ValueBase") then
-                    cps = tostring(cashLabel.Value)
-                end
+            if not cashLabel then return "" end
+            if cashLabel:IsA("TextLabel") or cashLabel:IsA("TextButton") or cashLabel:IsA("TextBox") then
+                return cashLabel.Text
+            elseif cashLabel:IsA("ValueBase") then
+                return tostring(cashLabel.Value)
             end
-            return cps
+            return ""
         end
         local function NormalizeAnimalName(value)
             value = tostring(value or ""):lower()
@@ -5275,6 +5273,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         local function GetAnimalComparisonKey(value)
             return NormalizeAnimalName(value):gsub("[%s_%-]", "")
         end
+        local function ParseAnimalWeight(value)
+            if value == nil then return nil end
+            local cleaned = tostring(value):gsub(",", "")
+            cleaned = cleaned:gsub("%s*[Kk][Gg]%s*$", "")
+            cleaned = cleaned:match("^%s*(.-)%s*$")
+            return tonumber(cleaned)
+        end
         local function GetInventoryCardInfo(card)
             local container = card:FindFirstChild("Container")
             local infoList = container and container:FindFirstChild("InfoList")
@@ -5283,16 +5288,13 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 return nil
             end
             local text = tostring(nameLabel.Text or "")
-            local animalName, weight = text:match("^(.-)%s*%((.-)%)$")
-            if not animalName then
-                animalName = text
-            elseif not weight:lower():find("kg", 1, true) then
-                animalName = text
-                weight = nil
-            end
+            local animalName, weightText = text:match("^%s*(.-)%s*%(([%d,%.]+)%s*[Kk][Gg]%)%s*$")
+            if not animalName or not weightText then return nil end
+            local weight = ParseAnimalWeight(weightText)
+            if not weight then return nil end
             animalName = NormalizeAnimalName(animalName)
             if animalName == "" then return nil end
-            return animalName, weight, container
+            return animalName, weightText, container, weight
         end
         local function FindInventoryCards()
             local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
@@ -5308,34 +5310,42 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 BackpackESPStatus.Text = "Waiting for backpack..."
                 return
             end
-            local animalsByName = {}
+
+            local animals = {}
             for _, tool in ipairs(backpack:GetChildren()) do
                 if tool:IsA("Tool") then
-                    local cps = GetBackpackESPInfo(tool)
-                    local key = GetAnimalComparisonKey(tool.Name)
-                    if key ~= "" then
-                        animalsByName[key] = animalsByName[key] or {}
-                        table.insert(animalsByName[key], {Tool = tool, CPS = cps or ""})
+                    local animalName = tool:GetAttribute("AnimalName")
+                    local weight = ParseAnimalWeight(tool:GetAttribute("WeightKg"))
+                    if animalName and weight then
+                        table.insert(animals, {
+                            Tool = tool,
+                            Key = GetAnimalComparisonKey(animalName),
+                            Weight = weight,
+                            CPS = GetBackpackESPInfo(tool),
+                            Used = false
+                        })
                     end
                 end
             end
+
             local seen = {}
             local count = 0
             for _, card in ipairs(FindInventoryCards()) do
-                local animalName, weight, container = GetInventoryCardInfo(card)
+                local animalName, weightText, container, cardWeight = GetInventoryCardInfo(card)
                 if animalName and container then
-                    local compareKey = GetAnimalComparisonKey(animalName)
-                    local matches = animalsByName[compareKey]
-                    local match = matches and matches[1]
-                    if not match then
-                        for toolName, entries in pairs(animalsByName) do
-                            if toolName:find(compareKey, 1, true) or compareKey:find(toolName, 1, true) then
-                                match = entries[1]
-                                break
-                            end
+                    local cardKey = GetAnimalComparisonKey(animalName)
+                    local match
+                    for _, animal in ipairs(animals) do
+                        if not animal.Used
+                            and animal.Key == cardKey
+                            and math.abs(animal.Weight - cardWeight) < 0.01 then
+                            match = animal
+                            break
                         end
                     end
+
                     if match then
+                        match.Used = true
                         seen[card] = true
                         count += 1
                         local overlay = BackpackESPObjects[card]
@@ -5349,6 +5359,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             overlay.Size = UDim2.new(1, 0, 0, 34)
                             overlay.ZIndex = 20
                             overlay.Parent = container
+
                             local cashText = Instance.new("TextLabel")
                             cashText.Name = "CashPerSecond"
                             cashText.BackgroundTransparency = 1
@@ -5364,28 +5375,31 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                             cashText.TextTruncate = Enum.TextTruncate.AtEnd
                             cashText.ZIndex = 21
                             cashText.Parent = overlay
-                            local weightText = Instance.new("TextLabel")
-                            weightText.Name = "Weight"
-                            weightText.BackgroundTransparency = 1
-                            weightText.BorderSizePixel = 0
-                            weightText.Position = UDim2.new(0, 2, 0, 17)
-                            weightText.Size = UDim2.new(1, -4, 0, 16)
-                            weightText.Font = Enum.Font.GothamBold
-                            weightText.TextSize = 13
-                            weightText.TextColor3 = Color3.fromRGB(255, 255, 255)
-                            weightText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                            weightText.TextStrokeTransparency = 0.35
-                            weightText.TextXAlignment = Enum.TextXAlignment.Center
-                            weightText.TextTruncate = Enum.TextTruncate.AtEnd
-                            weightText.ZIndex = 21
-                            weightText.Parent = overlay
+
+                            local weightLabel = Instance.new("TextLabel")
+                            weightLabel.Name = "Weight"
+                            weightLabel.BackgroundTransparency = 1
+                            weightLabel.BorderSizePixel = 0
+                            weightLabel.Position = UDim2.new(0, 2, 0, 17)
+                            weightLabel.Size = UDim2.new(1, -4, 0, 16)
+                            weightLabel.Font = Enum.Font.GothamBold
+                            weightLabel.TextSize = 13
+                            weightLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                            weightLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                            weightLabel.TextStrokeTransparency = 0.35
+                            weightLabel.TextXAlignment = Enum.TextXAlignment.Center
+                            weightLabel.TextTruncate = Enum.TextTruncate.AtEnd
+                            weightLabel.ZIndex = 21
+                            weightLabel.Parent = overlay
                             BackpackESPObjects[card] = overlay
                         end
+
                         overlay.CashPerSecond.Text = match.CPS ~= "" and tostring(match.CPS):gsub("[%$]", "") or "—"
-                        overlay.Weight.Text = weight or ""
+                        overlay.Weight.Text = weightText
                     end
                 end
             end
+
             for card in pairs(BackpackESPObjects) do
                 if not seen[card] or not card.Parent then
                     ClearBackpackESP(card)
