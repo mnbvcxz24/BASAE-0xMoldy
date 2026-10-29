@@ -116,8 +116,10 @@ pcall(function()
 end)
 pcall(function()
     local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-    local oldESP = playerGui and playerGui:FindFirstChild("BASE_Skrip_EggESP")
-    if oldESP then oldESP:Destroy() end
+    for _, name in ipairs({"BASE_Skrip_EggESP", "BASE_Skrip_BackpackESP"}) do
+        local oldESP = playerGui and playerGui:FindFirstChild(name)
+        if oldESP then oldESP:Destroy() end
+    end
 end)
 -- THEME PRESETS
 local ThemePresets = {
