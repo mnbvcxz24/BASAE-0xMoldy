@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Deploy v1.216"
+local testver = "Deploy v1.217"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -1542,9 +1542,9 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         DropInZone1Toggle.Position = UDim2.fromOffset(11, 257)
         DropInZone1Toggle.Size = UDim2.new(1, -22, 0, 22)
         local PickUpWithMutationEnabled = false
-        local PickUpWithMutationToggle = CreateToggle(AutoPickupCard, "Pick up with mutation", false, function(enabled)
+        local PickUpWithMutationToggle = CreateToggle(AutoPickupCard, "With Mutation", false, function(enabled)
             PickUpWithMutationEnabled = enabled
-            AddDebugLog("[Auto Pickup] Pick up with mutation " .. (enabled and "ON." or "OFF."))
+            AddDebugLog("[Auto Pickup] With Mutation " .. (enabled and "ON." or "OFF."))
         end)
         PickUpWithMutationToggle.Position = UDim2.fromOffset(11, 283)
         PickUpWithMutationToggle.Size = UDim2.new(1, -22, 0, 22)
