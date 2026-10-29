@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Deploy v1.214"
+local testver = "Deploy v1.215"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -2664,8 +2664,16 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         ReplicatedStorage.DescendantAdded:Connect(function(instance)
             BindAnimalBankEquip(instance)
         end)
+        local PendingReturnAfterFling = false
+        local PendingReturnAfterFlingReason = nil
         function ReturnToPickup(reason)
-            if FlingRecoveryActive or ReturningAfterPickup then return end
+            if FlingRecoveryActive then
+                PendingReturnAfterFling = true
+                PendingReturnAfterFlingReason = reason or "Pickup confirmed. Returning to base."
+                SetTrackerStatus("Return queued: waiting for fling recovery to release movement.")
+                return
+            end
+            if ReturningAfterPickup then return end
             local useZoneDrop = DropInZone1Enabled == true
             ClearPickupLock()
             ReturningAfterPickup = true
@@ -4035,6 +4043,12 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                     FlingRecoveryActive = false
                     if CancelFlingRecovery == cleanupFlingRecovery then
                         CancelFlingRecovery = nil
+                    end
+                    if PendingReturnAfterFling then
+                        local pendingReason = PendingReturnAfterFlingReason
+                        PendingReturnAfterFling = false
+                        PendingReturnAfterFlingReason = nil
+                        ReturnToPickup(pendingReason or "Fling recovery finished. Returning to base.")
                     end
                 end
                 CancelFlingRecovery = cleanupFlingRecovery
