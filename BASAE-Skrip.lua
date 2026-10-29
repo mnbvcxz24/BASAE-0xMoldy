@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.219"
+local testver = "Test v1.220"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -5186,7 +5186,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         if ESPTitle then ESPTitle.Size = UDim2.new(1, -78, 0, 22) end
         ESPCard.Size = UDim2.new(0.5, -5, 0, 100)
 
-        local BackpackESPCard = CreateCard(ESPCardsRow, "Backpack ESP", "Shows $/s and weight KG.")
+        local BackpackESPCard = CreateCard(ESPCardsRow, "Backpack ESP", "Shows larger $/s and KG on inventory cards.")
         BackpackESPCard.Position = UDim2.new(0.5, 5, 0, 0)
         BackpackESPCard.Size = UDim2.new(0.5, -5, 0, 100)
         BackpackESPCard.LayoutOrder = 2
@@ -5205,57 +5205,56 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         })
         local BackpackESPEnabled = false
         local BackpackESPObjects = {}
-        local BackpackToolTips = {}
-        local BackpackESPFolder = Create("Folder", {
-            Name = "BASE_Skrip_BackpackESP",
-            Parent = LocalPlayer:WaitForChild("PlayerGui")
-        })
-        local function ClearBackpackESP(tool)
-            local gui = BackpackESPObjects[tool]
-            if gui then
-                gui:Destroy()
-                BackpackESPObjects[tool] = nil
+        local BackpackESPConnections = {}
+        local function ClearBackpackESP(card)
+            local overlay = BackpackESPObjects[card]
+            if overlay then
+                overlay:Destroy()
+                BackpackESPObjects[card] = nil
             end
-            if tool and tool.Parent and tool:IsA("Tool") and BackpackToolTips[tool] ~= nil then
-                tool.ToolTip = BackpackToolTips[tool]
-            end
-            BackpackToolTips[tool] = nil
-        end
-        local function GetBackpackValue(object, names)
-            if not object then return nil end
-            for _, name in ipairs(names) do
-                local node = object:FindFirstChild(name, true)
-                if node then
-                    if node:IsA("ValueBase") then return tostring(node.Value) end
-                    if node:IsA("TextLabel") or node:IsA("TextButton") or node:IsA("TextBox") then
-                        if node.Text ~= "" then return node.Text end
-                    end
-                    local attr = node:GetAttribute(name)
-                    if attr ~= nil then return tostring(attr) end
-                end
-                local attr = object:GetAttribute(name)
-                if attr ~= nil then return tostring(attr) end
-            end
-            return nil
         end
         local function GetBackpackESPInfo(tool)
-            local weight = GetBackpackValue(tool, {"WeightKg", "WeightKG", "Weight"})
-            local animalModel = tool:FindFirstChild("AnimalModel", true)
-            local rootPart = animalModel and animalModel:FindFirstChild("RootPart", true)
-            local cashLabel = rootPart and rootPart:FindFirstChild("CashPerSecond", true)
-            local cashPerSecond = cashLabel and cashLabel:FindFirstChild("CashPerSecond", true)
+            local model = tool:FindFirstChild("AnimalModel", true)
+            local root = model and model:FindFirstChild("RootPart", true)
+            local overhead = root and root:FindFirstChild("AnimalOverheadAttachment", true)
+            overhead = overhead and overhead:FindFirstChild("AnimalOverhead", true)
+            local cashFolder = overhead and overhead:FindFirstChild("CashPerSecond")
+            local cashLabel = cashFolder and cashFolder:FindFirstChild("CashPerSecond")
             local cps
-            if cashPerSecond then
-                if cashPerSecond:IsA("TextLabel") or cashPerSecond:IsA("TextButton") or cashPerSecond:IsA("TextBox") then
-                    cps = cashPerSecond.Text
-                elseif cashPerSecond:IsA("ValueBase") then
-                    cps = tostring(cashPerSecond.Value)
+            if cashLabel then
+                if cashLabel:IsA("TextLabel") or cashLabel:IsA("TextButton") or cashLabel:IsA("TextBox") then
+                    cps = cashLabel.Text
+                elseif cashLabel:IsA("ValueBase") then
+                    cps = tostring(cashLabel.Value)
                 end
             end
-            if not cps or cps == "" then
-                cps = GetBackpackValue(tool, {"CashPerSecond", "CPS"})
+            return cps
+        end
+        local function NormalizeAnimalName(value)
+            value = tostring(value or ""):lower()
+            value = value:gsub("%s*%b()%s*$", "")
+            value = value:gsub("%s+", " ")
+            return value:match("^%s*(.-)%s*$")
+        end
+        local function GetInventoryCardInfo(card)
+            local container = card:FindFirstChild("Container")
+            local infoList = container and container:FindFirstChild("InfoList")
+            local nameLabel = infoList and infoList:FindFirstChild("Name")
+            if not nameLabel or not (nameLabel:IsA("TextLabel") or nameLabel:IsA("TextButton") or nameLabel:IsA("TextBox")) then
+                return nil
             end
-            return cps or "?", weight or "?"
+            local text = nameLabel.Text
+            local animalName, weight = text:match("^(.-)%s*%((.-KG)%)$")
+            if not animalName then return nil end
+            return NormalizeAnimalName(animalName), weight, container
+        end
+        local function FindInventoryCards()
+            local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
+            local mobile = playerGui and playerGui:FindFirstChild("MobileScatchel")
+            local hotbar = mobile and mobile:FindFirstChild("HotBarUi")
+            local inventory = hotbar and hotbar:FindFirstChild("Inventory")
+            local scrolling = inventory and inventory:FindFirstChild("ScrollingFrame")
+            return scrolling and scrolling:GetChildren() or {}
         end
         local function UpdateBackpackESP()
             local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
@@ -5263,68 +5262,95 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 BackpackESPStatus.Text = "Waiting for backpack..."
                 return
             end
-            local seen = {}
-            local count = 0
+            local animalsByName = {}
             for _, tool in ipairs(backpack:GetChildren()) do
                 if tool:IsA("Tool") then
-                    local animalModel = tool:FindFirstChild("AnimalModel", true)
-                    local rootPart = animalModel and animalModel:FindFirstChild("RootPart", true)
-                    if rootPart and rootPart:IsA("BasePart") then
-                        seen[tool] = true
-                        count += 1
-                        local gui = BackpackESPObjects[tool]
-                        if not gui or not gui.Parent then
-                            gui = Instance.new("BillboardGui")
-                            gui.Name = "BackpackAnimalESP"
-                            gui.Adornee = rootPart
-                            gui.Size = UDim2.fromOffset(190, 58)
-                            gui.StudsOffset = Vector3.new(0, 3.2, 0)
-                            gui.AlwaysOnTop = true
-                            gui.MaxDistance = math.huge
-                            gui.Parent = BackpackESPFolder
-                            local label = Instance.new("TextLabel")
-                            label.Name = "Info"
-                            label.Size = UDim2.fromScale(1, 1)
-                            label.BackgroundTransparency = 1
-                            label.BorderSizePixel = 0
-                            label.TextColor3 = Color3.fromRGB(255, 255, 255)
-                            label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                            label.TextStrokeTransparency = 0.15
-                            label.Font = Enum.Font.GothamBold
-                            label.TextSize = 18
-                            label.TextWrapped = false
-                            label.RichText = true
-                            label.Parent = gui
-                            BackpackESPObjects[tool] = gui
-                            BackpackToolTips[tool] = tool.ToolTip
-                        end
-                        local cps, weight = GetBackpackESPInfo(tool)
-                        BackpackESPObjects[tool].Adornee = rootPart
-                        BackpackESPObjects[tool].Info.Text = '<font color="#63FF91">[' .. cps .. ']</font>' .. string.char(10) .. '<font color="#FFFFFF">[' .. weight .. ' KG]</font>'
-                        tool.ToolTip = "[" .. cps .. "]" .. string.char(10) .. "[" .. weight .. " KG]"
+                    local cps = GetBackpackESPInfo(tool)
+                    if cps and cps ~= "" then
+                        local key = NormalizeAnimalName(tool.Name)
+                        animalsByName[key] = animalsByName[key] or {}
+                        table.insert(animalsByName[key], {Tool = tool, CPS = cps})
                     end
                 end
             end
-            for tool in pairs(BackpackESPObjects) do
-                if not seen[tool] or not tool.Parent or tool.Parent ~= backpack then
-                    ClearBackpackESP(tool)
+            local seen = {}
+            local count = 0
+            for _, card in ipairs(FindInventoryCards()) do
+                local animalName, weight, container = GetInventoryCardInfo(card)
+                if animalName and container then
+                    local matches = animalsByName[animalName]
+                    local match = matches and matches[1]
+                    if match then
+                        seen[card] = true
+                        count += 1
+                        local overlay = BackpackESPObjects[card]
+                        if not overlay or not overlay.Parent then
+                            overlay = Instance.new("Frame")
+                            overlay.Name = "BASAEInventoryStatsOverlay"
+                            overlay.BackgroundTransparency = 1
+                            overlay.BorderSizePixel = 0
+                            overlay.AnchorPoint = Vector2.new(0, 1)
+                            overlay.Position = UDim2.new(0, 0, 1, 0)
+                            overlay.Size = UDim2.new(1, 0, 0, 34)
+                            overlay.ZIndex = 20
+                            overlay.Parent = container
+                            local cashText = Instance.new("TextLabel")
+                            cashText.Name = "CashPerSecond"
+                            cashText.BackgroundTransparency = 1
+                            cashText.BorderSizePixel = 0
+                            cashText.Position = UDim2.new(0, 2, 0, 0)
+                            cashText.Size = UDim2.new(1, -4, 0, 18)
+                            cashText.Font = Enum.Font.GothamBold
+                            cashText.TextSize = 15
+                            cashText.TextColor3 = Color3.fromRGB(99, 255, 145)
+                            cashText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                            cashText.TextStrokeTransparency = 0.35
+                            cashText.TextXAlignment = Enum.TextXAlignment.Center
+                            cashText.TextTruncate = Enum.TextTruncate.AtEnd
+                            cashText.ZIndex = 21
+                            cashText.Parent = overlay
+                            local weightText = Instance.new("TextLabel")
+                            weightText.Name = "Weight"
+                            weightText.BackgroundTransparency = 1
+                            weightText.BorderSizePixel = 0
+                            weightText.Position = UDim2.new(0, 2, 0, 17)
+                            weightText.Size = UDim2.new(1, -4, 0, 16)
+                            weightText.Font = Enum.Font.GothamBold
+                            weightText.TextSize = 13
+                            weightText.TextColor3 = Color3.fromRGB(255, 255, 255)
+                            weightText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                            weightText.TextStrokeTransparency = 0.35
+                            weightText.TextXAlignment = Enum.TextXAlignment.Center
+                            weightText.TextTruncate = Enum.TextTruncate.AtEnd
+                            weightText.ZIndex = 21
+                            weightText.Parent = overlay
+                            BackpackESPObjects[card] = overlay
+                        end
+                        overlay.CashPerSecond.Text = match.CPS
+                        overlay.Weight.Text = weight
+                    end
                 end
             end
-            BackpackESPStatus.Text = "ESP " .. (BackpackESPEnabled and "ON" or "OFF") .. " | Tools: " .. count
+            for card in pairs(BackpackESPObjects) do
+                if not seen[card] or not card.Parent then
+                    ClearBackpackESP(card)
+                end
+            end
+            BackpackESPStatus.Text = "ESP " .. (BackpackESPEnabled and "ON" or "OFF") .. " | Cards: " .. count
         end
         CreateToggle(BackpackESPCard, "", false, function(enabled)
             BackpackESPEnabled = enabled
             if enabled then
-                BackpackESPStatus.Text = "Scanning backpack..."
+                BackpackESPStatus.Text = "Matching inventory cards..."
                 task.spawn(function()
                     while not Runtime.Stopped and BackpackESPEnabled and not ScriptShuttingDown do
-                        UpdateBackpackESP()
+                        pcall(UpdateBackpackESP)
                         task.wait(0.75)
                     end
                 end)
             else
-                for tool in pairs(BackpackESPObjects) do
-                    ClearBackpackESP(tool)
+                for card in pairs(BackpackESPObjects) do
+                    ClearBackpackESP(card)
                 end
                 BackpackESPStatus.Text = "ESP is off"
             end
