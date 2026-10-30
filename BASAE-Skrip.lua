@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Test v1.238"
+local testver = "Test v1.239"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -2892,8 +2892,10 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         function GetPickupMutation(pickup)
             if not pickup then return "No Mutation" end
-            local variant = pickup:FindFirstChild("Variant", true)
-            if variant then return "Mutated" end
+            local variant = pickup:GetAttribute("Variant")
+            if variant ~= nil and tostring(variant) ~= "" then
+                return "Mutated"
+            end
             return "No Mutation"
         end
         function GetDroppedAnimalSignature(pickup, weight)
