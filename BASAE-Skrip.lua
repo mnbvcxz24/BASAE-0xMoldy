@@ -5310,7 +5310,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             if not playerGui then return {} end
 
             local scrolling
-            local guiNames = {"MobileSatchel", "Satchel", "MobileScatchel"}
+            local guiNames = {"MobileScatchel", "Scatchel"}
             for _, guiName in ipairs(guiNames) do
                 local satchel = playerGui:FindFirstChild(guiName)
                 if satchel then
