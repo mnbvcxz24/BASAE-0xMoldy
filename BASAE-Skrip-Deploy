@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 local RuntimeEnv = type(getgenv) == "function" and getgenv() or _G
-local testver = "Deploy v1.221"
+local testver = "Deploy v1.240"
 local PreviousRuntimeCleanup = RuntimeEnv.__BASAESkripCleanup
 if type(PreviousRuntimeCleanup) == "function" then
     pcall(PreviousRuntimeCleanup)
@@ -41,21 +41,7 @@ RuntimeEnv.__BASAESkripCleanup = function()
         local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
         for _, name in ipairs({"BASE_Skrip_EggESP", "BASE_Skrip_BackpackESP"}) do
             local oldESP = playerGui and playerGui:FindFirstChild(name)
-            if oldESP then
-                if name == "BASE_Skrip_BackpackESP" then
-                    for _, overlayRef in ipairs(oldESP:GetChildren()) do
-                        if overlayRef:IsA("ObjectValue") then
-                            local overlay = overlayRef.Value
-                            if overlay then
-                                pcall(function()
-                                    overlay:Destroy()
-                                end)
-                            end
-                        end
-                    end
-                end
-                oldESP:Destroy()
-            end
+            if oldESP then oldESP:Destroy() end
         end
     end)
 end
@@ -669,48 +655,6 @@ local function CreateCard(parent, title, description)
     })
     return Card
 end
--- DISABLED CARD OVERLAY
-local function MarkUnderDevelopment(Card)
-    local Overlay = Create("Frame", {
-        Name = "UnderDevelopmentOverlay",
-        Parent = Card,
-        Size = UDim2.fromScale(1, 1),
-        Position = UDim2.fromScale(0, 0),
-        BackgroundColor3 = Theme.Card,
-        BackgroundTransparency = 0.18,
-        BorderSizePixel = 0,
-        Active = true,
-        ZIndex = 20
-    })
-    AddCorner(Overlay, 8)
-    Create("Frame", {
-        Name = "UnderDevelopmentLine",
-        Parent = Overlay,
-        AnchorPoint = Vector2.new(0, 0.5),
-        Position = UDim2.new(0, 0, 0.5, 0),
-        Size = UDim2.new(1, 0, 0, 1),
-        BackgroundColor3 = Theme.Gray,
-        BackgroundTransparency = 0.2,
-        BorderSizePixel = 0,
-        ZIndex = 21
-    })
-    Create("TextLabel", {
-        Name = "UnderDevelopmentLabel",
-        Parent = Overlay,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.fromScale(0.5, 0.5),
-        Size = UDim2.new(0.72, 0, 0, 20),
-        BackgroundColor3 = Theme.Card,
-        BackgroundTransparency = 0.05,
-        BorderSizePixel = 0,
-        Text = "UNDER DEVELOPMENT",
-        TextColor3 = Theme.Gray,
-        Font = Enum.Font.GothamBold,
-        TextSize = 10,
-        TextXAlignment = Enum.TextXAlignment.Center,
-        ZIndex = 22
-    })
-end
 -- BUTTON
 local function CreateButton(parent, text, callback)
     local Button = Create("TextButton", {
@@ -1131,7 +1075,7 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             BorderSizePixel = 0,
             LayoutOrder = 2
         })
-        local AutoFuseCard = CreateCard(AutoRow, "⚙️  Auto Fuse", "UNDER DEVELOPMENT")
+        local AutoFuseCard = CreateCard(AutoRow, "⚙️  Auto Fuse", "TEST MODE • Testing enabled")
         AutoFuseCard.Position = UDim2.new(0.5, 6, 0, 196)
         AutoFuseCard.Size = UDim2.new(0.5, -6, 0, 150)
         local AutoFuseEnabled = false
@@ -1192,21 +1136,49 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local AutoFuseToggle
         AutoFuseToggle = CreateToggle(AutoFuseCard, "", false, function(enabled)
-            if enabled then
-                AddDebugLog("[Auto Fuse] UNDER DEVELOPMENT - disabled in Deploy.")
-                task.defer(function()
-                    local controller = ToggleControllers[AutoFuseToggle]
-                    if controller then controller.SetEnabled(false, false) end
-                    AutoFuseStatus.Text = "UNDER DEVELOPMENT"
-                    AutoFuseStatus.TextColor3 = Theme.Gray
-                end)
-                return
-            end
-            AutoFuseEnabled = false
+            AutoFuseEnabled = enabled
             AutoFuseGeneration += 1
-            AutoFuseStatus.Text = "Status: OFF"
-            AutoFuseStatus.TextColor3 = Theme.Gray
-            AddDebugLog("[Auto Fuse] disabled.")
+            local generation = AutoFuseGeneration
+            AutoFuseStatus.Text = enabled and "Status: ON • Checking Backpack" or "Status: OFF"
+            AutoFuseStatus.TextColor3 = enabled and Theme.Accent or Theme.Gray
+            AddDebugLog("[Auto Fuse] " .. (enabled and "enabled." or "disabled."))
+            if not enabled then return end
+            task.spawn(function()
+                local depositedSlots = {}
+                while AutoFuseEnabled and AutoFuseGeneration == generation and not Runtime.Stopped do
+                    local requirements = RefreshAutoFuseRequirements()
+                    local backpack = LocalPlayer:FindFirstChildOfClass("Backpack")
+                    local remote = game:GetService("ReplicatedStorage"):FindFirstChild("FuseMachineRequest")
+                    if backpack and remote and remote:IsA("RemoteEvent") then
+                        for slot = 1, 3 do
+                            if not AutoFuseEnabled or AutoFuseGeneration ~= generation then break end
+                            local animalName = requirements[slot]
+                            if animalName and not depositedSlots[slot] then
+                                local animal = backpack:FindFirstChild(animalName)
+                                if animal then
+                                    local ok, err = pcall(function()
+                                        remote:FireServer("Deposit", animalName, animal)
+                                    end)
+                                    if ok then
+                                        depositedSlots[slot] = true
+                                        AutoFuseStatus.Text = "Status: Deposited " .. animalName
+                                        AutoFuseStatus.TextColor3 = Theme.Accent
+                                        AddDebugLog("[Auto Fuse] Deposited " .. animalName .. " for slot " .. slot .. ".")
+                                        task.wait(0.35)
+                                    else
+                                        AutoFuseStatus.Text = "Status: Deposit failed"
+                                        AddDebugLog("[Auto Fuse] Deposit failed for " .. animalName .. ": " .. tostring(err))
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        AutoFuseStatus.Text = "Status: Waiting for Backpack/remote"
+                        AutoFuseStatus.TextColor3 = Theme.Gray
+                    end
+                    task.wait(1)
+                end
+            end)
         end)
         AutoFuseToggle.Position = UDim2.new(1, -58, 0, 7)
         AutoFuseToggle.Size = UDim2.fromOffset(48, 24)
@@ -1216,7 +1188,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
                 task.wait(1)
             end
         end)
-        MarkUnderDevelopment(AutoFuseCard)
         local RarityFilterOpen = false
         local RarityOptions = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Cosmic", "Secret", "Eternal", "Divine", "Celestial", "Inferno", "Void", "Omega", "Spectral"}
         local SelectedRarities = {}
@@ -4993,14 +4964,14 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
 
     elseif index == 2 then
-        local CandyCard = CreateCard(Page, "🍬  Auto collect candies", "UNDER DEVELOPMENT")
+        local CandyCard = CreateCard(Page, "🍬  Auto collect candies", "TEST MODE")
         CandyCard.Size = UDim2.new(1, 0, 0, 110)
         local CandyInfo = Create("TextLabel", {
             Parent = CandyCard,
             Position = UDim2.fromOffset(12, 42),
             Size = UDim2.new(1, -24, 0, 38),
             BackgroundTransparency = 1,
-            Text = "UNDER DEVELOPMENT — Auto candy collection is disabled in Deploy.",
+            Text = "TEST MODE — Auto candy collection logic is not implemented yet.",
             TextColor3 = Theme.Gray,
             Font = Enum.Font.Gotham,
             TextSize = 9,
@@ -5008,7 +4979,6 @@ for index, name in ipairs(UIConfig.SidebarNames) do
             TextXAlignment = Enum.TextXAlignment.Left,
             TextYAlignment = Enum.TextYAlignment.Top
         })
-        MarkUnderDevelopment(CandyCard)
 
     elseif index == 3 then
         local ESPCardsRow = Create("Frame", {
@@ -5272,10 +5242,28 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local function FindInventoryCards()
             local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-            local mobile = playerGui and playerGui:FindFirstChild("MobileScatchel")
-            local hotbar = mobile and mobile:FindFirstChild("HotBarUi")
-            local inventory = hotbar and hotbar:FindFirstChild("Inventory")
-            local scrolling = inventory and inventory:FindFirstChild("ScrollingFrame")
+            if not playerGui then return {} end
+
+            local scrolling
+            local guiNames = {"MobileScatchel", "Scatchel"}
+            for _, guiName in ipairs(guiNames) do
+                local satchel = playerGui:FindFirstChild(guiName)
+                if satchel then
+                    local hotbar = satchel:FindFirstChild("HotBarUi", true)
+                    local inventory = hotbar and hotbar:FindFirstChild("Inventory", true)
+                    scrolling = inventory and inventory:FindFirstChild("ScrollingFrame", true)
+                    if scrolling then break end
+
+                    for _, descendant in ipairs(satchel:GetDescendants()) do
+                        if descendant.Name == "Inventory" then
+                            scrolling = descendant:FindFirstChild("ScrollingFrame", true)
+                            if scrolling then break end
+                        end
+                    end
+                    if scrolling then break end
+                end
+            end
+
             if not scrolling then return {} end
 
             local cards = {}
