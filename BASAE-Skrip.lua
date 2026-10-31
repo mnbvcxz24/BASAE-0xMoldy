@@ -5307,10 +5307,28 @@ for index, name in ipairs(UIConfig.SidebarNames) do
         end
         local function FindInventoryCards()
             local playerGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-            local mobile = playerGui and playerGui:FindFirstChild("MobileScatchel")
-            local hotbar = mobile and mobile:FindFirstChild("HotBarUi")
-            local inventory = hotbar and hotbar:FindFirstChild("Inventory")
-            local scrolling = inventory and inventory:FindFirstChild("ScrollingFrame")
+            if not playerGui then return {} end
+
+            local scrolling
+            local guiNames = {"MobileSatchel", "Satchel", "MobileScatchel"}
+            for _, guiName in ipairs(guiNames) do
+                local satchel = playerGui:FindFirstChild(guiName)
+                if satchel then
+                    local hotbar = satchel:FindFirstChild("HotBarUi", true)
+                    local inventory = hotbar and hotbar:FindFirstChild("Inventory", true)
+                    scrolling = inventory and inventory:FindFirstChild("ScrollingFrame", true)
+                    if scrolling then break end
+
+                    for _, descendant in ipairs(satchel:GetDescendants()) do
+                        if descendant.Name == "Inventory" then
+                            scrolling = descendant:FindFirstChild("ScrollingFrame", true)
+                            if scrolling then break end
+                        end
+                    end
+                    if scrolling then break end
+                end
+            end
+
             if not scrolling then return {} end
 
             local cards = {}
